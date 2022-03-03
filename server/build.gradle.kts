@@ -1,0 +1,40 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+    kotlin("jvm") version "1.5.0"
+    id("java")
+}
+
+group = "com.espero"
+version = "1.0-SNAPSHOT"
+
+val vertxVersion = "4.2.4"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
+    implementation("io.vertx:vertx-web")
+    implementation("io.vertx:vertx-lang-kotlin")
+    implementation("io.vertx:vertx-lang-kotlin-coroutines")
+
+    implementation("com.h2database:h2:1.4.200")
+    implementation("com.zaxxer:HikariCP:5.0.1")
+
+    implementation(kotlin("stdlib-jdk8"))
+    implementation("org.slf4j:slf4j-simple:1.7.30")
+
+    testImplementation(kotlin("test-junit5"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+tasks.withType<KotlinCompile>() {
+    kotlinOptions.jvmTarget = "1.8"
+}
