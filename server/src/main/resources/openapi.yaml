@@ -1,0 +1,161 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Yaade OpenAPI
+  license:
+    name: MIT
+paths:
+  /api/health:
+    get:
+      summary: Check if the server is running
+      operationId: health
+      tags:
+        - health
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/collection:
+    get:
+      summary: Get all collections
+      operationId: getAllCollections
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collections"
+    post:
+      summary: Create a collection
+      operationId: postCollection
+      requestBody:
+        description: A new collection
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCollectionRequest"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+  /api/request:
+    post:
+      summary: Creata a new request
+      operationId: postRequest
+      requestBody:
+        description: A new request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRequestRequest"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+    Header:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+    Request:
+      type: object
+      required:
+        - id
+        - collectionId
+        - name
+        - url
+        - method
+        - headers
+        - body
+      properties:
+        id:
+          type: integer
+          format: int64
+        collectionId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        method:
+          type: string
+        headers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Header"
+        body:
+          type: string
+    Collection:
+      type: object
+      required:
+        - id
+        - name
+        - description
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        requests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Request"
+    Collections:
+      type: array
+      items:
+        $ref: "#/components/schemas/Collection"
+
+    ########## Requests ##########
+    CreateCollectionRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    CreateRequestRequest:
+      type: object
+      required:
+        - collectionId
+        - name
+        - method
+      properties:
+        collectionId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        method:
+          type: string
+

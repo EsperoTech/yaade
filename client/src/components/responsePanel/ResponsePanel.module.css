@@ -1,0 +1,5 @@
+.container {
+  grid-row: 2 / 3;
+  margin-right: 1rem;
+  border-radius: 20px;
+}

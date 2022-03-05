@@ -1,0 +1,22 @@
+.container {
+  position: relative;
+  display: flex;
+  margin-bottom: 10px;
+  min-height: 100%;
+}
+
+.box {
+  border-radius: 20px;
+}
+
+.handle {
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  background-color: #0d1117;
+  opacity: 0.75;
+  border-radius: 4px;
+  right: -10px;
+  margin: 0 auto;
+  cursor: ew-resize;
+}

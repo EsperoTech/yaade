@@ -1,51 +1,23 @@
-import { useState, useEffect } from 'react'
+import { ChakraProvider } from '@chakra-ui/react';
+import { createContext, useState } from 'react';
+
+import User from './model/User';
+import Dashboard from './pages/dashboard/Dashboard';
+import Login from './pages/login';
+import theme from './theme';
+
+const UserContext = createContext([{} as User, null as any]);
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    async function get() {
-      const res = await fetch("http://localhost:9337/api/health")
-      const body = await res.json()
-      console.log(body)
-    }
-    get()
-  }, [])
+  const [user, setUser] = useState<User | null>({ username: 'hello', isAdmin: true });
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <p>Hello Vite + React!</p>
-        <p>
-          <button type="button" onClick={() => setCount((count) => count + 1)}>
-            count is: {count}
-          </button>
-        </p>
-        <p>
-          Edit <code>App.tsx</code> and save to test HMR updates.
-        </p>
-        <p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-          {' | '}
-          <a
-            className="App-link"
-            href="https://vitejs.dev/guide/features.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Vite Docs
-          </a>
-        </p>
-      </header>
-    </div>
-  )
+    <ChakraProvider theme={theme}>
+      <UserContext.Provider value={[user, setUser]}>
+        {user ? <Dashboard /> : <Login />}
+      </UserContext.Provider>
+    </ChakraProvider>
+  );
 }
 
-export default App
+export default App;

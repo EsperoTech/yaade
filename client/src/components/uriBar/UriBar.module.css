@@ -1,0 +1,63 @@
+.container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.select {
+  height: 32px;
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  text-align: center;
+  border-radius: 20px 0 0 20px;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+}
+
+.select--light {
+  background-color: var(--chakra-colors-gray-300);
+}
+
+.select--dark {
+  background-color: var(--chakra-colors-gray-700);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border: 1px solid var(--chakra-colors-gray-700);
+}
+
+.input {
+  width: 100%;
+  padding-left: 8px;
+}
+
+.input--light {
+  background-color: var(--chakra-colors-white);
+}
+
+.input--dark {
+  background-color: var(--chakra-colors-gray-900);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border: 1px solid var(--chakra-colors-gray-700);
+}
+
+.button {
+  background-color: lightgray;
+  border-radius: 0 20px 20px 0;
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.button--light {
+  background-color: var(--chakra-colors-green-500);
+  color: white;
+}
+
+.button--dark {
+  background-color: var(--chakra-colors-green-500);
+  color: white;
+}
