@@ -12,9 +12,9 @@ function UriBar({ handleSendButtonClicked }: UriBarProps) {
         <option>GET</option>
         <option>POST</option>
       </select>
-      <input className={cn(styles, 'input')} type="text" />
+      <input className={cn(styles, 'input')} type="text" placeholder="URL" />
       <button className={cn(styles, 'button')} onClick={handleSendButtonClicked}>
-        <span className={styles.buttonSpan}>SEND</span>
+        SEND
       </button>
     </div>
   );

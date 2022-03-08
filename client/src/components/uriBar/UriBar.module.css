@@ -23,12 +23,20 @@
   background-color: var(--chakra-colors-gray-300);
 }
 
+.select--light:hover {
+  background-color: var(--chakra-colors-gray-200);
+}
+
 .select--dark {
   background-color: var(--chakra-colors-gray-700);
   box-sizing: border-box;
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
   border: 1px solid var(--chakra-colors-gray-700);
+}
+
+.select--dark:hover {
+  background-color: var(--chakra-colors-gray-600);
 }
 
 .input {
@@ -54,20 +62,10 @@
   width: 120px;
   min-width: 120px;
   max-width: 120px;
-}
-
-.button--light {
   background-color: var(--chakra-colors-green-500);
   color: white;
 }
 
-.button--dark {
-  background-color: var(--chakra-colors-green-500);
-  color: white;
-}
-
-.buttonSpan {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.button:hover {
+  background-color: var(--chakra-colors-green-400);
 }

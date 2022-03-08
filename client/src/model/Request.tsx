@@ -8,6 +8,7 @@ interface Request {
   params: Array<KVRow>;
   headers: Array<KVRow>;
   body: string;
+  selected: boolean;
 }
 
 export default Request;

@@ -1,4 +1,16 @@
 import { type ThemeConfig, extendTheme } from '@chakra-ui/react';
+import { ComponentStyleConfig } from '@chakra-ui/react';
+
+const Menu: ComponentStyleConfig = {
+  parts: ['menu'],
+  baseStyle: {
+    menu: {
+      zIndex: 50,
+      py: '12',
+      background: 'red',
+    },
+  },
+};
 
 const config: ThemeConfig = {
   initialColorMode: 'dark',
@@ -20,6 +32,9 @@ const theme = extendTheme({
     },
   },
   shadows: { outline: '0 !important' },
+  components: {
+    Menu,
+  },
 });
 
 export default theme;
