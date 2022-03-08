@@ -1,0 +1,33 @@
+.row {
+  display: flex;
+}
+
+.input {
+  padding-left: 1rem;
+  width: 100%;
+}
+
+.input--left {
+  border-radius: 20px 0 0 20px;
+  border-right: 2px solid var(--chakra-colors-gray-100);
+}
+
+.input--right {
+  border-radius: 0 20px 20px 0;
+}
+
+.input--light {
+  background-color: var(--chakra-colors-white);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border: 1px solid var(--chakra-colors-gray-100);
+}
+
+.input--dark {
+  background-color: var(--chakra-colors-gray-900);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border: 1px solid var(--chakra-colors-gray-700);
+}

@@ -1,48 +1,67 @@
 import { Box } from '@chakra-ui/react';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
-import { ResizableBox } from 'react-resizable';
 
+import KVRow from '../../model/KVRow';
+import Request from '../../model/Request';
+import BodyEditor from '../bodyEditor';
+import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
 
-function RequestPanel() {
-  const vh = Math.max(
-    document.documentElement.clientHeight || 0,
-    window.innerHeight || 0,
-  );
+type RequestPanelProps = {
+  request: Request;
+  setRequest: any;
+  handleSendButtonClicked: () => void;
+};
+
+function RequestPanel({
+  request,
+  setRequest,
+  handleSendButtonClicked,
+}: RequestPanelProps) {
+  const setParams = (params: Array<KVRow>) => {
+    setRequest((request: Request) => ({
+      ...request,
+      params,
+    }));
+  };
+
+  const setHeaders = (headers: Array<KVRow>) => {
+    setRequest((request: Request) => ({
+      ...request,
+      headers,
+    }));
+  };
+
+  const setBody = (body: string) => {
+    setRequest((request: Request) => ({
+      ...request,
+      body,
+    }));
+  };
 
   return (
-    <ResizableBox
-      className={styles.container}
-      width={Infinity}
-      height={200}
-      maxConstraints={[Infinity, vh * 0.8]}
-      axis="y"
-      handle={<span className={styles.handle} />}
-      handleSize={[8, 8]}
-    >
-      <Box className={styles.box} bg="panelBg" h="100%">
-        <UriBar />
-        <Tabs colorScheme="green" mt="1">
-          <TabList>
-            <Tab>Parameters</Tab>
-            <Tab>Headers</Tab>
-            <Tab>Body</Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel>
-              <p>one!</p>
-            </TabPanel>
-            <TabPanel>
-              <p>two!</p>
-            </TabPanel>
-            <TabPanel>
-              <p>three!</p>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Box>
-    </ResizableBox>
+    <Box className={styles.box} bg="panelBg" h="100%">
+      <UriBar handleSendButtonClicked={handleSendButtonClicked} />
+      <Tabs colorScheme="green" mt="1">
+        <TabList>
+          <Tab>Parameters</Tab>
+          <Tab>Headers</Tab>
+          <Tab>Body</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            <KVEditor name="params" kvs={request.params} setKvs={setParams} />
+          </TabPanel>
+          <TabPanel>
+            <KVEditor name="headers" kvs={request.headers} setKvs={setHeaders} />
+          </TabPanel>
+          <TabPanel>
+            <BodyEditor content={request.body} setContent={setBody} />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Box>
   );
 }
 

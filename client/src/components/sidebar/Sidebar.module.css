@@ -1,22 +1,47 @@
 .container {
-  position: relative;
-  display: flex;
-  margin-bottom: 10px;
-  min-height: 100%;
+}
+
+.searchContainer {
+  width: 100%;
+  padding: 1rem;
+  border-bottom: 1px solid;
+}
+
+.searchContainer--light {
+  border-color: var(--chakra-colors-gray-300);
+}
+
+.searchContainer--dark {
+  border-color: var(--chakra-colors-gray-700);
+}
+
+.search {
+  width: 100%;
+  border-radius: 20px;
+  height: 32px;
+  padding-left: 16px;
+}
+
+.search--light {
+  background-color: var(--chakra-colors-white);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border: 1px solid var(--chakra-colors-gray-100);
+}
+
+.search--dark {
+  background-color: var(--chakra-colors-gray-900);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border: 1px solid var(--chakra-colors-gray-700);
 }
 
 .box {
-  border-radius: 20px;
-}
-
-.handle {
-  position: absolute;
-  width: 4px;
+  border-radius: 16px 0 0 16px;
+  width: 100%;
   height: 100%;
-  background-color: #0d1117;
-  opacity: 0.75;
-  border-radius: 4px;
-  right: -10px;
-  margin: 0 auto;
-  cursor: ew-resize;
+  overflow: auto;
+  border-radius: 16px 0 0 16px;
 }

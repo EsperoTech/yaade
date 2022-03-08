@@ -1,23 +1,8 @@
-.container {
-  box-sizing: border-box;
-  position: relative;
-  grid-row: 1 / 2;
-}
-
 .box {
-  margin-right: 1rem;
-  border-radius: 20px;
+  height: 100%;
+  width: 100%;
   padding: 1rem;
-}
-
-.handle {
-  position: absolute;
-  width: calc(100% - 1rem);
-  height: 4px;
-  background-color: #0d1117;
-  opacity: 0.75;
-  border-radius: 4px;
-  bottom: -10px;
-  margin: auto 0;
-  cursor: ns-resize;
+  border-radius: 0 16px 0 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }

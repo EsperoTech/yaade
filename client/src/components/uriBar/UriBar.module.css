@@ -15,6 +15,10 @@
   -webkit-appearance: none;
 }
 
+.select:hover {
+  cursor: pointer;
+}
+
 .select--light {
   background-color: var(--chakra-colors-gray-300);
 }
@@ -29,7 +33,7 @@
 
 .input {
   width: 100%;
-  padding-left: 8px;
+  padding-left: 1rem;
 }
 
 .input--light {
@@ -60,4 +64,10 @@
 .button--dark {
   background-color: var(--chakra-colors-green-500);
   color: white;
+}
+
+.buttonSpan {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

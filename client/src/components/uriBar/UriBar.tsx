@@ -1,18 +1,20 @@
-import { useColorMode } from '@chakra-ui/react';
-
+import { cn } from '../../utils';
 import styles from './UriBar.module.css';
 
-function UriBar() {
-  const { colorMode } = useColorMode();
+type UriBarProps = {
+  handleSendButtonClicked: () => void;
+};
+
+function UriBar({ handleSendButtonClicked }: UriBarProps) {
   return (
     <div className={styles.container}>
-      <select className={`${styles.select} ${styles[`select--${colorMode}`]}`}>
+      <select className={cn(styles, 'select')}>
         <option>GET</option>
         <option>POST</option>
       </select>
-      <input className={`${styles.input} ${styles[`input--${colorMode}`]}`} type="text" />
-      <button className={`${styles.button} ${styles[`button--${colorMode}`]}`}>
-        SEND
+      <input className={cn(styles, 'input')} type="text" />
+      <button className={cn(styles, 'button')} onClick={handleSendButtonClicked}>
+        <span className={styles.buttonSpan}>SEND</span>
       </button>
     </div>
   );

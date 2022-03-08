@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chakra-ui/icons": "^1.1.7",
     "@chakra-ui/react": "^1.8.6",
     "@codemirror/lang-json": "^0.19.2",
     "@emotion/react": "^11.8.1",
@@ -15,6 +16,7 @@
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.13.0",
     "@uiw/react-codemirror": "^4.5.1",
+    "allotment": "^1.10.0",
     "codemirror": "^5.65.2",
     "eslint": "^8.10.0",
     "eslint-config-prettier": "^8.5.0",
@@ -23,8 +25,7 @@
     "framer-motion": "^6.2.8",
     "prettier": "^2.5.1",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-resizable": "^3.0.4"
+    "react-dom": "^17.0.2"
   },
   "devDependencies": {
     "@types/react": "^17.0.33",

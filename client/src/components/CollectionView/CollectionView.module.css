@@ -1,0 +1,107 @@
+.header {
+  width: 100%;
+  height: 50px;
+  border-bottom: 1px solid;
+  display: flex;
+  align-items: center;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.header:hover {
+  cursor: pointer;
+}
+
+.header:focus {
+  border: 1px dotted var(--chakra-colors-gray-300);
+}
+
+.header--light {
+  border-color: var(--chakra-colors-gray-300);
+}
+
+.header--light:hover {
+  background-color: var(--chakra-colors-gray-200);
+}
+
+.header--dark {
+  border-color: var(--chakra-colors-gray-700);
+}
+
+.header--dark:hover {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.icon {
+  margin-right: 16px;
+}
+
+.icon--open {
+  -webkit-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  -o-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+
+.name {
+  margin-right: 1rem;
+}
+
+.actionIcon {
+  margin-left: auto;
+}
+
+.requests {
+  display: none;
+}
+
+.requests--open {
+  display: block;
+}
+
+.request {
+  padding: 0.5rem 1rem 0.5rem 2rem;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  border-bottom: 1px solid;
+}
+
+.request--light {
+  border-color: var(--chakra-colors-gray-300);
+}
+
+.request--dark {
+  border-color: var(--chakra-colors-gray-700);
+}
+
+.request:hover {
+  cursor: pointer;
+}
+
+.request:focus {
+  border: 1px dotted var(--chakra-colors-gray-300);
+}
+
+.request--light:hover {
+  background-color: var(--chakra-colors-gray-200);
+}
+.request--dark:hover {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.requestName {
+  text-overflow: hidden;
+}
+
+.requestMethod {
+  font-weight: 700;
+  width: 70px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
