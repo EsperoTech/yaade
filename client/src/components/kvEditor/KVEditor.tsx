@@ -7,7 +7,7 @@ import styles from './KVEditor.module.css';
 
 type KVEditorProps = {
   kvs: Array<KVRow>;
-  setKvs: any;
+  setKvs?: any;
   name: string;
   readOnly?: boolean;
 };

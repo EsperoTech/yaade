@@ -87,14 +87,44 @@ const defaultRequest: Request = {
     },
   ],
   body: '',
+  selected: true,
+};
+
+const defaultResponse: Response = {
+  uri: 'https://abc.de',
+  method: 'POST',
+  status: 200,
+  headers: [
+    {
+      key: 'abc',
+      value: 'def',
+    },
+  ],
+  body: JSON.stringify({ hello: 'world' }),
+};
+
+const defaultSettings = {
+  hello: 'world',
 };
 
 function Dashboard() {
   const [collections, setCollections] = useState<Array<Collection>>(defaultCollections);
   const [request, setRequest] = useState<Request>(defaultRequest);
-  const [response, setResponse] = useState<Response | null>(null);
+  const [response, setResponse] = useState<Response | null>(defaultResponse);
+  const [settings, setSettings] = useState<any>(defaultSettings);
 
   function handleRequestClick(request: Request) {
+    const newCollections = [...collections].map((collection) => {
+      const requests = collection.requests.map((newReq) => ({
+        ...newReq,
+        selected: request.id === newReq.id,
+      }));
+      return {
+        ...collection,
+        requests,
+      };
+    });
+    setCollections(newCollections);
     // TODO: ask user to save request before loading new content
     setRequest(request);
   }
@@ -104,7 +134,7 @@ function Dashboard() {
   return (
     <div className={styles.parent}>
       <header>
-        <Header />
+        <Header settings={settings} setSettings={setSettings} />
       </header>
       <div className={styles.allotment}>
         <Allotment defaultSizes={[50, 200]} snap>

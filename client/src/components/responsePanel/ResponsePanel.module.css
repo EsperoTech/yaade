@@ -2,4 +2,26 @@
   height: 100%;
   padding: 1rem;
   border-radius: 0 0 16px 0;
+  scrollbar-gutter: stable;
+  overflow: auto;
+}
+
+.tabList {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--chakra-colors-gray-700);
+}
+
+.tabs {
+}
+
+.statusBar {
+}
+
+.statusText {
+  margin-left: 1rem;
+  margin-right: 1rem;
+  color: var(--chakra-colors-green-500);
+  font-weight: 700;
 }

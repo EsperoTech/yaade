@@ -15,7 +15,7 @@
 }
 
 .header:focus {
-  border: 1px dotted var(--chakra-colors-gray-300);
+  border: 1px dotted var(--chakra-colors-green-500);
 }
 
 .header--light {
@@ -63,27 +63,34 @@
 }
 
 .request {
-  padding: 0.5rem 1rem 0.5rem 2rem;
+  padding: 0 1rem 0 2rem;
   display: flex;
   align-items: center;
   box-sizing: border-box;
   border-bottom: 1px solid;
 }
 
+.request:focus {
+  border: 1px dotted var(--chakra-colors-green-500);
+}
+
 .request--light {
   border-color: var(--chakra-colors-gray-300);
+}
+
+.request--light.request--selected {
+  background-color: var(--chakra-colors-gray-300);
 }
 
 .request--dark {
   border-color: var(--chakra-colors-gray-700);
 }
+.request--dark.request--selected {
+  background-color: var(--chakra-colors-gray-700);
+}
 
 .request:hover {
   cursor: pointer;
-}
-
-.request:focus {
-  border: 1px dotted var(--chakra-colors-gray-300);
 }
 
 .request--light:hover {

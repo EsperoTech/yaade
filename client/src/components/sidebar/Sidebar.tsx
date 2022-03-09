@@ -1,4 +1,5 @@
-import { Box } from '@chakra-ui/react';
+import { AddIcon } from '@chakra-ui/icons';
+import { Box, IconButton } from '@chakra-ui/react';
 
 import Collection from '../../model/Collection';
 import { cn } from '../../utils';
@@ -23,6 +24,11 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
     <Box className={styles.box} bg="panelBg" h="100%" w="100%">
       <div className={cn(styles, 'searchContainer')}>
         <input className={cn(styles, 'search')} placeholder="Search..." />
+        <IconButton
+          aria-label="add-collection-button"
+          icon={<AddIcon />}
+          variant="ghost"
+        ></IconButton>
       </div>
       <div className={styles.collections}>
         {collections.map((collection, i) => (

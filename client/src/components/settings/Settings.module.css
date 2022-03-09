@@ -1,0 +1,13 @@
+.container {
+  display: flex;
+}
+
+.tabListWrapper {
+  width: 300px;
+  padding: 1rem;
+  /* border-right: 1px solid var(--chakra-colors-gray-400); */
+}
+
+.settingsTabContainer {
+  width: 500px;
+}

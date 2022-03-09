@@ -19,6 +19,13 @@ function RequestPanel({
   setRequest,
   handleSendButtonClicked,
 }: RequestPanelProps) {
+  const setUri = (uri: string) => {
+    setRequest((request: Request) => ({
+      ...request,
+      uri,
+    }));
+  };
+
   const setParams = (params: Array<KVRow>) => {
     setRequest((request: Request) => ({
       ...request,
@@ -42,7 +49,11 @@ function RequestPanel({
 
   return (
     <Box className={styles.box} bg="panelBg" h="100%">
-      <UriBar handleSendButtonClicked={handleSendButtonClicked} />
+      <UriBar
+        uri={request.uri}
+        setUri={setUri}
+        handleSendButtonClicked={handleSendButtonClicked}
+      />
       <Tabs colorScheme="green" mt="1">
         <TabList>
           <Tab>Parameters</Tab>

@@ -11,6 +11,10 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+input:focus {
+  outline: 1px solid var(--chakra-colors-green-500) !important;
+}
+
 *:focus {
   outline: none !important;
 }
