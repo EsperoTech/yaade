@@ -1,9 +1,9 @@
 import {
   AddIcon,
   ChevronRightIcon,
-  EditIcon,
-  DeleteIcon,
   CopyIcon,
+  DeleteIcon,
+  EditIcon,
 } from '@chakra-ui/icons';
 import { IconButton, Menu, MenuButton, MenuItem, MenuList } from '@chakra-ui/react';
 import { VscEllipsis } from 'react-icons/vsc';

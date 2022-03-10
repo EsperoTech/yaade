@@ -90,23 +90,10 @@ const defaultRequest: Request = {
   selected: true,
 };
 
-const defaultResponse: Response = {
-  uri: 'https://abc.de',
-  method: 'POST',
-  status: 200,
-  headers: [
-    {
-      key: 'abc',
-      value: 'def',
-    },
-  ],
-  body: JSON.stringify({ hello: 'world' }),
-};
-
 function Dashboard() {
   const [collections, setCollections] = useState<Array<Collection>>(defaultCollections);
   const [request, setRequest] = useState<Request>(defaultRequest);
-  const [response, setResponse] = useState<Response | undefined>(defaultResponse);
+  const [response, setResponse] = useState<Response | undefined>();
 
   function handleRequestClick(request: Request) {
     const newCollections = [...collections].map((collection) => {

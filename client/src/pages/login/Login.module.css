@@ -1,0 +1,25 @@
+.root {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.container {
+  width: 500px;
+  border-radius: 20px;
+  padding: 3rem;
+}
+
+.heading {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+}

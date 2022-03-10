@@ -6,18 +6,28 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Login from './pages/login';
 import theme from './theme';
 
-const UserContext = createContext([{} as User, null as any]);
+interface IUserContext {
+  user: User | undefined;
+  setUser: Function;
+}
+
+const UserContext = createContext<IUserContext>({
+  user: undefined,
+  setUser: () => {},
+});
 
 function App() {
-  const [user, setUser] = useState<User | null>({ username: 'hello', isAdmin: true });
+  const [user, setUser] = useState<User | undefined>();
 
   return (
     <ChakraProvider theme={theme}>
-      <UserContext.Provider value={[user, setUser]}>
+      <UserContext.Provider value={{ user, setUser }}>
         {user ? <Dashboard /> : <Login />}
       </UserContext.Provider>
     </ChakraProvider>
   );
 }
+
+export { UserContext };
 
 export default App;

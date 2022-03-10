@@ -1,5 +1,13 @@
-import { Box } from '@chakra-ui/react';
-import { Tab, TabList, TabPanel, TabPanels, Tabs, useColorMode } from '@chakra-ui/react';
+import { Box, Center } from '@chakra-ui/react';
+import {
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  useColorMode,
+} from '@chakra-ui/react';
 import { json } from '@codemirror/lang-json';
 import CodeMirror from '@uiw/react-codemirror';
 
@@ -55,7 +63,9 @@ function ResponsePanel({ response }: ResponsePanelProps) {
           </TabPanels>
         </Tabs>
       ) : (
-        <span>Push send to get a response...</span>
+        <Center h="100%">
+          <Text>Push send to get a response...</Text>
+        </Center>
       )}
     </Box>
   );
