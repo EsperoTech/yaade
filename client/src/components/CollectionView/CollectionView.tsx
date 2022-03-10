@@ -1,8 +1,15 @@
-import { AddIcon, ChevronRightIcon, EditIcon, HamburgerIcon } from '@chakra-ui/icons';
+import {
+  AddIcon,
+  ChevronRightIcon,
+  EditIcon,
+  DeleteIcon,
+  CopyIcon,
+} from '@chakra-ui/icons';
 import { IconButton, Menu, MenuButton, MenuItem, MenuList } from '@chakra-ui/react';
+import { VscEllipsis } from 'react-icons/vsc';
 
 import Collection from '../../model/Collection';
-import { cn } from '../../utils';
+import { cn, getMethodColor } from '../../utils';
 import styles from './CollectionView.module.css';
 
 type CollectionProps = {
@@ -10,19 +17,6 @@ type CollectionProps = {
   handleCollectionClick: any;
   handleRequestClick: any;
 };
-
-function getMethodStyle(method: string): any {
-  switch (method) {
-    case 'GET':
-      return {
-        color: 'var(--chakra-colors-green-500)',
-      };
-    case 'POST':
-      return {
-        color: 'var(--chakra-colors-orange-500)',
-      };
-  }
-}
 
 function CollectionView({
   collection,
@@ -38,7 +32,7 @@ function CollectionView({
   }
 
   return (
-    <div>
+    <div className={styles.root}>
       <div
         className={cn(styles, 'header')}
         onClick={handleCollectionClick}
@@ -53,16 +47,31 @@ function CollectionView({
             <MenuButton
               as={IconButton}
               aria-label="Options"
-              icon={<HamburgerIcon />}
+              icon={<VscEllipsis />}
               variant="ghost"
               onClick={(e) => e.stopPropagation()}
             />
             <MenuList zIndex={50}>
-              <MenuItem icon={<AddIcon />} command="Cmd+T">
-                New Tab
+              <MenuItem
+                icon={<AddIcon />}
+                command="Cmd+T"
+                onClick={(e) => e.stopPropagation()}
+              >
+                New Request
               </MenuItem>
-              <MenuItem icon={<EditIcon />} command="Cmd+O">
+              <MenuItem
+                icon={<EditIcon />}
+                command="Cmd+O"
+                onClick={(e) => e.stopPropagation()}
+              >
                 Rename
+              </MenuItem>
+              <MenuItem
+                icon={<DeleteIcon />}
+                command="Cmd+O"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Delete
               </MenuItem>
             </MenuList>
           </Menu>
@@ -82,7 +91,7 @@ function CollectionView({
             >
               <span
                 className={cn(styles, 'requestMethod')}
-                style={getMethodStyle(request.method)}
+                style={getMethodColor(request.method)}
               >
                 {request.method}
               </span>
@@ -92,16 +101,31 @@ function CollectionView({
                   <MenuButton
                     as={IconButton}
                     aria-label="Options"
-                    icon={<HamburgerIcon />}
+                    icon={<VscEllipsis />}
                     variant="ghost"
                     onClick={(e) => e.stopPropagation()}
                   />
                   <MenuList zIndex={50}>
-                    <MenuItem icon={<AddIcon />} command="Cmd+T">
-                      New Tab
-                    </MenuItem>
-                    <MenuItem icon={<EditIcon />} command="Cmd+O">
+                    <MenuItem
+                      icon={<EditIcon />}
+                      command="Cmd+O"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       Rename
+                    </MenuItem>
+                    <MenuItem
+                      icon={<CopyIcon />}
+                      command="Cmd+O"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Duplicate
+                    </MenuItem>
+                    <MenuItem
+                      icon={<DeleteIcon />}
+                      command="Cmd+O"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Delete
                     </MenuItem>
                   </MenuList>
                 </Menu>

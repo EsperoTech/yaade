@@ -2,14 +2,19 @@
   height: 100%;
   padding: 1rem;
   border-radius: 0 0 16px 0;
-  scrollbar-gutter: stable;
-  overflow: auto;
 }
 
 .tabList {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.tabList--light {
+  border-bottom: 2px solid var(--chakra-colors-gray-200);
+}
+
+.tabList--dark {
   border-bottom: 2px solid var(--chakra-colors-gray-700);
 }
 

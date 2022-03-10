@@ -13,6 +13,7 @@
   border-radius: 20px 0 0 20px;
   -moz-appearance: none;
   -webkit-appearance: none;
+  font-weight: 700;
 }
 
 .select:hover {
@@ -57,15 +58,27 @@
 }
 
 .button {
-  background-color: lightgray;
   border-radius: 0 20px 20px 0;
   width: 120px;
   min-width: 120px;
   max-width: 120px;
-  background-color: var(--chakra-colors-green-500);
-  color: white;
+  font-weight: 700;
 }
 
-.button:hover {
+.button--light {
+  background-color: var(--chakra-colors-green-500);
+  color: var(--chakra-colors-white);
+}
+
+.button--dark {
+  background-color: var(--chakra-colors-green-300);
+  color: var(--chakra-colors-gray-900);
+}
+
+.button--light:hover {
+  background-color: var(--chakra-colors-green-400);
+}
+
+.button--dark:hover {
   background-color: var(--chakra-colors-green-400);
 }

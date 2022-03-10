@@ -1,6 +1,9 @@
+.root {
+}
+
 .header {
   width: 100%;
-  height: 50px;
+  height: 60px;
   border-bottom: 1px solid;
   display: flex;
   align-items: center;
@@ -48,10 +51,14 @@
 
 .name {
   margin-right: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .actionIcon {
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .requests {
@@ -101,10 +108,12 @@
 }
 
 .requestName {
-  text-overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .requestMethod {
+  flex-shrink: 0;
   font-weight: 700;
   width: 70px;
   -webkit-user-select: none;

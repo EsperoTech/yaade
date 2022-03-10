@@ -18,10 +18,8 @@
 
 .requestPanel {
   height: 100%;
-  overflow: auto;
 }
 
 .responsePanel {
   height: 100%;
-  overflow: auto;
 }

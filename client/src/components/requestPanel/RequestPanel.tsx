@@ -1,5 +1,14 @@
 import { Box } from '@chakra-ui/react';
-import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
+import {
+  IconButton,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  useToast,
+} from '@chakra-ui/react';
+import { VscSave } from 'react-icons/vsc';
 
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
@@ -11,18 +20,23 @@ import styles from './RequestPanel.module.css';
 type RequestPanelProps = {
   request: Request;
   setRequest: any;
-  handleSendButtonClicked: () => void;
+  handleSendButtonClick: () => void;
 };
 
-function RequestPanel({
-  request,
-  setRequest,
-  handleSendButtonClicked,
-}: RequestPanelProps) {
+function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPanelProps) {
+  const toast = useToast();
+
   const setUri = (uri: string) => {
     setRequest((request: Request) => ({
       ...request,
       uri,
+    }));
+  };
+
+  const setMethod = (method: string) => {
+    setRequest((request: Request) => ({
+      ...request,
+      method,
     }));
   };
 
@@ -47,27 +61,72 @@ function RequestPanel({
     }));
   };
 
+  async function saveRequest() {
+    try {
+      const response = await fetch('/api/request', {
+        method: 'PUT',
+        body: JSON.stringify(request),
+      });
+      if (response.status !== 200) throw new Error();
+      toast({
+        title: 'Request saved.',
+        description: 'The request was successfully saved.',
+        status: 'success',
+        isClosable: true,
+      });
+    } catch (e) {
+      console.log(e);
+      toast({
+        title: 'Save failed.',
+        description: 'The request could not be saved.',
+        status: 'error',
+        isClosable: true,
+      });
+    }
+  }
+
   return (
     <Box className={styles.box} bg="panelBg" h="100%">
-      <UriBar
-        uri={request.uri}
-        setUri={setUri}
-        handleSendButtonClicked={handleSendButtonClicked}
-      />
-      <Tabs colorScheme="green" mt="1">
+      <div style={{ display: 'flex' }}>
+        <UriBar
+          uri={request.uri}
+          setUri={setUri}
+          method={request.method}
+          setMethod={setMethod}
+          handleSendButtonClick={handleSendButtonClick}
+        />
+        <IconButton
+          aria-label="save-request-button"
+          icon={<VscSave />}
+          variant="ghost"
+          size="sm"
+          ml="2"
+          onClick={saveRequest}
+        />
+      </div>
+
+      <Tabs
+        colorScheme="green"
+        mt="1"
+        display="flex"
+        flexDirection="column"
+        maxHeight="100%"
+        h="100%"
+        mb="4"
+      >
         <TabList>
           <Tab>Parameters</Tab>
           <Tab>Headers</Tab>
           <Tab>Body</Tab>
         </TabList>
-        <TabPanels>
+        <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
           <TabPanel>
             <KVEditor name="params" kvs={request.params} setKvs={setParams} />
           </TabPanel>
           <TabPanel>
             <KVEditor name="headers" kvs={request.headers} setKvs={setHeaders} />
           </TabPanel>
-          <TabPanel>
+          <TabPanel h="100%">
             <BodyEditor content={request.body} setContent={setBody} />
           </TabPanel>
         </TabPanels>

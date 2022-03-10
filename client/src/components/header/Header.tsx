@@ -12,16 +12,11 @@ import { useDisclosure } from '@chakra-ui/react';
 import Settings from '../settings';
 import styles from './Header.module.css';
 
-type HeaderProps = {
-  settings: any;
-  setSettings: any;
-};
-
-function Header({ settings, setSettings }: HeaderProps) {
+function Header() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <Box className={styles.container} bg="headerBg">
-      <Heading as="h1" size="2xl">
+      <Heading as="h1" size="md">
         Yaade
       </Heading>
       <div className={styles.buttons}>
@@ -35,7 +30,7 @@ function Header({ settings, setSettings }: HeaderProps) {
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent width="" maxWidth="" borderRadius={20} padding={2}>
-          <Settings settings={settings} setSettings={setSettings} />
+          <Settings />
         </ModalContent>
       </Modal>
     </Box>

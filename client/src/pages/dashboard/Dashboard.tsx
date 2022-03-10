@@ -15,7 +15,7 @@ import styles from './Dashboard.module.css';
 const defaultCollections: Array<Collection> = [
   {
     id: 1,
-    name: 'hello',
+    name: 'hello abc',
     open: false,
     requests: [
       {
@@ -47,7 +47,7 @@ const defaultCollections: Array<Collection> = [
     requests: [
       {
         id: 4,
-        name: 'aaa',
+        name: 'aaa abc',
         uri: 'http://abc.de',
         method: 'POST',
         params: [
@@ -103,15 +103,10 @@ const defaultResponse: Response = {
   body: JSON.stringify({ hello: 'world' }),
 };
 
-const defaultSettings = {
-  hello: 'world',
-};
-
 function Dashboard() {
   const [collections, setCollections] = useState<Array<Collection>>(defaultCollections);
   const [request, setRequest] = useState<Request>(defaultRequest);
-  const [response, setResponse] = useState<Response | null>(defaultResponse);
-  const [settings, setSettings] = useState<any>(defaultSettings);
+  const [response, setResponse] = useState<Response | undefined>(defaultResponse);
 
   function handleRequestClick(request: Request) {
     const newCollections = [...collections].map((collection) => {
@@ -129,12 +124,18 @@ function Dashboard() {
     setRequest(request);
   }
 
-  function handleSendButtonClicked() {}
+  async function handleSendButtonClick() {
+    const response = await fetch('/sendRequest', {
+      body: JSON.stringify(request),
+    });
+    const responseBody = (await response.json()) as Response;
+    setResponse(responseBody);
+  }
 
   return (
     <div className={styles.parent}>
       <header>
-        <Header settings={settings} setSettings={setSettings} />
+        <Header />
       </header>
       <div className={styles.allotment}>
         <Allotment defaultSizes={[50, 200]} snap>
@@ -151,7 +152,7 @@ function Dashboard() {
                 <RequestPanel
                   request={request}
                   setRequest={setRequest}
-                  handleSendButtonClicked={handleSendButtonClicked}
+                  handleSendButtonClick={handleSendButtonClick}
                 />
               </div>
               <div className={styles.responsePanel}>

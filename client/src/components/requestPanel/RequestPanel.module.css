@@ -3,6 +3,5 @@
   width: 100%;
   padding: 1rem;
   border-radius: 0 16px 0 0;
-  overflow: auto;
   scrollbar-gutter: stable;
 }

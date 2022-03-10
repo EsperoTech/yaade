@@ -20,6 +20,7 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
         extensions={[json()]}
         theme={colorMode}
         value={content}
+        style={{ height: '100%' }}
       />
     </div>
   );

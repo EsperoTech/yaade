@@ -1,18 +1,39 @@
 import { cn } from '../../utils';
+import { getMethodColor } from '../../utils';
 import styles from './UriBar.module.css';
 
 type UriBarProps = {
   uri: string;
   setUri: any;
-  handleSendButtonClicked: () => void;
+  method: string;
+  setMethod: any;
+  handleSendButtonClick: () => void;
 };
 
-function UriBar({ uri, setUri, handleSendButtonClicked }: UriBarProps) {
+type MethodOptionProps = {
+  method: string;
+};
+
+function MethodOption({ method }: MethodOptionProps) {
+  return (
+    <option className={cn(styles, 'option')} value={method}>
+      {method}
+    </option>
+  );
+}
+
+function UriBar({ uri, setUri, method, setMethod, handleSendButtonClick }: UriBarProps) {
   return (
     <div className={styles.container}>
-      <select className={cn(styles, 'select')}>
-        <option>GET</option>
-        <option>POST</option>
+      <select
+        className={cn(styles, 'select')}
+        value={method}
+        onChange={(e) => setMethod(e.target.value)}
+      >
+        <MethodOption method="GET" />
+        <MethodOption method="POST" />
+        <MethodOption method="PUT" />
+        <MethodOption method="DELETE" />
       </select>
       <input
         className={cn(styles, 'input')}
@@ -21,7 +42,7 @@ function UriBar({ uri, setUri, handleSendButtonClicked }: UriBarProps) {
         value={uri}
         onChange={(e) => setUri(e.target.value)}
       />
-      <button className={cn(styles, 'button')} onClick={handleSendButtonClicked}>
+      <button className={cn(styles, 'button')} onClick={handleSendButtonClick}>
         SEND
       </button>
     </div>

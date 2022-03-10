@@ -4,6 +4,7 @@ import { json } from '@codemirror/lang-json';
 import CodeMirror from '@uiw/react-codemirror';
 
 import Response from '../../model/Response';
+import { cn } from '../../utils';
 import KVEditor from '../kvEditor';
 import styles from './ResponsePanel.module.css';
 
@@ -15,10 +16,16 @@ function ResponsePanel({ response }: ResponsePanelProps) {
   const colorMode = useColorMode();
 
   return (
-    <Box className={styles.container} bg="panelBg">
+    <Box className={styles.container} bg="panelBg" h="100%">
       {response ? (
-        <Tabs colorScheme="green" mt="1">
-          <div className={styles.tabList}>
+        <Tabs
+          colorScheme="green"
+          mt="1"
+          display="flex"
+          flexDirection="column"
+          maxHeight="100%"
+        >
+          <div className={cn(styles, 'tabList')}>
             <TabList className={styles.tabs} borderWidth={0}>
               <Tab>Body</Tab>
               <Tab>Headers</Tab>
@@ -32,7 +39,7 @@ function ResponsePanel({ response }: ResponsePanelProps) {
               <span className={styles.statusText}>8kB</span>
             </div>
           </div>
-          <TabPanels>
+          <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }}>
             <TabPanel>
               <CodeMirror
                 height="100%"
