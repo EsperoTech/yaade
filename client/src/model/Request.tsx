@@ -2,6 +2,7 @@ import KVRow from './KVRow';
 
 interface Request {
   id: number;
+  collectionId: number;
   name: string;
   uri: string;
   method: string;

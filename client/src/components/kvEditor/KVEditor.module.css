@@ -10,11 +10,12 @@
 
 .input--left {
   border-radius: 20px 0 0 20px;
-  border-right: 2px solid var(--chakra-colors-gray-100);
+  border-right: 1px solid var(--chakra-colors-gray-100);
 }
 
 .input--right {
   border-radius: 0 20px 20px 0;
+  border-left: 1px solid var(--chakra-colors-gray-100);
 }
 
 .input--light {

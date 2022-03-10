@@ -5,7 +5,6 @@ import {
   Checkbox,
   Heading,
   Input,
-  Text,
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
@@ -13,7 +12,6 @@ import { useContext } from 'react';
 import { useState } from 'react';
 
 import { UserContext } from '../../App';
-import User from '../../model/User';
 import styles from './Login.module.css';
 
 type State = {

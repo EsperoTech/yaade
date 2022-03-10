@@ -10,14 +10,17 @@ import {
   PopoverContent,
   PopoverHeader,
   PopoverTrigger,
+  useDisclosure,
   useToast,
 } from '@chakra-ui/react';
 import { useRef } from 'react';
 import { useState } from 'react';
 
 import Collection from '../../model/Collection';
+import Request from '../../model/Request';
 import { cn } from '../../utils';
-import CollectionView from '../CollectionView';
+import CollectionView from '../collectionView';
+import CreateModal from '../createModal/CreateModal';
 import styles from './Sidebar.module.css';
 
 type SideBarProps = {
@@ -27,14 +30,17 @@ type SideBarProps = {
 };
 
 type SidebarState = {
-  newCollectionName: string;
+  createModalType: string;
+  handleCreateClick: any;
 };
 
 function Sidebar({ collections, setCollections, handleRequestClick }: SideBarProps) {
   const [state, setState] = useState<SidebarState>({
-    newCollectionName: '',
+    createModalType: '',
+    handleCreateClick: () => {},
   });
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   function handleCollectionClick(i: number) {
     const newCollection = { ...collections[i], open: !collections[i].open };
@@ -43,11 +49,11 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
     setCollections(newCollections);
   }
 
-  async function handleCreateCollectionClick(closePopover: () => void) {
+  async function handleCreateCollectionClick(name: string, closeModal: () => void) {
     try {
       const respone = await fetch('/api/collection', {
         method: 'POST',
-        body: JSON.stringify({ name: state.newCollectionName }),
+        body: JSON.stringify({ name: name }),
       });
       const newCollection = await respone.json();
       setCollections([...collections, newCollection]);
@@ -57,8 +63,7 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
         status: 'success',
         isClosable: true,
       });
-      setState({ ...state, newCollectionName: '' });
-      closePopover();
+      closeModal();
     } catch (e) {
       console.log(e);
       toast({
@@ -70,54 +75,82 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
     }
   }
 
-  const initialFocusRef = useRef<HTMLInputElement>(null);
+  function createUpdatedCollections(
+    collections: Array<Collection>,
+    newRequest: Request,
+  ): Array<Collection> {
+    const newCollections = [...collections];
+
+    const i = collections.findIndex((c) => c.id === newRequest.collectionId)!;
+    if (i === -1) {
+      throw new Error();
+    }
+
+    const updatedCollection = {
+      ...collections[i],
+      requests: [...collections[i].requests, newRequest],
+    };
+    newCollections.splice(i, 1, updatedCollection);
+
+    return newCollections;
+  }
+
+  async function handleCreateRequestClick(
+    name: string,
+    collectionId: string,
+    closeModal: () => void,
+  ) {
+    try {
+      const respone = await fetch('/api/request', {
+        method: 'POST',
+        body: JSON.stringify({ name, collectionId }),
+      });
+      const newRequest = (await respone.json()) as Request;
+
+      const newCollections = createUpdatedCollections(collections, newRequest);
+
+      setCollections(newCollections);
+      toast({
+        title: 'Request created.',
+        description: 'A new request was created and saved.',
+        status: 'success',
+        isClosable: true,
+      });
+      closeModal();
+    } catch (e) {
+      console.log(e);
+      toast({
+        title: 'Could not create request.',
+        description: 'An error occured. Please try again.',
+        status: 'error',
+        isClosable: true,
+      });
+    }
+  }
 
   return (
     <Box className={styles.box} bg="panelBg" h="100%" w="100%">
       <div className={cn(styles, 'searchContainer')}>
-        <input
-          className={cn(styles, 'search')}
-          placeholder="Search..."
-          value={state.newCollectionName}
-          onChange={(e) => setState({ ...state, newCollectionName: e.target.value })}
+        <input className={cn(styles, 'search')} placeholder="Search..." />
+        <IconButton
+          aria-label="add-collection-button"
+          icon={<AddIcon />}
+          variant="ghost"
+          onClick={() => {
+            setState({
+              ...state,
+              createModalType: 'collection',
+              handleCreateClick: handleCreateCollectionClick,
+            });
+            onOpen();
+          }}
         />
-        <Popover initialFocusRef={initialFocusRef} placement="bottom" closeOnBlur={false}>
-          {({ onClose }) => (
-            <>
-              <PopoverTrigger>
-                <IconButton
-                  aria-label="add-collection-button"
-                  icon={<AddIcon />}
-                  variant="ghost"
-                />
-              </PopoverTrigger>
-              <PopoverContent>
-                <PopoverArrow />
-                <PopoverCloseButton />
-                <PopoverHeader>New Collection</PopoverHeader>
-                <PopoverBody>
-                  <input
-                    className={cn(styles, 'search')}
-                    placeholder="Name"
-                    ref={initialFocusRef}
-                  />
-                  <Button
-                    mt="6"
-                    mr="2"
-                    colorScheme="green"
-                    size="sm"
-                    onClick={() => handleCreateCollectionClick(onClose)}
-                  >
-                    SAVE
-                  </Button>
-                  <Button mt="6" mr="2" variant="ghost" size="sm" onClick={onClose}>
-                    CANCEL
-                  </Button>
-                </PopoverBody>
-              </PopoverContent>
-            </>
-          )}
-        </Popover>
+        <CreateModal
+          isOpen={isOpen}
+          onClose={onClose}
+          type={state.createModalType}
+          handleCreateClick={state.handleCreateClick}
+        />
       </div>
       <div className={styles.collections}>
         {collections.map((collection, i) => (
@@ -126,6 +159,14 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
             collection={collection}
             handleCollectionClick={() => handleCollectionClick(i)}
             handleRequestClick={handleRequestClick}
+            onOpenCreateRequestModal={() => {
+              setState({
+                ...state,
+                createModalType: 'request',
+                handleCreateClick: handleCreateRequestClick,
+              });
+              onOpen();
+            }}
           />
         ))}
       </div>

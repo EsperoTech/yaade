@@ -37,6 +37,7 @@ const defaultCollections: Array<Collection> = [
         ],
         body: 'abcde',
         selected: false,
+        collectionId: 3,
       },
     ],
   },
@@ -64,6 +65,7 @@ const defaultCollections: Array<Collection> = [
         ],
         body: '',
         selected: false,
+        collectionId: 3,
       },
     ],
   },
@@ -88,6 +90,7 @@ const defaultRequest: Request = {
   ],
   body: '',
   selected: true,
+  collectionId: -1,
 };
 
 function Dashboard() {

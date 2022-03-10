@@ -16,12 +16,14 @@ type CollectionProps = {
   collection: Collection;
   handleCollectionClick: any;
   handleRequestClick: any;
+  onOpenCreateRequestModal: any;
 };
 
 function CollectionView({
   collection,
   handleCollectionClick,
   handleRequestClick,
+  onOpenCreateRequestModal,
 }: CollectionProps) {
   const variants = collection.open ? ['open'] : [];
 
@@ -55,7 +57,10 @@ function CollectionView({
               <MenuItem
                 icon={<AddIcon />}
                 command="Cmd+T"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenCreateRequestModal();
+                }}
               >
                 New Request
               </MenuItem>
