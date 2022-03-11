@@ -7,4 +7,8 @@ class RequestDao(connectionSource: ConnectionSource) : BaseDao<RequestDb>(connec
     fun getAll(): List<RequestDb> {
         return dao.queryForAll()
     }
+
+    fun getAllInCollection(collectionId: Long): List<RequestDb> {
+        return dao.queryForEq("collectionId", collectionId)
+    }
 }

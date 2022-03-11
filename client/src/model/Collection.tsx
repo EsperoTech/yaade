@@ -2,7 +2,7 @@ import Request from './Request';
 
 interface Collection {
   id: number;
-  name: string;
+  data: any;
   open: boolean;
   requests: Array<Request>;
 }

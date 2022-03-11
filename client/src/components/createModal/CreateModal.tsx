@@ -22,15 +22,13 @@ function CreateModal({ isOpen, onClose, type, handleCreateClick }: CreateModalPr
   const [name, setName] = useState<string>('');
   const initialRef = useRef<HTMLInputElement>(null);
 
+  const onCloseClear = () => {
+    setName('');
+    onClose();
+  };
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={() => {
-        setName('');
-        onClose();
-      }}
-      initialFocusRef={initialRef}
-    >
+    <Modal isOpen={isOpen} onClose={onCloseClear} initialFocusRef={initialRef}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Create a new {type}</ModalHeader>
@@ -47,10 +45,17 @@ function CreateModal({ isOpen, onClose, type, handleCreateClick }: CreateModalPr
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>
+          <Button variant="ghost" mr={3} onClick={onCloseClear}>
             Close
           </Button>
-          <Button colorScheme="green" onClick={handleCreateClick} disabled={name === ''}>
+          <Button
+            colorScheme="green"
+            onClick={() => {
+              handleCreateClick(name);
+              onCloseClear();
+            }}
+            disabled={name === ''}
+          >
             CREATE
           </Button>
         </ModalFooter>

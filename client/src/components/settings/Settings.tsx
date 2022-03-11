@@ -120,7 +120,7 @@ function Settings() {
                 Import a backup file. Make sure to backup your data before importing or
                 else data could be lost.
               </Text>
-              <input className={cn(styles, 'fileInput')} type="file" />
+              <input className={cn(styles, 'fileInput', [colorMode])} type="file" />
               <Button mt="8" borderRadius={20} colorScheme="green" w={150}>
                 Import
               </Button>
@@ -142,21 +142,21 @@ function Settings() {
                 Password
               </Heading>
               <input
-                className={cn(styles, 'input')}
+                className={cn(styles, 'input', [colorMode])}
                 type="password"
                 placeholder="Current Password..."
                 value={state.currentPassword}
                 onChange={(e) => setState({ ...state, currentPassword: e.target.value })}
               />
               <input
-                className={cn(styles, 'input')}
+                className={cn(styles, 'input', [colorMode])}
                 type="password"
                 placeholder="New Password..."
                 value={state.newPassword}
                 onChange={(e) => setState({ ...state, newPassword: e.target.value })}
               />
               <input
-                className={cn(styles, 'input')}
+                className={cn(styles, 'input', [colorMode])}
                 type="password"
                 placeholder="New Password..."
                 value={state.repeatPassword}

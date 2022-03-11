@@ -63,6 +63,9 @@
   min-width: 120px;
   max-width: 120px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .button--light {

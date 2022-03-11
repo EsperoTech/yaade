@@ -1,15 +1,10 @@
-import KVRow from './KVRow';
-
 interface Request {
   id: number;
   collectionId: number;
-  name: string;
-  uri: string;
-  method: string;
-  params: Array<KVRow>;
-  headers: Array<KVRow>;
-  body: string;
+  type: string;
+  data: any;
   selected: boolean;
+  isLoading: boolean;
 }
 
 export default Request;

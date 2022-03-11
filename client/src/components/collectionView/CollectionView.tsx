@@ -5,7 +5,14 @@ import {
   DeleteIcon,
   EditIcon,
 } from '@chakra-ui/icons';
-import { IconButton, Menu, MenuButton, MenuItem, MenuList } from '@chakra-ui/react';
+import {
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  useColorMode,
+} from '@chakra-ui/react';
 import { VscEllipsis } from 'react-icons/vsc';
 
 import Collection from '../../model/Collection';
@@ -16,15 +23,16 @@ type CollectionProps = {
   collection: Collection;
   handleCollectionClick: any;
   handleRequestClick: any;
-  onOpenCreateRequestModal: any;
+  onCreateRequestClick: any;
 };
 
 function CollectionView({
   collection,
   handleCollectionClick,
   handleRequestClick,
-  onOpenCreateRequestModal,
+  onCreateRequestClick,
 }: CollectionProps) {
+  const { colorMode } = useColorMode();
   const variants = collection.open ? ['open'] : [];
 
   function handleOnKeyDown(e: any, action: any) {
@@ -36,14 +44,14 @@ function CollectionView({
   return (
     <div className={styles.root}>
       <div
-        className={cn(styles, 'header')}
+        className={cn(styles, 'header', [colorMode])}
         onClick={handleCollectionClick}
         onKeyDown={(e) => handleOnKeyDown(e, handleCollectionClick)}
         role="button"
         tabIndex={0}
       >
-        <ChevronRightIcon className={cn(styles, 'icon', variants)} />
-        <span className={styles.name}>{collection.name}</span>
+        <ChevronRightIcon className={cn(styles, 'icon', [...variants, colorMode])} />
+        <span className={styles.name}>{collection.data.name}</span>
         <span className={styles.actionIcon}>
           <Menu>
             <MenuButton
@@ -59,7 +67,7 @@ function CollectionView({
                 command="Cmd+T"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onOpenCreateRequestModal();
+                  onCreateRequestClick();
                 }}
               >
                 New Request
@@ -82,12 +90,12 @@ function CollectionView({
           </Menu>
         </span>
       </div>
-      <div className={cn(styles, 'requests', variants)}>
-        {collection.requests.map((request) => {
+      <div className={cn(styles, 'requests', [...variants, colorMode])}>
+        {collection.requests?.map((request) => {
           const reqVariants = request.selected ? ['selected'] : [];
           return (
             <div
-              className={cn(styles, 'request', reqVariants)}
+              className={cn(styles, 'request', [...reqVariants, colorMode])}
               key={`request-${request.id}`}
               onClick={() => handleRequestClick(request)}
               onKeyDown={(e) => handleOnKeyDown(e, () => handleRequestClick(request))}
@@ -95,12 +103,14 @@ function CollectionView({
               tabIndex={0}
             >
               <span
-                className={cn(styles, 'requestMethod')}
-                style={getMethodColor(request.method)}
+                className={cn(styles, 'requestMethod', [colorMode])}
+                style={getMethodColor(request.data.method)}
               >
-                {request.method}
+                {request.data.method}
               </span>
-              <span className={cn(styles, 'requestName')}>{request.name}</span>
+              <span className={cn(styles, 'requestName', [colorMode])}>
+                {request.data.name}
+              </span>
               <span className={styles.actionIcon}>
                 <Menu>
                   <MenuButton

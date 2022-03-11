@@ -1,10 +1,9 @@
 package com.espero.yaade.model.db
 
+import com.j256.ormlite.field.DataType
 import com.j256.ormlite.field.DatabaseField
 import com.j256.ormlite.table.DatabaseTable
 import io.vertx.core.json.JsonObject
-import io.vertx.kotlin.core.json.json
-import io.vertx.kotlin.core.json.obj
 
 @DatabaseTable(tableName = "collections")
 class CollectionDb {
@@ -14,32 +13,22 @@ class CollectionDb {
     var id: Long = -1
 
     @DatabaseField
-    lateinit var name: String
+    lateinit var version: String
 
-    @DatabaseField
-    lateinit var description: String
+    @DatabaseField(dataType = DataType.BYTE_ARRAY)
+    lateinit var data: ByteArray
 
-    constructor(name: String, description: String) {
-        this.name = name
-        this.description = description
+    constructor(name: String) {
+        this.version = "1.0.0"
+        this.data = JsonObject()
+            .put("name", name)
+            .encode().toByteArray()
     }
 
     fun toJson(): JsonObject {
-        return json {
-            obj(
-                "id" to id,
-                "name" to name,
-                "description" to description
-            )
-        }
-    }
-
-    companion object {
-        fun fromJsonRequest(jsonObject: JsonObject): CollectionDb {
-            return CollectionDb(
-                jsonObject.getString("name"),
-                jsonObject.getString("description")
-            )
-        }
+        return JsonObject()
+            .put("id", id)
+            .put("version", version)
+            .put("data", JsonObject(data.decodeToString()))
     }
 }

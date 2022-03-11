@@ -1,102 +1,69 @@
 import 'allotment/dist/style.css';
 
+import { useToast } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
-import { useState } from 'react';
+import beautify from 'json-beautify';
+import { useEffect, useState } from 'react';
 
 import Header from '../../components/header';
 import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import Collection from '../../model/Collection';
+import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import Response from '../../model/Response';
 import styles from './Dashboard.module.css';
 
-const defaultCollections: Array<Collection> = [
-  {
-    id: 1,
-    name: 'hello abc',
-    open: false,
-    requests: [
-      {
-        id: 2,
-        name: 'aaa',
-        uri: 'http://abc.de',
-        method: 'GET',
-        params: [
-          {
-            key: '111',
-            value: '2222',
-          },
-        ],
-        headers: [
-          {
-            key: '333',
-            value: '444',
-          },
-        ],
-        body: 'abcde',
-        selected: false,
-        collectionId: 3,
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: 'hello',
-    open: false,
-    requests: [
-      {
-        id: 4,
-        name: 'aaa abc',
-        uri: 'http://abc.de',
-        method: 'POST',
-        params: [
-          {
-            key: 'abc',
-            value: '123',
-          },
-        ],
-        headers: [
-          {
-            key: 'xxx',
-            value: 'yyy',
-          },
-        ],
-        body: '',
-        selected: false,
-        collectionId: 3,
-      },
-    ],
-  },
-];
-
 const defaultRequest: Request = {
   id: -1,
-  name: '',
-  uri: '',
-  method: 'GET',
-  params: [
-    {
-      key: '',
-      value: '',
-    },
-  ],
-  headers: [
-    {
-      key: '',
-      value: '',
-    },
-  ],
-  body: '',
+  type: 'REST',
+  data: {
+    name: '',
+    uri: '',
+    method: 'GET',
+    params: [
+      {
+        key: '',
+        value: '',
+      },
+    ],
+    headers: [
+      {
+        key: '',
+        value: '',
+      },
+    ],
+    body: '',
+  },
   selected: true,
+  isLoading: false,
   collectionId: -1,
 };
 
 function Dashboard() {
-  const [collections, setCollections] = useState<Array<Collection>>(defaultCollections);
+  const [collections, setCollections] = useState<Array<Collection>>([]);
   const [request, setRequest] = useState<Request>(defaultRequest);
-  const [response, setResponse] = useState<Response | undefined>();
+  const toast = useToast();
+
+  useEffect(() => {
+    async function getCollections() {
+      try {
+        const response = await fetch('/api/collection');
+        const collections = await response.json();
+        setCollections(collections);
+      } catch (e) {
+        console.log(e);
+        toast({
+          title: 'Error.',
+          description: 'Could not retrieve collections.',
+          status: 'error',
+          isClosable: true,
+        });
+      }
+    }
+    getCollections();
+  }, []);
 
   function handleRequestClick(request: Request) {
     const newCollections = [...collections].map((collection) => {
@@ -115,11 +82,70 @@ function Dashboard() {
   }
 
   async function handleSendButtonClick() {
-    const response = await fetch('/sendRequest', {
-      body: JSON.stringify(request),
+    if (request.isLoading) {
+      setRequest({ ...request, isLoading: false });
+      return;
+    }
+    const headers: Record<string, string> = {};
+    request.data.headers.forEach(({ key, value }: KVRow) => {
+      if (key === '') return;
+      headers[key] = value;
     });
-    const responseBody = (await response.json()) as Response;
-    setResponse(responseBody);
+
+    const options: any = { headers };
+    if (request.data.body) {
+      options['body'] = JSON.stringify(request.data.body);
+    }
+
+    setRequest({ ...request, isLoading: true });
+
+    try {
+      const startTime = Date.now();
+      const resp = await fetch(request.data.uri, options);
+      const time = Date.now() - startTime;
+      let responseBody = await resp.text();
+
+      if (resp.headers.get('content-type') === 'application/json') {
+        responseBody = beautify(JSON.parse(responseBody), null, 2, 20);
+      }
+      const responseHeaders: Array<KVRow> = [];
+      for (const [k, v] of resp.headers.entries()) {
+        responseHeaders.push({ key: k, value: v });
+      }
+
+      const response: Response = {
+        uri: request.data.uri,
+        headers: responseHeaders,
+        body: responseBody,
+        status: resp.status,
+        time,
+        size: 0,
+      };
+      setRequest({
+        ...request,
+        data: {
+          ...request.data,
+          response: response,
+        },
+        isLoading: false,
+      });
+    } catch (e) {
+      console.log(e);
+      toast({
+        title: 'Error.',
+        description: 'An error occured while sending the request.',
+        status: 'error',
+        isClosable: true,
+      });
+      setRequest({
+        ...request,
+        data: {
+          ...request.data,
+          response: undefined,
+        },
+        isLoading: false,
+      });
+    }
   }
 
   return (
@@ -146,7 +172,7 @@ function Dashboard() {
                 />
               </div>
               <div className={styles.responsePanel}>
-                <ResponsePanel response={response} />
+                <ResponsePanel response={request.data.response} />
               </div>
             </Allotment>
           </div>

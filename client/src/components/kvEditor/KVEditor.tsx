@@ -15,14 +15,20 @@ type KVEditorProps = {
 function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   const { colorMode } = useColorMode();
 
+  if (kvs === []) {
+    setKvs({
+      key: '',
+      value: '',
+    });
+  }
+
   const onChangeRow = (i: number, param: string, e: any) => {
     const newKvs = [...kvs];
     const newRow = { ...newKvs[i] } as any;
-    const oldParam = newRow[param];
     newRow[param] = e.target.value;
     newKvs[i] = newRow;
 
-    if (i === newKvs.length - 1 && oldParam === '') {
+    if (i === newKvs.length - 1) {
       newKvs.push({
         key: '',
         value: '',

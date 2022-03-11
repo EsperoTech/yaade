@@ -21,7 +21,7 @@ type ResponsePanelProps = {
 };
 
 function ResponsePanel({ response }: ResponsePanelProps) {
-  const colorMode = useColorMode();
+  const { colorMode } = useColorMode();
 
   return (
     <Box className={styles.container} bg="panelBg" h="100%">
@@ -33,18 +33,18 @@ function ResponsePanel({ response }: ResponsePanelProps) {
           flexDirection="column"
           maxHeight="100%"
         >
-          <div className={cn(styles, 'tabList')}>
+          <div className={cn(styles, 'tabList', [colorMode])}>
             <TabList className={styles.tabs} borderWidth={0}>
               <Tab>Body</Tab>
               <Tab>Headers</Tab>
             </TabList>
             <div className={styles.statusBar}>
               Status
-              <span className={styles.statusText}>200</span>
+              <span className={styles.statusText}>{response.status}</span>
               Time
-              <span className={styles.statusText}>320ms</span>
+              <span className={styles.statusText}>{response.time}</span>
               Size
-              <span className={styles.statusText}>8kB</span>
+              <span className={styles.statusText}>{response.size}</span>
             </div>
           </div>
           <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }}>
@@ -52,7 +52,7 @@ function ResponsePanel({ response }: ResponsePanelProps) {
               <CodeMirror
                 height="100%"
                 extensions={[json()]}
-                theme={colorMode.colorMode}
+                theme={colorMode}
                 value={response.body}
                 editable={false}
               />

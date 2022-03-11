@@ -1,5 +1,6 @@
+import { Spinner, useColorMode } from '@chakra-ui/react';
+
 import { cn } from '../../utils';
-import { getMethodColor } from '../../utils';
 import styles from './UriBar.module.css';
 
 type UriBarProps = {
@@ -7,43 +8,56 @@ type UriBarProps = {
   setUri: any;
   method: string;
   setMethod: any;
+  isLoading: boolean;
   handleSendButtonClick: () => void;
 };
 
 type MethodOptionProps = {
   method: string;
+  colorMode: string;
 };
 
-function MethodOption({ method }: MethodOptionProps) {
+function MethodOption({ method, colorMode }: MethodOptionProps) {
   return (
-    <option className={cn(styles, 'option')} value={method}>
+    <option className={cn(styles, 'option', [colorMode])} value={method}>
       {method}
     </option>
   );
 }
 
-function UriBar({ uri, setUri, method, setMethod, handleSendButtonClick }: UriBarProps) {
+function UriBar({
+  uri,
+  setUri,
+  method,
+  setMethod,
+  isLoading,
+  handleSendButtonClick,
+}: UriBarProps) {
+  const { colorMode } = useColorMode();
   return (
     <div className={styles.container}>
       <select
-        className={cn(styles, 'select')}
+        className={cn(styles, 'select', [colorMode])}
         value={method}
         onChange={(e) => setMethod(e.target.value)}
       >
-        <MethodOption method="GET" />
-        <MethodOption method="POST" />
-        <MethodOption method="PUT" />
-        <MethodOption method="DELETE" />
+        <MethodOption method="GET" colorMode={colorMode} />
+        <MethodOption method="POST" colorMode={colorMode} />
+        <MethodOption method="PUT" colorMode={colorMode} />
+        <MethodOption method="DELETE" colorMode={colorMode} />
       </select>
       <input
-        className={cn(styles, 'input')}
+        className={cn(styles, 'input', [colorMode])}
         type="text"
         placeholder="URL"
         value={uri}
         onChange={(e) => setUri(e.target.value)}
       />
-      <button className={cn(styles, 'button')} onClick={handleSendButtonClick}>
-        SEND
+      <button
+        className={cn(styles, 'button', [colorMode])}
+        onClick={handleSendButtonClick}
+      >
+        {isLoading ? <Spinner size="sm" /> : 'SEND'}
       </button>
     </div>
   );
