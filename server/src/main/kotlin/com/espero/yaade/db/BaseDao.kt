@@ -23,4 +23,8 @@ open class BaseDao<T : Any>(connectionSource: ConnectionSource, clazz: Class<T>)
     fun update(data: T) {
         dao.update(data)
     }
+
+    fun delete(id: String) {
+        dao.deleteById(id)
+    }
 }

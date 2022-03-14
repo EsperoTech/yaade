@@ -1,13 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import {
-  IconButton,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  useToast,
-} from '@chakra-ui/react';
+import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
 import { VscSave } from 'react-icons/vsc';
 
 import KVRow from '../../model/KVRow';
@@ -21,15 +13,21 @@ type RequestPanelProps = {
   request: Request;
   setRequest: any;
   handleSendButtonClick: () => void;
+  handleSaveRequestClick: () => void;
 };
 
+const defaultParam = {
+  key: '',
+  value: '',
+};
+
+function shouldAppendNewRow(params: Array<KVRow>): boolean {
+  if (params.length === 0) return true;
+  const { key, value } = params[params.length - 1];
+  return key !== '' || value !== '';
+}
+
 function getParamsFromUri(uri: string): Array<KVRow> {
-  const defaultParams = [
-    {
-      key: '',
-      value: '',
-    },
-  ];
   try {
     const paramString = uri.split('?')[1];
     const params = paramString.split('&').map((kv) => {
@@ -39,18 +37,21 @@ function getParamsFromUri(uri: string): Array<KVRow> {
         value: v.join('='),
       };
     });
-    if (params.length === 0 || params[params.length - 1] !== defaultParams[0]) {
-      params.push(defaultParams[0]);
+    if (shouldAppendNewRow(params)) {
+      params.push(defaultParam);
     }
     return params;
   } catch (e) {
-    return defaultParams;
+    return [defaultParam];
   }
 }
 
-function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPanelProps) {
-  const toast = useToast();
-
+function RequestPanel({
+  request,
+  setRequest,
+  handleSendButtonClick,
+  handleSaveRequestClick,
+}: RequestPanelProps) {
   const setUri = (uri: string) => {
     setRequest((request: Request) => ({
       ...request,
@@ -62,6 +63,7 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
   };
 
   const params = getParamsFromUri(request.data.uri);
+
   const headers =
     request.data.headers && request.data.headers.length !== 0
       ? request.data.headers
@@ -92,7 +94,11 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
         if (i !== 0) searchParams += '&';
         searchParams += `${params[i].key}=${params[i].value}`;
       }
-      setUri(`${base}?${searchParams}`);
+      if (searchParams === '') {
+        setUri(base);
+      } else {
+        setUri(`${base}?${searchParams}`);
+      }
     } catch (e) {
       console.log(e);
     }
@@ -118,33 +124,6 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
     }));
   };
 
-  async function saveRequest() {
-    try {
-      const response = await fetch('/api/request', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
-      if (response.status !== 200) throw new Error();
-      toast({
-        title: 'Request saved.',
-        description: 'The request was successfully saved.',
-        status: 'success',
-        isClosable: true,
-      });
-    } catch (e) {
-      console.log(e);
-      toast({
-        title: 'Save failed.',
-        description: 'The request could not be saved.',
-        status: 'error',
-        isClosable: true,
-      });
-    }
-  }
-
   return (
     <Box className={styles.box} bg="panelBg" h="100%">
       <div style={{ display: 'flex' }}>
@@ -162,7 +141,7 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
           variant="ghost"
           size="sm"
           ml="2"
-          onClick={saveRequest}
+          onClick={handleSaveRequestClick}
         />
       </div>
 

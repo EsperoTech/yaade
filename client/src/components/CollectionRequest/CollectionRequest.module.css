@@ -1,0 +1,58 @@
+.request {
+  padding: 0 1rem 0 2rem;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  border-bottom: 1px solid;
+}
+
+.request:focus {
+  outline: 1px solid var(--chakra-colors-green-500) !important;
+  outline-offset: -1px;
+}
+
+.request--light {
+  border-color: var(--chakra-colors-gray-300);
+}
+
+.request--light.request--selected {
+  background-color: var(--chakra-colors-gray-300);
+}
+
+.request--dark {
+  border-color: var(--chakra-colors-gray-700);
+}
+.request--dark.request--selected {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.request:hover {
+  cursor: pointer;
+}
+
+.request--light:hover {
+  background-color: var(--chakra-colors-gray-200);
+}
+.request--dark:hover {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.requestName {
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.requestMethod {
+  flex-shrink: 0;
+  font-weight: 700;
+  width: 70px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.actionIcon {
+  margin-left: auto;
+  flex-shrink: 0;
+}

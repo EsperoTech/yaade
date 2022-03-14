@@ -24,4 +24,24 @@ function getMethodColor(method: string): any {
   }
 }
 
-export { cn, getMethodColor };
+function successToast(msg: string, toast: any) {
+  toast({
+    title: 'Success',
+    description: msg,
+    status: 'success',
+    isClosable: true,
+    duration: 2000,
+  });
+}
+
+function errorToast(msg: string, toast: any) {
+  toast({
+    title: 'Error',
+    description: msg,
+    status: 'error',
+    isClosable: true,
+    duration: 2000,
+  });
+}
+
+export { cn, errorToast, getMethodColor, successToast };

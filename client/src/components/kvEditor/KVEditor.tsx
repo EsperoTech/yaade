@@ -15,7 +15,7 @@ type KVEditorProps = {
 function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   const { colorMode } = useColorMode();
 
-  if (kvs === []) {
+  if (kvs.length === 0) {
     setKvs({
       key: '',
       value: '',
@@ -41,12 +41,13 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   const onDeleteRow = (i: number) => {
     const newKvs = [...kvs];
     newKvs.splice(i, 1);
+    console.log(newKvs);
     setKvs(newKvs);
   };
 
   return (
     <div className={styles.container}>
-      {kvs.map(({ key, value }, i: number) => (
+      {kvs.map(({ key, value }, i) => (
         <div key={`${name}-${i}`} className={styles.row}>
           <input
             className={`${styles.input} ${styles['input--left']} ${
@@ -71,7 +72,7 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
               aria-label="delete-row"
               isRound
               variant="ghost"
-              disabled={i === 0 && kvs.length === 1}
+              disabled={i === kvs.length - 1}
               onClick={() => onDeleteRow(i)}
               color={colorMode === 'light' ? 'red.500' : 'red.300'}
               icon={<DeleteIcon />}

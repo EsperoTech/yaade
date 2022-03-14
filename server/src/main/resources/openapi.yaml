@@ -46,6 +46,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Collection"
+    put:
+      summary: Update a collection
+      operationId: putCollection
+      requestBody:
+        description: The updated collection
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Collection"
+      responses:
+        '200':
+          description: "Success"
+  /api/collection/{id}:
+    delete:
+      summary: Delete a collection
+      operationId: deleteCollection
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: "Success"
   /api/request:
     post:
       summary: Creata a new request
@@ -74,6 +100,53 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/Request"
+      responses:
+        '200':
+          description: "Success"
+  /api/request/{id}:
+    delete:
+      summary: Delete a request
+      operationId: deleteRequest
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: "Success"
+  /api/login:
+    post:
+      summary: Login
+      operationId: doLogin
+      requestBody:
+        description: Credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        '200':
+          description: "Success"
+  /api/user:
+    get:
+      summary: Get the current user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: "Success"
+    put:
+      summary: Change user password
+      operationId: changeUserPassword
+      requestBody:
+        description: New and current password
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
       responses:
         '200':
           description: "Success"
@@ -138,5 +211,25 @@ components:
         name:
           type: string
         type:
+          type: string
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
           type: string
 

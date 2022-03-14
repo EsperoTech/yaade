@@ -1,6 +1,5 @@
 interface User {
   username: String;
-  isAdmin: Boolean;
   settings: any;
 }
 

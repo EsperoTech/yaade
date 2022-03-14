@@ -9,9 +9,11 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useContext } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { UserContext } from '../../App';
+import User from '../../model/User';
+import { errorToast, successToast } from '../../utils';
 import styles from './Login.module.css';
 
 type State = {
@@ -32,36 +34,50 @@ function Login() {
     loading: false,
   });
 
+  useEffect(() => {
+    async function tryAutoLogin() {
+      try {
+        setState((state) => ({ ...state, loading: true }));
+
+        const response = await fetch('/api/user');
+        if (response.status !== 200) throw new Error();
+
+        const user = (await response.json()) as User;
+
+        setUser({ username: user.username, settings: {} });
+        setState((state) => ({ ...state, loading: false }));
+      } catch (e) {
+        console.log(e);
+        setState((state) => ({ ...state, loading: false }));
+      }
+    }
+    tryAutoLogin();
+  }, []);
+
   async function handleLoginClick() {
     try {
       setState({ ...state, loading: true });
 
-      // const response = await fetch('/login', {
-      //   method: 'POST',
-      //   body: JSON.stringify(state),
-      // });
-      // if (response.status !== 200) throw new Error();
-
-      // const user = (await response.json()) as User;
-
-      setUser({ username: 'joro', isAdmin: 'true', settings: {} });
-      setState({ ...state, loading: false });
-      toast({
-        title: `Hello ${state.username}.`,
-        description: `You were successfully logged in.`,
-        status: 'success',
-        isClosable: true,
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: state.username,
+          password: state.password,
+        }),
       });
+      if (response.status !== 200) throw new Error();
+
+      setUser({ username: 'joro', settings: {} });
+      setState({ ...state, loading: false });
+      successToast('You are successfully logged in.', toast);
     } catch (e) {
       console.log(e);
       setState({ ...state, loading: false });
 
-      toast({
-        title: 'Could not login.',
-        description: 'An error occured during login. Please try again.',
-        status: 'error',
-        isClosable: true,
-      });
+      errorToast('Login was not successful.', toast);
     }
   }
 
@@ -87,6 +103,7 @@ function Login() {
         <Input
           mt="6"
           placeholder="Password"
+          type="password"
           w="100%"
           borderRadius={20}
           size="lg"

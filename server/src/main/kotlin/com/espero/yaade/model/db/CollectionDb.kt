@@ -25,10 +25,26 @@ class CollectionDb {
             .encode().toByteArray()
     }
 
+    constructor(id: Long, version: String, data: JsonObject) {
+        this.id = id
+        this.version = version
+        this.data = data.encode().toByteArray()
+    }
+
     fun toJson(): JsonObject {
         return JsonObject()
             .put("id", id)
             .put("version", version)
             .put("data", JsonObject(data.decodeToString()))
+    }
+
+    companion object {
+        fun fromUpdateRequest(request: JsonObject): CollectionDb {
+            return CollectionDb(
+                id = request.getLong("id"),
+                version = request.getString("version"),
+                data = request.getJsonObject("data")
+            )
+        }
     }
 }

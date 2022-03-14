@@ -16,9 +16,19 @@ class RequestRoute(private val daoManager: DaoManager) {
     }
 
     fun putRequest(ctx: RoutingContext) {
-        val newRequest = RequestDb.fromUpdateRequest(ctx.bodyAsJson)
-        daoManager.requestDao.update(newRequest)
-        println(newRequest.toJson().encode())
+        try {
+            val newRequest = RequestDb.fromUpdateRequest(ctx.bodyAsJson)
+            daoManager.requestDao.update(newRequest)
+            ctx.end()
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            ctx.fail(500)
+        }
+    }
+
+    fun deleteRequest(ctx: RoutingContext) {
+        val id = ctx.pathParam("id")
+        daoManager.requestDao.delete(id)
         ctx.end()
     }
 
