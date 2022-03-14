@@ -17,7 +17,7 @@ function Header() {
   return (
     <Box className={styles.container} bg="headerBg">
       <Heading as="h1" size="md">
-        Yaade
+        YAADE
       </Heading>
       <div className={styles.buttons}>
         <IconButton

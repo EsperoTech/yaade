@@ -56,7 +56,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
 
   async function handleRenameRequestClick() {
     try {
-      const response = await fetch(`/api/request/${request.id}`, {
+      const response = await fetch('/api/request', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -78,6 +78,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
           name: state.name,
         },
       });
+      onCloseClear();
       successToast('Request was renamed.', toast);
     } catch (e) {
       errorToast('The request could not be renamed.', toast);

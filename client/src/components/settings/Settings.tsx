@@ -13,10 +13,12 @@ import {
   Tabs,
   Text,
   useColorMode,
+  useToast,
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 
-import { cn } from '../../utils';
+import { UserContext } from '../../App';
+import { cn, errorToast, successToast } from '../../utils';
 import styles from './Settings.module.css';
 
 type SettingsTabProps = {
@@ -43,13 +45,55 @@ type SettingsState = {
   repeatPassword: string;
 };
 
+const defaultState: SettingsState = {
+  currentPassword: '',
+  newPassword: '',
+  repeatPassword: '',
+};
+
 function Settings() {
-  const [state, setState] = useState<SettingsState>({
-    currentPassword: '',
-    newPassword: '',
-    repeatPassword: '',
-  });
+  const [state, setState] = useState<SettingsState>(defaultState);
+  const { setUser } = useContext(UserContext);
   const { colorMode, setColorMode } = useColorMode();
+  const toast = useToast();
+
+  async function handleChangePasswordClick() {
+    try {
+      const response = await fetch('/api/user', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: state.currentPassword,
+          newPassword: state.newPassword,
+        }),
+      });
+      if (response.status !== 200) throw new Error();
+      setState(defaultState);
+      setUser(undefined);
+      successToast('Password changed.', toast);
+    } catch (e) {
+      setState(defaultState);
+      errorToast('Password could not be changed.', toast);
+    }
+  }
+
+  async function handleExportBackupClick() {
+    try {
+      const response = await fetch('/api/user/exportBackup');
+      if (response.status !== 200) throw new Error();
+      const blob = await response.blob();
+
+      let url = window.URL.createObjectURL(blob);
+      let a = document.createElement('a');
+      a.href = url;
+      a.download = 'yaade-db.mv.db';
+      a.click();
+    } catch (e) {
+      errorToast('Data could not be exported.', toast);
+    }
+  }
 
   const sx = {
     borderRadius: '0 20px 20px 0',
@@ -110,7 +154,13 @@ function Settings() {
                 Export your entire Yaade data into a single file that can be used to
                 restore your data.
               </Text>
-              <Button mt="6" borderRadius={20} colorScheme="green" w={150}>
+              <Button
+                mt="6"
+                borderRadius={20}
+                colorScheme="green"
+                w={150}
+                onClick={handleExportBackupClick}
+              >
                 Export
               </Button>
               <Heading as="h4" size="md" mb="2" mt="4">
@@ -157,14 +207,23 @@ function Settings() {
                   id="new-password-input"
                   type="password"
                   placeholder="New Password..."
+                  value={state.newPassword}
+                  onChange={(e) => setState({ ...state, newPassword: e.target.value })}
                 />
                 <input
                   className={cn(styles, 'input', [colorMode])}
                   id="repeat-password-input"
                   type="password"
                   placeholder="New Password..."
+                  value={state.repeatPassword}
+                  onChange={(e) => setState({ ...state, repeatPassword: e.target.value })}
                 />
-                <Button mt="4" borderRadius={20} colorScheme="green">
+                <Button
+                  mt="4"
+                  borderRadius={20}
+                  colorScheme="green"
+                  onClick={handleChangePasswordClick}
+                >
                   Change password
                 </Button>
               </form>

@@ -82,6 +82,7 @@ function CollectionView({
       onCloseClear();
       successToast('A new request was created.', toast);
     } catch (e) {
+      console.log(e);
       errorToast('The request could be not created', toast);
     }
   }

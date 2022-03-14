@@ -80,7 +80,8 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
       });
       if (response.status !== 200) throw new Error();
       const newCollection = await response.json();
-      setCollections([...collections, newCollection]);
+      setCollections((collections: Array<Collection>) => [...collections, newCollection]);
+      console.log(newCollection);
       toast({
         title: 'Collection created.',
         description: 'A new collection was created and saved.',

@@ -1,13 +1,11 @@
 package com.espero.yaade.server.routes
 
-import com.espero.yaade.db.CollectionDao
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.RequestDb
 import com.j256.ormlite.misc.TransactionManager
 import io.vertx.core.json.JsonArray
 import io.vertx.ext.web.RoutingContext
-import java.util.concurrent.Callable
 
 class CollectionRoute(private val daoManager: DaoManager) {
 
@@ -28,11 +26,12 @@ class CollectionRoute(private val daoManager: DaoManager) {
     fun postCollection(ctx: RoutingContext) {
         try {
             val request = ctx.bodyAsJson
-            val newCollection = CollectionDb(request.getString("name"))
+            val userId = ctx.user().principal().getLong("id")
+            val newCollection = CollectionDb(request.getString("name"), userId)
 
             daoManager.collectionDao.create(newCollection)
 
-            ctx.end(newCollection.toJson().encode())
+            ctx.end(newCollection.toJson().put("requests", JsonArray()).encode())
         } catch (t: Throwable) {
             t.printStackTrace()
             ctx.fail(500)

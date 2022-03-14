@@ -150,6 +150,13 @@ paths:
       responses:
         '200':
           description: "Success"
+  /api/user/exportBackup:
+    get:
+      summary: Export a backup of the database
+      operationId: exportBackup
+      responses:
+        '200':
+          description: "Success"
 components:
   schemas:
     HealthResponse:

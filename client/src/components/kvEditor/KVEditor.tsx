@@ -41,7 +41,6 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   const onDeleteRow = (i: number) => {
     const newKvs = [...kvs];
     newKvs.splice(i, 1);
-    console.log(newKvs);
     setKvs(newKvs);
   };
 

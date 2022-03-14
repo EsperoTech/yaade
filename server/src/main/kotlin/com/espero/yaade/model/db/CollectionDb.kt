@@ -13,20 +13,25 @@ class CollectionDb {
     var id: Long = -1
 
     @DatabaseField
+    var ownerId: Long = -1
+
+    @DatabaseField
     lateinit var version: String
 
     @DatabaseField(dataType = DataType.BYTE_ARRAY)
     lateinit var data: ByteArray
 
-    constructor(name: String) {
+    constructor(name: String, ownerId: Long) {
+        this.ownerId = ownerId
         this.version = "1.0.0"
         this.data = JsonObject()
             .put("name", name)
             .encode().toByteArray()
     }
 
-    constructor(id: Long, version: String, data: JsonObject) {
+    constructor(id: Long, ownerId: Long, version: String, data: JsonObject) {
         this.id = id
+        this.ownerId = ownerId
         this.version = version
         this.data = data.encode().toByteArray()
     }
@@ -34,6 +39,7 @@ class CollectionDb {
     fun toJson(): JsonObject {
         return JsonObject()
             .put("id", id)
+            .put("ownerId", ownerId)
             .put("version", version)
             .put("data", JsonObject(data.decodeToString()))
     }
@@ -42,6 +48,7 @@ class CollectionDb {
         fun fromUpdateRequest(request: JsonObject): CollectionDb {
             return CollectionDb(
                 id = request.getLong("id"),
+                ownerId = request.getLong("ownerId"),
                 version = request.getString("version"),
                 data = request.getJsonObject("data")
             )

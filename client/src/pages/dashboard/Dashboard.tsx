@@ -90,8 +90,6 @@ function Dashboard() {
     onClose();
   }
 
-  console.log(newReqForm);
-
   function handleRequestClick(selectedRequest: Request) {
     const newCollections = [...collections].map((collection) => {
       const requests = collection.requests.map((req) => ({
