@@ -209,7 +209,6 @@ components:
       type: object
       required:
         - collectionId
-        - name
         - type
       properties:
         collectionId:

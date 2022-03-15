@@ -25,17 +25,24 @@ class RequestDb {
     @DatabaseField(dataType = DataType.BYTE_ARRAY)
     lateinit var data: ByteArray
 
-    constructor(request: JsonObject) {
-        this.collectionId = request.getLong("collectionId")
+    constructor(collectionId: Long, name: String) {
+        this.collectionId = collectionId
         this.type = "REST"
         this.version = "1.0.0"
         this.data = JsonObject()
-            .put("name", request.getString("name"))
+            .put("name", name)
             .put("uri", "")
             .put("method", "GET")
             .put("headers", JsonArray())
             .put("body", "")
             .encode().toByteArray()
+    }
+
+    constructor(collectionId: Long, data: JsonObject) {
+        this.collectionId = collectionId
+        this.type = "REST"
+        this.version = "1.0.0"
+        this.data = data.encode().toByteArray()
     }
 
     constructor(id: Long, collectionId: Long, type: String, version: String, data: JsonObject) {

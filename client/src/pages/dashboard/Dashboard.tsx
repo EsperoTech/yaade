@@ -79,8 +79,35 @@ function Dashboard() {
         });
       }
     }
+    addResponseListener();
     getCollections();
   }, []);
+
+  function addResponseListener() {
+    window.addEventListener('message', (event) => {
+      // TODO: check if this is the response to the most frequent req, eg. by setting a req-id on send-request
+      if (event.data.type === 'receive-response') {
+        console.log('event', event);
+        const response: Response = {
+          uri: request.data.uri,
+          headers: event.data.response.headers,
+          body: event.data.response.body,
+          status: event.data.response.status,
+          // TODO: get correct time by adding it to the background response
+          time: 9,
+          size: 0,
+        };
+        setRequest((request) => ({
+          ...request,
+          data: {
+            ...request.data,
+            response: response,
+          },
+          isLoading: false,
+        }));
+      }
+    });
+  }
 
   function onCloseClear() {
     setNewReqForm({
@@ -106,11 +133,12 @@ function Dashboard() {
     setRequest(selectedRequest);
   }
 
-  async function handleSendButtonClick() {
+  function handleSendButtonClick() {
     if (request.isLoading) {
       setRequest({ ...request, isLoading: false });
       return;
     }
+
     const headers: Record<string, string> = {};
     request.data.headers.forEach(({ key, value }: KVRow) => {
       if (key === '') return;
@@ -124,48 +152,14 @@ function Dashboard() {
 
     setRequest({ ...request, isLoading: true });
 
-    try {
-      const startTime = Date.now();
-      const resp = await fetch(request.data.uri, options);
-      const time = Date.now() - startTime;
-      let responseBody = await resp.text();
-
-      if (resp.headers.get('content-type') === 'application/json') {
-        responseBody = beautify(JSON.parse(responseBody), null, 2, 20);
-      }
-      const responseHeaders: Array<KVRow> = [];
-      for (const [k, v] of resp.headers.entries()) {
-        responseHeaders.push({ key: k, value: v });
-      }
-
-      const response: Response = {
-        uri: request.data.uri,
-        headers: responseHeaders,
-        body: responseBody,
-        status: resp.status,
-        time,
-        size: 0,
-      };
-      setRequest({
-        ...request,
-        data: {
-          ...request.data,
-          response: response,
-        },
-        isLoading: false,
-      });
-    } catch (e) {
-      console.log(e);
-      errorToast('An error occured while sending the request.', toast);
-      setRequest({
-        ...request,
-        data: {
-          ...request.data,
-          response: undefined,
-        },
-        isLoading: false,
-      });
-    }
+    window.postMessage(
+      {
+        url: request.data.uri,
+        type: 'send-request',
+        options: options,
+      },
+      '*',
+    );
   }
 
   async function handleSaveNewRequestClick() {
@@ -176,9 +170,9 @@ function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: newReqForm.name,
           collectionId: newReqForm.collectionId,
           type: 'REST',
+          data: { ...request.data, name: newReqForm.name },
         }),
       });
 

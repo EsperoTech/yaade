@@ -8,7 +8,11 @@ import io.vertx.ext.web.RoutingContext
 class RequestRoute(private val daoManager: DaoManager) {
 
     fun postRequest(ctx: RoutingContext) {
-        val newRequest = RequestDb(ctx.bodyAsJson)
+        val body = ctx.bodyAsJson
+        val newRequest = if (body.containsKey("data"))
+            RequestDb(body.getLong("collectionId"), body.getJsonObject("data"))
+        else
+            RequestDb(body.getLong("collectionId"), body.getString("name"))
 
         daoManager.requestDao.create(newRequest)
 
