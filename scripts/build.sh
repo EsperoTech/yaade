@@ -13,3 +13,6 @@ mv client/dist server/src/main/resources/webroot
 # build server
 cd server
 ./gradlew clean assemble
+
+# build the docker container
+docker build -t yaade:latest .

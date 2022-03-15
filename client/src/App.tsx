@@ -2,7 +2,7 @@ import { ChakraProvider } from '@chakra-ui/react';
 import { createContext, useState } from 'react';
 
 import User from './model/User';
-import Dashboard from './pages/dashboard/Dashboard';
+import Dashboard from './pages/dashboard';
 import Login from './pages/login';
 import theme from './theme';
 

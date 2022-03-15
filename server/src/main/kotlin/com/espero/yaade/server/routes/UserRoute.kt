@@ -46,7 +46,7 @@ class UserRoute(private val daoManager: DaoManager) {
             ctx.response()
                 .putHeader("Content-Disposition", "attachment; filename=\"yaade-db.mv.db\"")
                 .putHeader(HttpHeaders.TRANSFER_ENCODING, "chunked")
-                .sendFile("yaade-db.mv.db")
+                .sendFile("/app/data/yaade-db.mv.db")
 
         } catch (t: Throwable) {
             t.printStackTrace()

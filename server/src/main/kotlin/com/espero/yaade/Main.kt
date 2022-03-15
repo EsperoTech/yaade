@@ -7,10 +7,10 @@ import com.password4j.Password
 import io.vertx.core.Vertx
 
 const val PORT = 9339
-const val JDBC_URL = "jdbc:h2:file:./yaade-db"
+const val JDBC_URL = "jdbc:h2:file:./app/data/yaade-db"
 const val JDBC_USR = "sa"
 const val JDBC_PWD = ""
-const val ADMIN_USERNAME = "joro"
+val ADMIN_USERNAME: String = System.getenv("YAADE_ADMIN_USERNAME")
 const val ADMIN_PASSWORD = "password"
 
 fun main() {
