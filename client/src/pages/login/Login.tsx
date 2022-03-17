@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Center,
-  Checkbox,
   Heading,
   Input,
   useColorMode,
@@ -19,7 +18,6 @@ import styles from './Login.module.css';
 type State = {
   username: string;
   password: string;
-  remember: boolean;
   loading: boolean;
 };
 
@@ -30,7 +28,6 @@ function Login() {
   const [state, setState] = useState<State>({
     username: '',
     password: '',
-    remember: true,
     loading: false,
   });
 
@@ -70,13 +67,13 @@ function Login() {
       });
       if (response.status !== 200) throw new Error();
 
-      setUser({ username: 'joro', settings: {} });
+      const usr = await response.json();
+
+      setUser(usr);
       setState({ ...state, loading: false });
       successToast('You are successfully logged in.', toast);
     } catch (e) {
-      console.log(e);
       setState({ ...state, loading: false });
-
       errorToast('Login was not successful.', toast);
     }
   }
@@ -112,17 +109,6 @@ function Login() {
           value={state.password}
           onChange={(e) => setState({ ...state, password: e.target.value })}
         />
-        <Center>
-          <Checkbox
-            size="lg"
-            mt="6"
-            colorScheme="green"
-            defaultChecked
-            onChange={(e) => setState({ ...state, remember: e.target.checked })}
-          >
-            Remember me
-          </Checkbox>
-        </Center>
         <Center>
           <Button
             mt="6"
