@@ -1,6 +1,7 @@
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import {
   Button,
+  Checkbox,
   Divider,
   Heading,
   IconButton,
@@ -44,6 +45,7 @@ type SettingsState = {
   newPassword: string;
   repeatPassword: string;
   backupfile: any;
+  acknowledge: boolean;
 };
 
 const defaultState: SettingsState = {
@@ -51,6 +53,7 @@ const defaultState: SettingsState = {
   newPassword: '',
   repeatPassword: '',
   backupfile: undefined,
+  acknowledge: false,
 };
 
 const sx = {
@@ -166,7 +169,7 @@ function Settings() {
                   colorScheme={colorMode === 'dark' ? 'green' : 'gray'}
                 />
               </Stack>
-              <Heading as="h4" size="md" mb="2" mt="4">
+              <Heading as="h4" size="md" mb="2" mt="2">
                 Export Backup
               </Heading>
               <Text>
@@ -174,7 +177,7 @@ function Settings() {
                 restore your data.
               </Text>
               <Button
-                mt="6"
+                mt="4"
                 borderRadius={20}
                 colorScheme="green"
                 w={150}
@@ -198,10 +201,21 @@ function Settings() {
                   setState({ ...state, backupfile });
                 }}
               />
+              <Checkbox
+                mt="4"
+                colorScheme="green"
+                onChange={(e) => setState({ ...state, acknowledge: e.target.checked })}
+              >
+                <Text fontSize={12}>
+                  I acknowledge that importing a backup file will result in a complete
+                  loss of my current data with no way of recovery.
+                </Text>
+              </Checkbox>
               <Button
-                mt="8"
+                mt="4"
                 borderRadius={20}
                 colorScheme="green"
+                disabled={!state.backupfile || !state.acknowledge}
                 w={150}
                 onClick={handleImportBackupClick}
               >
@@ -247,7 +261,7 @@ function Settings() {
                   className={cn(styles, 'input', [colorMode])}
                   id="repeat-password-input"
                   type="password"
-                  placeholder="New Password..."
+                  placeholder="Repeat Password..."
                   value={state.repeatPassword}
                   onChange={(e) => setState({ ...state, repeatPassword: e.target.value })}
                 />
@@ -255,6 +269,11 @@ function Settings() {
                   mt="4"
                   borderRadius={20}
                   colorScheme="green"
+                  disabled={
+                    !state.currentPassword ||
+                    !state.newPassword ||
+                    !(state.repeatPassword === state.newPassword)
+                  }
                   onClick={handleChangePasswordClick}
                 >
                   Change password
