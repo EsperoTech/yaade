@@ -22,7 +22,6 @@ dependencies {
     implementation("io.vertx:vertx-lang-kotlin-coroutines")
     implementation("io.vertx:vertx-web-openapi")
     implementation("io.vertx:vertx-web-validation")
-    implementation("io.vertx:vertx-auth-jwt")
 
     implementation("com.h2database:h2:1.4.200")
     implementation("com.zaxxer:HikariCP:5.0.1")
@@ -34,6 +33,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.1")
     implementation("com.password4j:password4j:1.5.4")
+    implementation("net.lingala.zip4j:zip4j:2.9.1")
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")

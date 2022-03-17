@@ -56,6 +56,7 @@ function UriBar({
       <button
         className={cn(styles, 'button', [colorMode])}
         onClick={handleSendButtonClick}
+        disabled={uri === ''}
       >
         {isLoading ? <Spinner size="sm" /> : 'SEND'}
       </button>

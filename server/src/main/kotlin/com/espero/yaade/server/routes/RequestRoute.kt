@@ -8,15 +8,21 @@ import io.vertx.ext.web.RoutingContext
 class RequestRoute(private val daoManager: DaoManager) {
 
     fun postRequest(ctx: RoutingContext) {
-        val body = ctx.bodyAsJson
-        val newRequest = if (body.containsKey("data"))
-            RequestDb(body.getLong("collectionId"), body.getJsonObject("data"))
-        else
-            RequestDb(body.getLong("collectionId"), body.getString("name"))
+        try {
+            val body = ctx.bodyAsJson
+            val newRequest = if (body.containsKey("data"))
+                RequestDb(body.getLong("collectionId"), body.getJsonObject("data"))
+            else
+                RequestDb(body.getLong("collectionId"), body.getString("name"))
 
-        daoManager.requestDao.create(newRequest)
+            daoManager.requestDao.create(newRequest)
 
-        ctx.end(newRequest.toJson().encode())
+            ctx.end(newRequest.toJson().encode())
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            ctx.fail(500)
+        }
+
     }
 
     fun putRequest(ctx: RoutingContext) {
@@ -31,9 +37,14 @@ class RequestRoute(private val daoManager: DaoManager) {
     }
 
     fun deleteRequest(ctx: RoutingContext) {
-        val id = ctx.pathParam("id")
-        daoManager.requestDao.delete(id)
-        ctx.end()
+        try {
+            val id = ctx.pathParam("id")
+            daoManager.requestDao.delete(id)
+            ctx.end()
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            ctx.fail(500)
+        }
     }
 
 }

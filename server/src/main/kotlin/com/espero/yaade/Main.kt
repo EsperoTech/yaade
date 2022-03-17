@@ -1,6 +1,7 @@
 package com.espero.yaade
 
 import com.espero.yaade.init.createDaoManager
+import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.Server
 import com.password4j.Password
@@ -20,6 +21,8 @@ fun main() {
         val hashedPassword = Password.hash(ADMIN_PASSWORD).addRandomSalt().withArgon2().result
         val admin = UserDb(ADMIN_USERNAME, hashedPassword)
         daoManager.userDao.create(admin)
+        val collection = CollectionDb("Collection", admin.id)
+        daoManager.collectionDao.create(collection)
     }
 
     val vertx = Vertx.vertx()

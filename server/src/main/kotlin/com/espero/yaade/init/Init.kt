@@ -7,14 +7,12 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 
 fun createDaoManager(jdbcUrl: String, jdbcUser: String, jdbcPwd: String): DaoManager {
-    val connectionSource = createConnectionSource(jdbcUrl, jdbcUser, jdbcPwd)
-    return DaoManager(connectionSource)
-}
-
-fun createConnectionSource(jdbcUrl: String, jdbcUser: String, jdbcPwd: String): ConnectionSource {
     val hikariConfig = createHikariConfig(jdbcUrl, jdbcUser, jdbcPwd)
-    val ds = HikariDataSource(hikariConfig)
-    return DataSourceConnectionSource(ds, jdbcUrl)
+    val dataSource = HikariDataSource(hikariConfig)
+    val connectionSource = DataSourceConnectionSource(dataSource, jdbcUrl)
+    val daoManager = DaoManager()
+    daoManager.init(dataSource, connectionSource)
+    return daoManager
 }
 
 fun createHikariConfig(jdbcUrl: String, jdbcUser: String, jdbcPwd: String): HikariConfig {

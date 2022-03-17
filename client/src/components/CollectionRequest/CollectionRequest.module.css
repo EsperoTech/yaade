@@ -1,5 +1,5 @@
 .request {
-  padding: 0 1rem 0 2rem;
+  padding: 0 1rem 0 1rem;
   display: flex;
   align-items: center;
   box-sizing: border-box;
@@ -38,14 +38,18 @@
 }
 
 .requestName {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .requestMethod {
-  flex-shrink: 0;
   font-weight: 700;
+  min-width: 70px;
   width: 70px;
+  max-width: 70px;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;

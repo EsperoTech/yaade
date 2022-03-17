@@ -12,14 +12,13 @@ fun Operation.coroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Ha
         coroutineVerticle.launch { handler.handle(ctx) } }
 }
 
-
-fun Operation.authorizedCoroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Handler<RoutingContext>) {
+fun Operation.authorizedCoroutineHandler(coroutineVerticle: CoroutineVerticle, handler: suspend (ctx: RoutingContext) -> Unit) {
     this.handler { ctx ->
         if (ctx.user() == null) {
             ctx.fail(403)
             return@handler
         }
-        coroutineVerticle.launch { handler.handle(ctx) } }
+        coroutineVerticle.launch { handler(ctx) } }
 }
 
 fun Route.coroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Handler<RoutingContext>) {

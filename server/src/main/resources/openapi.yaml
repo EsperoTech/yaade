@@ -157,6 +157,13 @@ paths:
       responses:
         '200':
           description: "Success"
+  /api/user/importBackup:
+    post:
+      summary: Import a backup file
+      operationId: importBackup
+      responses:
+        '200':
+          description: "Success"
 components:
   schemas:
     HealthResponse:

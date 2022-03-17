@@ -43,12 +43,22 @@ type SettingsState = {
   currentPassword: string;
   newPassword: string;
   repeatPassword: string;
+  backupfile: any;
 };
 
 const defaultState: SettingsState = {
   currentPassword: '',
   newPassword: '',
   repeatPassword: '',
+  backupfile: undefined,
+};
+
+const sx = {
+  borderRadius: '0 20px 20px 0',
+  borderWidth: '0px',
+  justifyContent: 'start',
+  paddingLeft: '2rem',
+  boxSizing: 'border-box',
 };
 
 function Settings() {
@@ -95,13 +105,22 @@ function Settings() {
     }
   }
 
-  const sx = {
-    borderRadius: '0 20px 20px 0',
-    borderWidth: '0px',
-    justifyContent: 'start',
-    paddingLeft: '2rem',
-    boxSizing: 'border-box',
-  };
+  async function handleImportBackupClick() {
+    try {
+      const data = new FormData();
+      data.append('File', state.backupfile, 'yaade-db.mv.db');
+
+      const response = await fetch('/api/user/importBackup', {
+        method: 'POST',
+        body: data,
+      });
+      if (response.status !== 200) throw new Error();
+      setUser(undefined);
+    } catch (e) {
+      errorToast('Failed to import backup', toast);
+    }
+  }
+
   const selected = {
     bg: colorMode === 'light' ? 'gray.200' : 'gray.800',
     borderLeft: '4px solid var(--chakra-colors-green-500)',
@@ -170,8 +189,22 @@ function Settings() {
                 Import a backup file. Make sure to backup your data before importing or
                 else data could be lost.
               </Text>
-              <input className={cn(styles, 'fileInput', [colorMode])} type="file" />
-              <Button mt="8" borderRadius={20} colorScheme="green" w={150}>
+              <input
+                className={cn(styles, 'fileInput', [colorMode])}
+                type="file"
+                accept=".db"
+                onChange={(e) => {
+                  const backupfile = e.target.files ? e.target.files[0] : undefined;
+                  setState({ ...state, backupfile });
+                }}
+              />
+              <Button
+                mt="8"
+                borderRadius={20}
+                colorScheme="green"
+                w={150}
+                onClick={handleImportBackupClick}
+              >
                 Import
               </Button>
             </SettingsTab>

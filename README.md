@@ -1,21 +1,21 @@
 # <span style="color:#48bb78">Yaade</span> - Yet Another API Development Environment
 
-<span style="color:#48bb78">Yaade</span> is an open-source, self-hosted, collaborative API development environment.
+Yaade is an open-source, self-hosted, collaborative API development environment.
 
-## 🤔 Why did you develop <span style="color:#48bb78">Yaade</span>?
-
+## 🤔 Why did you develop Yaade?
 
 When working with a team on an API I found that all teammembers have their own local collection of Postman requests that they use during development.
 Everytime the API changes, all devs update their collection manually. Some don't get notified and wonder why their calls don't work anymore.
 Therefore I was looking for a free and leightweight alternative to Postman where all the data would be stored on my own machine and could be securely accessed by my teammates.
-There were a few candidates but non of them fullfiled all of my requirements, so I decided to build <span style="color:#48bb78">Yaade</span>.
+There were a few candidates but non of them fullfiled all of my requirements, so I decided to build Yaade.
 
 ## 🌟 Features
 
-1. Self-hosted, data never leaves your own server.
-2. Persistent even across container restarts
-3. Easy single-file data import / export when moving to a new server
-4. Requests are executed on your machine so you can call localhost as well as remote servers
+1. Self-hosted: data never leaves your own server.
+2. Secured: if you don't know the password, you can't get in
+3. Persistent: even across container restarts
+4. Easy single-file data import / export when moving to a new server
+5. Requests are executed on your machine so you can call localhost as well as remote servers
 
 ## Install
 
@@ -30,7 +30,7 @@ $ docker run -d --restart=always -p 9339:9339 -e YAADE_ADMIN_USERNAME=admin -v y
 
 ### 2. 🔧 Extension
 
-Yaade uses a browser extension as a proxy so enable CORS requests. Simply install the extension, open it and input your server URL, eg. `https://yaade.example.com/`.
+Yaade uses a browser extension as a proxy to enable CORS requests. Simply install the extension, open it and input your server URL, eg. `https://yaade.example.com/`. From that point, all requests originating from your Yaade browser tabs will be proxied through the extension.
 
 ## Technology
 
@@ -49,4 +49,4 @@ There are only three reasons why I implement new features:
 2. People pay me to do it.
 3. I have nothing else to do (rarely the case).
 
-Besides that, feel free to implement new features yourself and open a pull requests.
+Besides that, feel free to implement new features yourself and open a pull request. I will review them as often as I have the time.

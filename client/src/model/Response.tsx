@@ -1,7 +1,6 @@
 import KVRow from './KVRow';
 
 interface Response {
-  uri: string;
   status: number;
   headers: Array<KVRow>;
   body: string;

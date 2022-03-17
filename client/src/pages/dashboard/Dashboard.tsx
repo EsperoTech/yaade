@@ -1,8 +1,19 @@
 import 'allotment/dist/style.css';
 
-import { Input, Select, useDisclosure, useToast } from '@chakra-ui/react';
+import {
+  Button,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Select,
+  useDisclosure,
+  useToast,
+} from '@chakra-ui/react';
 import { Allotment } from 'allotment';
-import beautify from 'json-beautify';
 import { useEffect, useRef, useState } from 'react';
 
 import BasicModal from '../../components/basicModal';
@@ -55,46 +66,89 @@ function Dashboard() {
     collectionId: collections.length >= 1 ? collections[0].id : -1,
     name: '',
   });
+  const [isExtInitialized, setIsExtInitialized] = useState<boolean>(false);
   const initialRef = useRef(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isExtFail,
+    onOpen: onOpenExtFail,
+    onClose: onCloseExtFail,
+  } = useDisclosure();
   const toast = useToast();
 
   useEffect(() => {
-    async function getCollections() {
-      try {
-        const response = await fetch('/api/collection');
-        const collections = await response.json();
-        setCollections(collections);
-        setNewReqForm({
-          collectionId: collections.length >= 1 ? collections[0].id : -1,
-          name: '',
-        });
-      } catch (e) {
-        console.log(e);
-        toast({
-          title: 'Error.',
-          description: 'Could not retrieve collections.',
-          status: 'error',
-          isClosable: true,
-        });
-      }
-    }
-    addResponseListener();
-    getCollections();
+    initExtension();
   }, []);
+
+  async function getCollections() {
+    try {
+      const response = await fetch('/api/collection');
+      const collections = await response.json();
+      setCollections(collections);
+      setNewReqForm({
+        collectionId: collections.length >= 1 ? collections[0].id : -1,
+        name: '',
+      });
+    } catch (e) {
+      toast({
+        title: 'Error.',
+        description: 'Could not retrieve collections.',
+        status: 'error',
+        isClosable: true,
+      });
+    }
+  }
+
+  function initExtension() {
+    new Promise<void>((resolve, reject) => {
+      window.addEventListener('message', (event) => {
+        if (event.data.type === 'pong') {
+          setIsExtInitialized(true);
+          resolve();
+        }
+      });
+      setTimeout(() => {
+        if (!isExtInitialized) {
+          reject();
+        }
+      }, 400);
+      window.postMessage({ type: 'ping' }, '*');
+    })
+      .then(() => {
+        addResponseListener();
+        onCloseExtFail();
+        getCollections();
+      })
+      .catch(() => {
+        onOpenExtFail();
+      });
+  }
 
   function addResponseListener() {
     window.addEventListener('message', (event) => {
       // TODO: check if this is the response to the most frequent req, eg. by setting a req-id on send-request
       if (event.data.type === 'receive-response') {
-        console.log('event', event);
+        if (event.data.response.err) {
+          console.log(event.data.response.err);
+          setRequest((request) => ({ ...request, isLoading: false }));
+          errorToast(event.data.response.err, toast);
+          return;
+        }
+        const headers = event.data.response.headers;
+        const isBodyJson =
+          event.data.response.headers.find(
+            (header: KVRow) => header.key.toLowerCase() === 'content-type',
+          )?.value === 'application/json';
+
+        const body = isBodyJson
+          ? JSON.stringify(event.data.response.body, null, 2)
+          : event.data.response.body;
+
         const response: Response = {
-          uri: request.data.uri,
-          headers: event.data.response.headers,
-          body: event.data.response.body,
+          headers,
+          body,
           status: event.data.response.status,
-          // TODO: get correct time by adding it to the background response
-          time: 9,
+          time: event.data.response.time,
           size: 0,
         };
         setRequest((request) => ({
@@ -299,6 +353,21 @@ function Dashboard() {
           ))}
         </Select>
       </BasicModal>
+      <Modal isOpen={isExtFail} onClose={() => {}}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Failed to connect to extension</ModalHeader>
+          <ModalBody>
+            The extension could not be connected. Please install the extension and copy
+            the URL of this window into the host field of the extension. Then click retry.
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="green" onClick={initExtension}>
+              Retry
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
