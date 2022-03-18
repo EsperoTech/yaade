@@ -26,6 +26,7 @@ import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import Response from '../../model/Response';
 import { errorToast, successToast } from '../../utils';
+import { useKeyPress } from '../../utils/useKeyPress';
 import styles from './Dashboard.module.css';
 
 const defaultRequest: Request = {
@@ -76,7 +77,10 @@ function Dashboard() {
   } = useDisclosure();
   const toast = useToast();
 
+  useKeyPress(handleSaveRequestClick, 's', true);
+
   useEffect(() => {
+    console.log('here');
     initExtension();
   }, []);
 
@@ -126,10 +130,8 @@ function Dashboard() {
 
   function addResponseListener() {
     window.addEventListener('message', (event) => {
-      // TODO: check if this is the response to the most frequent req, eg. by setting a req-id on send-request
       if (event.data.type === 'receive-response') {
         if (event.data.response.err) {
-          console.log(event.data.response.err);
           setRequest((request) => ({ ...request, isLoading: false }));
           errorToast(event.data.response.err, toast);
           return;
@@ -140,9 +142,14 @@ function Dashboard() {
             (header: KVRow) => header.key.toLowerCase() === 'content-type',
           )?.value === 'application/json';
 
-        const body = isBodyJson
-          ? JSON.stringify(event.data.response.body, null, 2)
-          : event.data.response.body;
+        let body = event.data.response.body;
+        if (isBodyJson) {
+          try {
+            body = JSON.stringify(JSON.parse(event.data.response.body), null, 2);
+          } catch (e) {
+            console.log(e);
+          }
+        }
 
         const response: Response = {
           headers,

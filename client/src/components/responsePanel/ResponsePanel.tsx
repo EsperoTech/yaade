@@ -1,5 +1,7 @@
-import { Box, Center } from '@chakra-ui/react';
+import { CopyIcon } from '@chakra-ui/icons';
+import { Box, Center, useClipboard } from '@chakra-ui/react';
 import {
+  IconButton,
   Tab,
   TabList,
   TabPanel,
@@ -7,12 +9,13 @@ import {
   Tabs,
   Text,
   useColorMode,
+  useToast,
 } from '@chakra-ui/react';
 import { json } from '@codemirror/lang-json';
 import CodeMirror from '@uiw/react-codemirror';
 
 import Response from '../../model/Response';
-import { cn } from '../../utils';
+import { cn, successToast } from '../../utils';
 import KVEditor from '../kvEditor';
 import styles from './ResponsePanel.module.css';
 
@@ -22,6 +25,13 @@ type ResponsePanelProps = {
 
 function ResponsePanel({ response }: ResponsePanelProps) {
   const { colorMode } = useColorMode();
+  const toast = useToast();
+  const { onCopy } = useClipboard(response?.body ?? '');
+
+  function handleCopyToClipboardClick() {
+    onCopy();
+    successToast('Copied to clipboard', toast);
+  }
 
   return (
     <Box className={styles.container} bg="panelBg" h="100%">
@@ -45,6 +55,15 @@ function ResponsePanel({ response }: ResponsePanelProps) {
               <span className={styles.statusText}>{response.time}</span>
               Size
               <span className={styles.statusText}>{response.size}</span>
+              <IconButton
+                aria-label="save-request-button"
+                icon={<CopyIcon />}
+                variant="ghost"
+                size="sm"
+                ml="2"
+                disabled={!response || !response.body}
+                onClick={handleCopyToClipboardClick}
+              />
             </div>
           </div>
           <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }}>

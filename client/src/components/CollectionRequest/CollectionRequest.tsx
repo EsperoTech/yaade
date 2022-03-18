@@ -170,7 +170,6 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
           <MenuList zIndex={50}>
             <MenuItem
               icon={<EditIcon />}
-              command="Cmd+O"
               onClick={(e) => {
                 e.stopPropagation();
                 setState({ ...state, currentModal: 'rename' });
@@ -181,7 +180,6 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
             </MenuItem>
             <MenuItem
               icon={<DeleteIcon />}
-              command="Cmd+O"
               onClick={(e) => {
                 e.stopPropagation();
                 setState({ ...state, currentModal: 'delete' });

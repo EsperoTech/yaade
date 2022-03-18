@@ -1,4 +1,5 @@
 import { Spinner, useColorMode } from '@chakra-ui/react';
+import { FormEvent } from 'react';
 
 import { cn } from '../../utils';
 import styles from './UriBar.module.css';
@@ -34,8 +35,15 @@ function UriBar({
   handleSendButtonClick,
 }: UriBarProps) {
   const { colorMode } = useColorMode();
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (uri === '') return;
+    handleSendButtonClick();
+  }
+
   return (
-    <div className={styles.container}>
+    <form className={styles.container} onSubmit={handleSubmit}>
       <select
         className={cn(styles, 'select', [colorMode])}
         value={method}
@@ -55,12 +63,12 @@ function UriBar({
       />
       <button
         className={cn(styles, 'button', [colorMode])}
-        onClick={handleSendButtonClick}
         disabled={uri === ''}
+        type="submit"
       >
         {isLoading ? <Spinner size="sm" /> : 'SEND'}
       </button>
-    </div>
+    </form>
   );
 }
 

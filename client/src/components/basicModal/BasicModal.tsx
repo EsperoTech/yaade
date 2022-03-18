@@ -8,15 +8,16 @@ import {
   ModalHeader,
   ModalOverlay,
 } from '@chakra-ui/react';
-import { FunctionComponent } from 'react';
+import { MutableRefObject, useRef } from 'react';
+import { FormEvent, FunctionComponent } from 'react';
 
 type BasicModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  initialRef?: any;
+  initialRef?: MutableRefObject<null>;
   heading: string;
   isButtonDisabled: boolean;
-  onClick: any;
+  onClick: () => void;
   buttonText: string;
   buttonColor: string;
 };
@@ -32,21 +33,35 @@ const BasicModal: FunctionComponent<BasicModalProps> = ({
   buttonColor,
   children,
 }) => {
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (isButtonDisabled) return;
+    onClick();
+  }
+
+  const defaultRef = useRef(null);
   return (
-    <Modal isOpen={isOpen} onClose={onClose} initialFocusRef={initialRef}>
+    <Modal isOpen={isOpen} onClose={onClose} initialFocusRef={initialRef || defaultRef}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>{heading}</ModalHeader>
         <ModalCloseButton />
-        <ModalBody>{children}</ModalBody>
-        <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>
-            Close
-          </Button>
-          <Button colorScheme={buttonColor} onClick={onClick} disabled={isButtonDisabled}>
-            {buttonText}
-          </Button>
-        </ModalFooter>
+        <form onSubmit={handleSubmit}>
+          <ModalBody>{children}</ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Close
+            </Button>
+            <Button
+              colorScheme={buttonColor}
+              disabled={isButtonDisabled}
+              type="submit"
+              ref={defaultRef}
+            >
+              {buttonText}
+            </Button>
+          </ModalFooter>
+        </form>
       </ModalContent>
     </Modal>
   );

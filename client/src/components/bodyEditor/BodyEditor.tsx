@@ -20,7 +20,7 @@ type BodyEditorState = {
 
 function BodyEditor({ content, setContent }: BodyEditorProps) {
   const [state, setState] = useState<BodyEditorState>({
-    contentType: '',
+    contentType: 'json',
   });
   const { colorMode } = useColorMode();
   const toast = useToast();
@@ -53,6 +53,7 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
           size="xs"
           width="150px"
           onChange={(e) => setState({ ...state, contentType: e.target.value })}
+          value={state.contentType}
           outline="none"
         >
           <option value="json">application/json</option>

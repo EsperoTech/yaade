@@ -124,6 +124,18 @@ function Settings() {
     }
   }
 
+  async function handleLogoutClick() {
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+      });
+      if (response.status !== 200) throw new Error();
+      setUser(undefined);
+    } catch (e) {
+      errorToast('Failed to logout', toast);
+    }
+  }
+
   const selected = {
     bg: colorMode === 'light' ? 'gray.200' : 'gray.800',
     borderLeft: '4px solid var(--chakra-colors-green-500)',
@@ -231,7 +243,13 @@ function Settings() {
               <Stack direction="row" alignItems="center" mb="4">
                 <p>Logged in as</p>
                 <span style={{ fontWeight: 700 }}>joro</span>
-                <Button colorScheme="red" variant="outline" size="sm" borderRadius={20}>
+                <Button
+                  colorScheme="red"
+                  variant="outline"
+                  size="sm"
+                  borderRadius={20}
+                  onClick={handleLogoutClick}
+                >
                   Logout
                 </Button>
               </Stack>

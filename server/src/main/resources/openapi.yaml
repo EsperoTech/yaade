@@ -130,6 +130,13 @@ paths:
       responses:
         '200':
           description: "Success"
+  /api/logout:
+    post:
+      summary: Login
+      operationId: doLogout
+      responses:
+        '200':
+          description: "Success"
   /api/user:
     get:
       summary: Get the current user

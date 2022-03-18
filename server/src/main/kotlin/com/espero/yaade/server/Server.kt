@@ -34,6 +34,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             routerBuilder.operation("health").coroutineHandler(this, ::health)
 
             routerBuilder.operation("doLogin").coroutineHandler(this, AuthHandler(provider))
+            routerBuilder.operation("doLogout").coroutineHandler(this, userRoute::logout)
 
             routerBuilder.operation("getCurrentUser")
                 .authorizedCoroutineHandler(this, userRoute::getCurrentUser)
@@ -61,9 +62,6 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .authorizedCoroutineHandler(this, requestRoute::deleteRequest)
 
             val router = routerBuilder.rootHandler(LoggerHandler.create(LoggerFormat.DEFAULT)).createRouter()
-
-            router.route("/api/logout").handler(userRoute::logout)
-
             router.route("/*").coroutineHandler(this, StaticHandler.create())
 
             val server = vertx.createHttpServer()

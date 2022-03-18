@@ -7,7 +7,7 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import { useContext } from 'react';
+import { FormEvent, useContext } from 'react';
 import { useEffect, useState } from 'react';
 
 import { UserContext } from '../../App';
@@ -51,7 +51,8 @@ function Login() {
     tryAutoLogin();
   }, []);
 
-  async function handleLoginClick() {
+  async function handleFormSubmit(e: FormEvent) {
+    e.preventDefault();
     try {
       setState({ ...state, loading: true });
 
@@ -86,41 +87,43 @@ function Login() {
             Yaade
           </Heading>
         </div>
-        <Input
-          mt="6"
-          placeholder="Username"
-          w="100%"
-          borderRadius={20}
-          size="lg"
-          colorScheme="green"
-          backgroundColor={colorMode === 'light' ? 'white' : undefined}
-          value={state.username}
-          onChange={(e) => setState({ ...state, username: e.target.value })}
-        />
-        <Input
-          mt="6"
-          placeholder="Password"
-          type="password"
-          w="100%"
-          borderRadius={20}
-          size="lg"
-          colorScheme="green"
-          backgroundColor={colorMode === 'light' ? 'white' : undefined}
-          value={state.password}
-          onChange={(e) => setState({ ...state, password: e.target.value })}
-        />
-        <Center>
-          <Button
+        <form onSubmit={handleFormSubmit}>
+          <Input
             mt="6"
-            colorScheme="green"
+            placeholder="Username"
+            w="100%"
             borderRadius={20}
-            w={200}
-            onClick={handleLoginClick}
-            isLoading={state.loading}
-          >
-            LOGIN
-          </Button>
-        </Center>
+            size="lg"
+            colorScheme="green"
+            backgroundColor={colorMode === 'light' ? 'white' : undefined}
+            value={state.username}
+            onChange={(e) => setState({ ...state, username: e.target.value })}
+          />
+          <Input
+            mt="6"
+            placeholder="Password"
+            type="password"
+            w="100%"
+            borderRadius={20}
+            size="lg"
+            colorScheme="green"
+            backgroundColor={colorMode === 'light' ? 'white' : undefined}
+            value={state.password}
+            onChange={(e) => setState({ ...state, password: e.target.value })}
+          />
+          <Center>
+            <Button
+              mt="6"
+              colorScheme="green"
+              borderRadius={20}
+              w={200}
+              isLoading={state.loading}
+              type="submit"
+            >
+              LOGIN
+            </Button>
+          </Center>
+        </form>
       </Box>
     </div>
   );

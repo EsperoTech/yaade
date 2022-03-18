@@ -255,7 +255,6 @@ function CollectionView({
             <MenuList zIndex={50}>
               <MenuItem
                 icon={<AddIcon />}
-                command="Cmd+T"
                 onClick={(e) => {
                   e.stopPropagation();
                   setState({ ...state, currentModal: 'newRequest' });
@@ -266,7 +265,6 @@ function CollectionView({
               </MenuItem>
               <MenuItem
                 icon={<EditIcon />}
-                command="Cmd+O"
                 onClick={(e) => {
                   e.stopPropagation();
                   setState({ ...state, currentModal: 'rename' });
@@ -277,7 +275,6 @@ function CollectionView({
               </MenuItem>
               <MenuItem
                 icon={<DeleteIcon />}
-                command="Cmd+O"
                 onClick={(e) => {
                   e.stopPropagation();
                   setState({ ...state, currentModal: 'delete' });

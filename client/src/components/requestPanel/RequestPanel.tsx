@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
+import { Dispatch, SetStateAction } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import KVRow from '../../model/KVRow';
@@ -11,7 +12,7 @@ import styles from './RequestPanel.module.css';
 
 type RequestPanelProps = {
   request: Request;
-  setRequest: any;
+  setRequest: Dispatch<SetStateAction<Request>>;
   handleSendButtonClick: () => void;
   handleSaveRequestClick: () => void;
 };

@@ -7,18 +7,19 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useRef, useState } from 'react';
 
 import Collection from '../../model/Collection';
-import { cn } from '../../utils';
+import Request from '../../model/Request';
+import { cn, errorToast, successToast } from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionView from '../collectionView';
 import styles from './Sidebar.module.css';
 
 type SideBarProps = {
   collections: Array<Collection>;
-  setCollections: any;
-  handleRequestClick: any;
+  setCollections: Dispatch<SetStateAction<Collection[]>>;
+  handleRequestClick: (selectedRequest: Request) => void;
 };
 
 type StateProps = {
@@ -39,7 +40,7 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
   const initialRef = useRef(null);
 
   const filteredCollections = collections.filter((c) =>
-    c.data.name.includes(state.searchTerm),
+    c.data.name.toLowerCase().includes(state.searchTerm.toLowerCase()),
   );
 
   function handleCollectionClick(collectionId: number) {
@@ -80,23 +81,13 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
       });
       if (response.status !== 200) throw new Error();
       const newCollection = await response.json();
+
       setCollections((collections: Array<Collection>) => [...collections, newCollection]);
-      console.log(newCollection);
-      toast({
-        title: 'Collection created.',
-        description: 'A new collection was created and saved.',
-        status: 'success',
-        isClosable: true,
-      });
+      successToast('A new collection was created and saved', toast);
       onCloseClear();
     } catch (e) {
       console.log(e);
-      toast({
-        title: 'Error',
-        description: 'The collection could be not created.',
-        status: 'error',
-        isClosable: true,
-      });
+      errorToast('The collection could be not created', toast);
     }
   }
 
