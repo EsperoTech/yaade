@@ -11,6 +11,7 @@
     "@chakra-ui/icons": "^1.1.7",
     "@chakra-ui/react": "^1.8.6",
     "@codemirror/lang-json": "^0.19.2",
+    "@codemirror/lang-xml": "^0.19.2",
     "@emotion/react": "^11.8.1",
     "@emotion/styled": "^11.8.1",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
@@ -27,7 +28,8 @@
     "prettier": "^2.5.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-icons": "^4.3.1"
+    "react-icons": "^4.3.1",
+    "xml-formatter": "^2.6.1"
   },
   "devDependencies": {
     "@types/react": "^17.0.33",

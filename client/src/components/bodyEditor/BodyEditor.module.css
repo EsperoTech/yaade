@@ -1,3 +1,13 @@
 .container {
-  height: 100%;
+  /* compensate for menubar or else overflow */
+  height: calc(100% - 40px);
+}
+
+.menu {
+  margin-bottom: 12px;
+  display: flex;
+}
+
+.iconBar {
+  margin-left: auto;
 }

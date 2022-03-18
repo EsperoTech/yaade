@@ -34,6 +34,7 @@ class AuthHandler(authProvider: AuthenticationProvider) :
     }
 
     override fun postAuthentication(ctx: RoutingContext) {
-        ctx.end()
+        val user = ctx.user()
+        ctx.end(user.principal().encode())
     }
 }

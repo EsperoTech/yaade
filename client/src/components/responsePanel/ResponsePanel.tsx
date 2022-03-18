@@ -34,11 +34,11 @@ function ResponsePanel({ response }: ResponsePanelProps) {
           maxHeight="100%"
         >
           <div className={cn(styles, 'tabList', [colorMode])}>
-            <TabList className={styles.tabs} borderWidth={0}>
+            <TabList borderWidth={0}>
               <Tab>Body</Tab>
               <Tab>Headers</Tab>
             </TabList>
-            <div className={styles.statusBar}>
+            <div>
               Status
               <span className={styles.statusText}>{response.status}</span>
               Time
