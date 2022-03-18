@@ -80,7 +80,6 @@ function Dashboard() {
   useKeyPress(handleSaveRequestClick, 's', true);
 
   useEffect(() => {
-    console.log('here');
     initExtension();
   }, []);
 

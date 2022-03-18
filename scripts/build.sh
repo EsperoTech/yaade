@@ -15,4 +15,4 @@ cd server
 ./gradlew clean assemble
 
 # build the docker container
-docker build -t yaade:latest .
+docker build -t esperotech/yaade:latest .

@@ -58,7 +58,6 @@ class CollectionRoute(private val daoManager: DaoManager) {
                 daoManager.requestDao.deleteAllInCollection(id)
             }
 
-            daoManager.collectionDao.delete(id)
             ctx.end()
         } catch (t: Throwable) {
             t.printStackTrace()

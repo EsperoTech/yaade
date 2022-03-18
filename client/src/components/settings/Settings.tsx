@@ -66,7 +66,7 @@ const sx = {
 
 function Settings() {
   const [state, setState] = useState<SettingsState>(defaultState);
-  const { setUser } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
   const { colorMode, setColorMode } = useColorMode();
   const toast = useToast();
 
@@ -242,7 +242,7 @@ function Settings() {
               </Heading>
               <Stack direction="row" alignItems="center" mb="4">
                 <p>Logged in as</p>
-                <span style={{ fontWeight: 700 }}>joro</span>
+                <span style={{ fontWeight: 700 }}>{user?.username}</span>
                 <Button
                   colorScheme="red"
                   variant="outline"
