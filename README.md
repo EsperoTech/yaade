@@ -18,7 +18,7 @@ There were a few promising candidates like Hoppscotch but non of them fullfiled 
 5. Requests are executed on your machine so you can call localhost as well as remote servers
 6. Most importantly: dark mode default
 
-## Install
+## ⚡ Install
 
 To have the best experience with Yaade run the docker container on your sever and install the browser extension on your local machine.
 
@@ -33,14 +33,14 @@ $ docker run -d --restart=always -p 9339:9339 -e YAADE_ADMIN_USERNAME=admin -v y
 
 Yaade uses a browser extension as a proxy to enable CORS requests. Simply install the extension, open it and input your server URL, eg. `https://yaade.example.com/`. From that point, all requests originating from your Yaade browser tabs will be proxied through the extension.
 
-## Technology
+## 💾 Technology
 
 1. SPA built with TypeScript, React and Vite.
 2. Backend built with Kotlin.
 3. H2 file-based database.
 4. Browser extension with plain JavaScript.
 
-## Local development
+## 🖥️ Local development
 
 1. Install the required dependencies
     - Java 11
@@ -68,7 +68,7 @@ $ node index.js
 ```
 7. Now open your browser and visit http://localhost:9337
 
-# Build
+## 🔨 Build
 
 ```bash
 $ cd scripts/
@@ -76,6 +76,6 @@ $ chmod +x build.sh
 $ ./build.sh
 ```
 
-##  How can I contribute?
+## 🤝  How can I contribute?
 
 Your contribution is very welcome! First open an issue about the topic you want to contribute on, eg. adding a new feature, bugfixing or refactoring. We will then discuss further details. Eventually I will review your Pull Request and merge / release it.
