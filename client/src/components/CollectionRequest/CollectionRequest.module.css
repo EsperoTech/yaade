@@ -47,9 +47,9 @@
 
 .requestMethod {
   font-weight: 700;
-  min-width: 70px;
-  width: 70px;
-  max-width: 70px;
+  min-width: 60px;
+  width: 60px;
+  max-width: 60px;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;

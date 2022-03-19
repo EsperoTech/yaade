@@ -143,6 +143,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
 
   const currentModal = state.currentModal === 'rename' ? renameModal : deleteModal;
 
+  const methodName = request.data.method === 'DELETE' ? 'DEL' : request.data.method;
+
   return (
     <div
       className={cn(styles, 'request', [...variants, colorMode])}
@@ -155,7 +157,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
         className={cn(styles, 'requestMethod', [colorMode])}
         style={getMethodColor(request.data.method)}
       >
-        {request.data.method}
+        {methodName}
       </span>
       <span className={cn(styles, 'requestName', [colorMode])}>{request.data.name}</span>
       <span className={styles.actionIcon}>

@@ -11,9 +11,17 @@
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [{
-    "matches": ["<all_urls>"],
-    "run_at": "document_idle",
-    "js": ["contentScript.js"]
-  }]
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "run_at": "document_idle",
+      "js": ["contentScript.js"]
+    }
+  ],
+  "icons": {
+    "36": "icons/android-icon-36x36.png",
+    "48": "icons/android-icon-48x48.png",
+    "72": "icons/android-icon-72x72.png",
+    "192": "icons/android-icon-192x192.png"
+  }
 }

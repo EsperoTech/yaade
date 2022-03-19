@@ -1,12 +1,13 @@
 import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, Select, useColorMode, useToast } from '@chakra-ui/react';
+import { html } from '@codemirror/lang-html';
 import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
 import xmlFormat from 'xml-formatter';
 
-import { errorToast } from '../../utils';
+import { beautifyBody, errorToast } from '../../utils';
 import styles from './BodyEditor.module.css';
 
 type BodyEditorProps = {
@@ -20,27 +21,24 @@ type BodyEditorState = {
 
 function BodyEditor({ content, setContent }: BodyEditorProps) {
   const [state, setState] = useState<BodyEditorState>({
-    contentType: 'json',
+    contentType: 'application/json',
   });
   const { colorMode } = useColorMode();
   const toast = useToast();
 
   const extensions = [];
-  if (state.contentType === 'json') {
+  if (state.contentType === 'application/json') {
     extensions.push(json());
-  } else if (state.contentType === 'xml') {
+  } else if (state.contentType === 'application/xml') {
     extensions.push(xml());
+  } else if (state.contentType === 'text/html') {
+    extensions.push(html());
   }
 
   function handleBeautifyClick() {
     try {
-      if (state.contentType === 'json') {
-        const beautified = JSON.stringify(JSON.parse(content), null, 2);
-        setContent(beautified);
-      } else if (state.contentType === 'xml') {
-        const beautified = xmlFormat(content);
-        setContent(beautified);
-      }
+      const beautifiedBody = beautifyBody(content, state.contentType);
+      setContent(beautifiedBody);
     } catch (e) {
       errorToast('Could not format body.', toast);
     }
@@ -56,9 +54,10 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
           value={state.contentType}
           outline="none"
         >
-          <option value="json">application/json</option>
-          <option value="xml">application/xml</option>
-          <option value="text">text/plain</option>
+          <option value="application/json">application/json</option>
+          <option value="application/xml">application/xml</option>
+          <option value="text/html">text/html</option>
+          <option value="text/plain">text/plain</option>
           <option value="none">none</option>
         </Select>
         <div className={styles.iconBar}>
@@ -67,7 +66,11 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
             isRound
             variant="ghost"
             size="xs"
-            disabled={!['json', 'xml'].includes(state.contentType)}
+            disabled={
+              !['application/json', 'application/xml', 'text/html'].includes(
+                state.contentType,
+              )
+            }
             onClick={handleBeautifyClick}
             icon={<StarIcon />}
           />

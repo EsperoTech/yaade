@@ -25,7 +25,7 @@ import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import Response from '../../model/Response';
-import { errorToast, successToast } from '../../utils';
+import { errorToast, parseResponseEvent, successToast } from '../../utils';
 import { useKeyPress } from '../../utils/useKeyPress';
 import styles from './Dashboard.module.css';
 
@@ -67,7 +67,12 @@ function Dashboard() {
     collectionId: collections.length >= 1 ? collections[0].id : -1,
     name: '',
   });
-  const [isExtInitialized, setIsExtInitialized] = useState<boolean>(false);
+  const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
+  const isExtInitialized = useRef(_isExtInitialized);
+  const setIsExtInitialized = (result: boolean) => {
+    _setIsExtInitialized(result);
+    isExtInitialized.current = result;
+  };
   const initialRef = useRef(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -81,7 +86,51 @@ function Dashboard() {
 
   useEffect(() => {
     initExtension();
+    return () => {
+      window.removeEventListener('message', handlePongMessage);
+    };
   }, []);
+
+  function initExtension() {
+    window.addEventListener('message', handlePongMessage);
+    setTimeout(() => {
+      if (!isExtInitialized.current) {
+        onOpenExtFail();
+      } else {
+        window.addEventListener('message', handleResponseMessage);
+        onCloseExtFail();
+        getCollections();
+      }
+    }, 400);
+    window.postMessage({ type: 'ping' }, '*');
+  }
+
+  const handlePongMessage = (event: MessageEvent<any>) => {
+    if (event.data.type === 'pong') {
+      setIsExtInitialized(true);
+    }
+  };
+
+  function handleResponseMessage(event: MessageEvent<any>) {
+    if (event.data.type === 'receive-response') {
+      if (event.data.response.err) {
+        setRequest((request) => ({ ...request, isLoading: false }));
+        errorToast(event.data.response.err, toast);
+        return;
+      }
+
+      const response = parseResponseEvent(event);
+
+      setRequest((request) => ({
+        ...request,
+        data: {
+          ...request.data,
+          response: response,
+        },
+        isLoading: false,
+      }));
+    }
+  }
 
   async function getCollections() {
     try {
@@ -93,80 +142,8 @@ function Dashboard() {
         name: '',
       });
     } catch (e) {
-      toast({
-        title: 'Error.',
-        description: 'Could not retrieve collections.',
-        status: 'error',
-        isClosable: true,
-      });
+      errorToast('Could not retrieve collections', toast);
     }
-  }
-
-  function initExtension() {
-    new Promise<void>((resolve, reject) => {
-      window.addEventListener('message', (event) => {
-        if (event.data.type === 'pong') {
-          setIsExtInitialized(true);
-          resolve();
-        }
-      });
-      setTimeout(() => {
-        if (!isExtInitialized) {
-          reject();
-        }
-      }, 400);
-      window.postMessage({ type: 'ping' }, '*');
-    })
-      .then(() => {
-        addResponseListener();
-        onCloseExtFail();
-        getCollections();
-      })
-      .catch(() => {
-        onOpenExtFail();
-      });
-  }
-
-  function addResponseListener() {
-    window.addEventListener('message', (event) => {
-      if (event.data.type === 'receive-response') {
-        if (event.data.response.err) {
-          setRequest((request) => ({ ...request, isLoading: false }));
-          errorToast(event.data.response.err, toast);
-          return;
-        }
-        const headers = event.data.response.headers;
-        const isBodyJson =
-          event.data.response.headers.find(
-            (header: KVRow) => header.key.toLowerCase() === 'content-type',
-          )?.value === 'application/json';
-
-        let body = event.data.response.body;
-        if (isBodyJson) {
-          try {
-            body = JSON.stringify(JSON.parse(event.data.response.body), null, 2);
-          } catch (e) {
-            console.log(e);
-          }
-        }
-
-        const response: Response = {
-          headers,
-          body,
-          status: event.data.response.status,
-          time: event.data.response.time,
-          size: 0,
-        };
-        setRequest((request) => ({
-          ...request,
-          data: {
-            ...request.data,
-            response: response,
-          },
-          isLoading: false,
-        }));
-      }
-    });
   }
 
   function onCloseClear() {
@@ -207,8 +184,10 @@ function Dashboard() {
 
     const options: any = { headers, method: request.data.method };
     if (request.data.body) {
-      options['body'] = JSON.stringify(request.data.body);
+      options['body'] = request.data.body;
     }
+
+    console.log('seinding');
 
     setRequest({ ...request, isLoading: true });
 

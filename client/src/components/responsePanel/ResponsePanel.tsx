@@ -12,12 +12,32 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { json } from '@codemirror/lang-json';
+import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
 
+import KVRow from '../../model/KVRow';
 import Response from '../../model/Response';
 import { cn, successToast } from '../../utils';
 import KVEditor from '../kvEditor';
 import styles from './ResponsePanel.module.css';
+
+function getExtensions(contentType: string): Array<any> {
+  let extensions = [];
+
+  if (contentType.includes('application/json')) {
+    extensions.push(json());
+  } else if (
+    contentType.includes('application/xml') ||
+    contentType.includes('text/html')
+  ) {
+    extensions.push(xml());
+  }
+
+  return extensions;
+}
+
+const getContentType = (headers: Array<KVRow>) =>
+  headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
 type ResponsePanelProps = {
   response?: Response;
@@ -32,6 +52,10 @@ function ResponsePanel({ response }: ResponsePanelProps) {
     onCopy();
     successToast('Copied to clipboard', toast);
   }
+
+  const contentType = getContentType(response?.headers ?? []);
+
+  const extensions = getExtensions(contentType);
 
   return (
     <Box className={styles.container} bg="panelBg" h="100%">
@@ -70,7 +94,7 @@ function ResponsePanel({ response }: ResponsePanelProps) {
             <TabPanel>
               <CodeMirror
                 height="100%"
-                extensions={[json()]}
+                extensions={extensions}
                 theme={colorMode}
                 value={response.body}
                 editable={false}

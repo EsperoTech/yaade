@@ -1,3 +1,7 @@
+import beautify from 'beautify';
+
+import parseResponseEvent from './parseResponseEvent';
+
 function cn(styles: any, name: string, variants: Array<string>): string {
   const variantCns = variants.map((v) => styles[`${name}--${v}`]).join(' ');
   return styles[name] + ' ' + variantCns;
@@ -44,4 +48,15 @@ function errorToast(msg: string, toast: any) {
   });
 }
 
-export { cn, errorToast, getMethodColor, successToast };
+function beautifyBody(body: string, contentType: string): string {
+  if (contentType?.includes('application/json')) {
+    return beautify(body, { format: 'json' });
+  } else if (contentType?.includes('application/xml')) {
+    return beautify(body, { format: 'xml' });
+  } else if (contentType?.includes('text/html')) {
+    return beautify(body, { format: 'html' });
+  }
+  return body;
+}
+
+export { beautifyBody, cn, errorToast, getMethodColor, parseResponseEvent, successToast };
