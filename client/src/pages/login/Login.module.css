@@ -8,13 +8,14 @@
 .container {
   width: 500px;
   border-radius: 20px;
-  padding: 3rem;
+  padding: 1rem 3rem 2rem 3rem;
 }
 
 .heading {
   width: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 }
 
 .remember {
@@ -22,4 +23,8 @@
   align-items: center;
   justify-content: center;
   margin-top: 24px;
+}
+
+.img {
+  height: 100px;
 }

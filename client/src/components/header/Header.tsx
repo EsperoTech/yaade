@@ -16,7 +16,8 @@ function Header() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <Box className={styles.container} bg="headerBg">
-      <Heading as="h1" size="md">
+      <img className={styles.img} src="yaade-icon.png" alt="yaade icon" />
+      <Heading as="h1" size="md" ml="2">
         YAADE
       </Heading>
       <div className={styles.buttons}>

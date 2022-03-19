@@ -83,7 +83,8 @@ function Login() {
     <div className={styles.root}>
       <Box className={styles.container} bg="panelBg">
         <div className={styles.heading}>
-          <Heading as="h1" size="lg" mt="4">
+          <img className={styles.img} src="yaade-icon.png" alt="yaade icon" />
+          <Heading as="h1" size="lg">
             Yaade
           </Heading>
         </div>

@@ -1,5 +1,7 @@
 # <span style="color:#48bb78">Yaade</span> - Yet Another API Development Environment
 
+![yaade icon](assets/YaadeIcon.png)
+
 Yaade is an open-source, self-hosted, collaborative API development environment.
 
 ## 🤔 Why did you develop Yaade?
