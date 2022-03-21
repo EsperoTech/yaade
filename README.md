@@ -1,8 +1,6 @@
 # <span style="color:#48bb78">Yaade</span> - Yet Another API Development Environment
 
-<p align="center">
-    <img src="assets/YaadeIcon.png" alt="yaade-icon"/>
-</p>
+<img src="assets/YaadeIcon.png" alt="yaade-icon"/>
 
 Yaade is an open-source, self-hosted, collaborative API development environment.
 
@@ -33,9 +31,11 @@ $ docker volume create yaade
 $ docker run -d --restart=always -p 9339:9339 -e YAADE_ADMIN_USERNAME=admin -v yaade:/app/data --name yaade esperotech/yaade:latest
 ```
 
+The default password is `password`. After login go to `⚙️ > Account` and change the password.
+
 ### 2. 🔧 Extension
 
-Yaade uses a browser extension as a proxy to enable CORS requests. Simply install the extension, open it and input your server URL, eg. `https://yaade.example.com/`. From that point, all requests originating from your Yaade browser tabs will be proxied through the extension.
+Yaade uses a browser extension as a proxy to enable CORS requests. Install the extension using your browsers extension store. Eg. the chrome web store. Then open it and input your server URL, eg. `https://yaade.example.com/`. From that point all requests originating from your Yaade browser tabs will be proxied through the extension.
 
 ## 💾 Technology
 

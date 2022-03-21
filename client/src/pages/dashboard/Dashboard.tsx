@@ -14,7 +14,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import BasicModal from '../../components/basicModal';
 import Header from '../../components/header';
@@ -84,55 +84,31 @@ function Dashboard() {
 
   useKeyPress(handleSaveRequestClick, 's', true);
 
-  useEffect(() => {
-    initExtension();
-    return () => {
-      window.removeEventListener('message', handlePongMessage);
-    };
-  }, []);
+  const handleResponseMessage = useCallback(
+    (event: MessageEvent<any>) => {
+      if (event.data.type === 'receive-response') {
+        if (event.data.response.err) {
+          setRequest((request) => ({ ...request, isLoading: false }));
+          errorToast(event.data.response.err, toast);
+          return;
+        }
 
-  function initExtension() {
-    window.addEventListener('message', handlePongMessage);
-    setTimeout(() => {
-      if (!isExtInitialized.current) {
-        onOpenExtFail();
-      } else {
-        window.addEventListener('message', handleResponseMessage);
-        onCloseExtFail();
-        getCollections();
+        const response = parseResponseEvent(event);
+
+        setRequest((request) => ({
+          ...request,
+          data: {
+            ...request.data,
+            response: response,
+          },
+          isLoading: false,
+        }));
       }
-    }, 400);
-    window.postMessage({ type: 'ping' }, '*');
-  }
+    },
+    [toast],
+  );
 
-  const handlePongMessage = (event: MessageEvent<any>) => {
-    if (event.data.type === 'pong') {
-      setIsExtInitialized(true);
-    }
-  };
-
-  function handleResponseMessage(event: MessageEvent<any>) {
-    if (event.data.type === 'receive-response') {
-      if (event.data.response.err) {
-        setRequest((request) => ({ ...request, isLoading: false }));
-        errorToast(event.data.response.err, toast);
-        return;
-      }
-
-      const response = parseResponseEvent(event);
-
-      setRequest((request) => ({
-        ...request,
-        data: {
-          ...request.data,
-          response: response,
-        },
-        isLoading: false,
-      }));
-    }
-  }
-
-  async function getCollections() {
+  const getCollections = useCallback(async () => {
     try {
       const response = await fetch('/api/collection');
       const collections = await response.json();
@@ -144,7 +120,7 @@ function Dashboard() {
     } catch (e) {
       errorToast('Could not retrieve collections', toast);
     }
-  }
+  }, [toast]);
 
   function onCloseClear() {
     setNewReqForm({
@@ -153,6 +129,36 @@ function Dashboard() {
     });
     onClose();
   }
+
+  const handlePongMessage = useCallback(
+    (event: MessageEvent<any>) => {
+      if (event.data.type === 'pong') {
+        setIsExtInitialized(true);
+        window.addEventListener('message', handleResponseMessage);
+        onCloseExtFail();
+        getCollections();
+      }
+    },
+    [getCollections, onCloseExtFail, handleResponseMessage],
+  );
+
+  const initExtension = useCallback(() => {
+    window.addEventListener('message', handlePongMessage);
+    setTimeout(() => {
+      if (!isExtInitialized.current) {
+        onOpenExtFail();
+      }
+    }, 600);
+    window.postMessage({ type: 'ping' }, '*');
+  }, [onOpenExtFail, handlePongMessage]);
+
+  useEffect(() => {
+    if (isExtInitialized.current) return;
+    initExtension();
+    return () => {
+      window.removeEventListener('message', handlePongMessage);
+    };
+  }, [initExtension, handlePongMessage]);
 
   function handleRequestClick(selectedRequest: Request) {
     const newCollections = [...collections].map((collection) => {

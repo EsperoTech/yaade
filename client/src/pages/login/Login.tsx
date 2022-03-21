@@ -90,7 +90,7 @@ function Login() {
         </div>
         <form onSubmit={handleFormSubmit}>
           <Input
-            mt="6"
+            mt="4"
             placeholder="Username"
             w="100%"
             borderRadius={20}
@@ -101,7 +101,7 @@ function Login() {
             onChange={(e) => setState({ ...state, username: e.target.value })}
           />
           <Input
-            mt="6"
+            mt="4"
             placeholder="Password"
             type="password"
             w="100%"
