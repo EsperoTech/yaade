@@ -4,7 +4,7 @@
   "version": "1.0",
   "manifest_version": 3,
   "host_permissions": ["<all_urls>"],
-  "permissions": ["storage", "scripting"],
+  "permissions": ["storage"],
   "action": {
     "default_popup": "/popup/popup.html"
   },
