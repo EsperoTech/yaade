@@ -9,18 +9,46 @@ import kotlinx.coroutines.launch
 
 fun Operation.coroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Handler<RoutingContext>) {
     this.handler { ctx ->
-        coroutineVerticle.launch { handler.handle(ctx) } }
+        coroutineVerticle.launch {
+            try {
+                handler.handle(ctx)
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                ctx.fail(500)
+            }
+        }
+    }
 }
 
-fun Operation.authorizedCoroutineHandler(coroutineVerticle: CoroutineVerticle, handler: suspend (ctx: RoutingContext) -> Unit) {
+fun Operation.authorizedCoroutineHandler(
+    coroutineVerticle: CoroutineVerticle,
+    handler: suspend (ctx: RoutingContext) -> Unit
+) {
     this.handler { ctx ->
         if (ctx.user() == null) {
             ctx.fail(403)
             return@handler
         }
-        coroutineVerticle.launch { handler(ctx) } }
+        coroutineVerticle.launch {
+            try {
+                handler(ctx)
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                ctx.fail(500)
+            }
+        }
+    }
 }
 
 fun Route.coroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Handler<RoutingContext>) {
-    this.handler { ctx -> coroutineVerticle.launch { handler.handle(ctx) } }
+    this.handler { ctx ->
+        coroutineVerticle.launch {
+            try {
+                handler.handle(ctx)
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                ctx.fail(500)
+            }
+        }
+    }
 }

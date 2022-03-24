@@ -6,63 +6,44 @@ import com.espero.yaade.model.db.RequestDb
 import com.j256.ormlite.misc.TransactionManager
 import io.vertx.core.json.JsonArray
 import io.vertx.ext.web.RoutingContext
+import io.vertx.kotlin.coroutines.await
 
 class CollectionRoute(private val daoManager: DaoManager) {
 
-    fun getAllCollections(ctx: RoutingContext) {
-        try {
-            val collections = daoManager.collectionDao.getAll().map {
-                val requests = daoManager.requestDao.getAllInCollection(it.id).map(RequestDb::toJson)
-                it.toJson().put("requests", requests)
-            }
-
-            ctx.end(JsonArray(collections).encode())
-        } catch (t: Throwable) {
-            t.printStackTrace()
-            ctx.fail(500)
+    suspend fun getAllCollections(ctx: RoutingContext) {
+        val collections = daoManager.collectionDao.getAll().map {
+            val requests = daoManager.requestDao.getAllInCollection(it.id).map(RequestDb::toJson)
+            it.toJson().put("requests", requests)
         }
+
+        ctx.end(JsonArray(collections).encode()).await()
     }
 
-    fun postCollection(ctx: RoutingContext) {
-        try {
-            val request = ctx.bodyAsJson
-            val userId = ctx.user().principal().getLong("id")
-            val newCollection = CollectionDb(request.getString("name"), userId)
+    suspend fun postCollection(ctx: RoutingContext) {
+        val request = ctx.bodyAsJson
+        val userId = ctx.user().principal().getLong("id")
+        val newCollection = CollectionDb(request.getString("name"), userId)
 
-            daoManager.collectionDao.create(newCollection)
+        daoManager.collectionDao.create(newCollection)
 
-            ctx.end(newCollection.toJson().put("requests", JsonArray()).encode())
-        } catch (t: Throwable) {
-            t.printStackTrace()
-            ctx.fail(500)
-        }
+        ctx.end(newCollection.toJson().put("requests", JsonArray()).encode()).await()
     }
 
-    fun putCollection(ctx: RoutingContext) {
-        try {
-            val newCollection = CollectionDb.fromUpdateRequest(ctx.bodyAsJson)
-            daoManager.collectionDao.update(newCollection)
-            ctx.end()
-        } catch (t: Throwable) {
-            t.printStackTrace()
-            ctx.fail(500)
-        }
+    suspend fun putCollection(ctx: RoutingContext) {
+        val newCollection = CollectionDb.fromUpdateRequest(ctx.bodyAsJson)
+        daoManager.collectionDao.update(newCollection)
+        ctx.end().await()
     }
 
-    fun deleteCollection(ctx: RoutingContext) {
-        try {
-            val id = ctx.pathParam("id")
+    suspend fun deleteCollection(ctx: RoutingContext) {
+        val id = ctx.pathParam("id")
 
-            TransactionManager.callInTransaction(daoManager.connectionSource) {
-                daoManager.collectionDao.delete(id)
-                daoManager.requestDao.deleteAllInCollection(id)
-            }
-
-            ctx.end()
-        } catch (t: Throwable) {
-            t.printStackTrace()
-            ctx.fail(500)
+        TransactionManager.callInTransaction(daoManager.connectionSource) {
+            daoManager.collectionDao.delete(id)
+            daoManager.requestDao.deleteAllInCollection(id)
         }
+
+        ctx.end().await()
     }
 
 }

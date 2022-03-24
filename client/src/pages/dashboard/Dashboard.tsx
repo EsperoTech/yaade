@@ -193,8 +193,6 @@ function Dashboard() {
       options['body'] = request.data.body;
     }
 
-    console.log('seinding');
-
     setRequest({ ...request, isLoading: true });
 
     window.postMessage(
