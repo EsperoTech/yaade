@@ -37,7 +37,7 @@ The default password is `password`. After login go to `⚙️ > Account` and cha
 
 ### 2. 🔧 Extension
 
-Yaade uses a browser extension as a proxy to enable CORS requests. Install the extension using your browsers extension store. Eg. the chrome web store. Then open it and input your server URL, eg. `https://yaade.example.com/`. From that point all requests originating from your Yaade browser tabs will be proxied through the extension.
+Yaade uses a browser extension as a proxy to enable CORS requests. Install the extension using your browsers extension store. Currently only a chrome extension is available. You can find it <a href="https://chrome.google.com/webstore/detail/yaade-extension/mddoackclclnbkmofficmmepfnadolfa">here</a>. Then open it and input your server URL, eg. `https://yaade.example.com/`. From that point all requests originating from your Yaade browser tabs will be proxied through the extension.
 
 ## 💾 Technology
 
@@ -81,6 +81,16 @@ $ cd scripts/
 $ chmod +x build.sh
 $ ./build.sh
 ```
+
+## Screenshots
+
+### 🌙 Dark mode
+
+<img src="assets/dark-mode.jpg" alt="dark-mode-screenshot"/>
+
+### ☀️ Light mode
+
+<img src="assets/light-mode.jpg" alt="light-mode-screenshot"/>
 
 ## 🤝  How can I contribute?
 
