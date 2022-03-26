@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.5.0"
     id("java")
-    id("org.openapi.generator") version "5.3.0"
 }
 
 group = "com.espero"
@@ -58,6 +57,6 @@ tasks.withType<Jar> {
     })
 }
 
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
 }

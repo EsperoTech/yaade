@@ -5,7 +5,9 @@ var browser = browser || chrome;
 const hostInput = document.querySelector("#host");
 
 chrome.storage.sync.get("host", ({ host }) => {
-  hostInput.value = host;
+  if (host) {
+    hostInput.value = host;
+  }
 });
 
 function saveHost() {

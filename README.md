@@ -6,25 +6,24 @@
 
 Yaade is an open-source, self-hosted, collaborative API development environment.
 
+<img src="assets/dark-mode.jpg" alt="dark-mode-screenshot"/>
+
 ## 🤔 Why did you develop Yaade?
 
-When working with a team on an API I found that all teammembers have their own local collection of Postman requests that they use during development.
-Everytime the API changes, all devs update their collection manually. Some don't get notified and wonder why their calls don't work anymore.
-Therefore I was looking for a free and leightweight alternative to Postman where all the data would be stored on my own machine and could be securely accessed by my teammates.
-There were a few promising candidates like Hoppscotch but non of them fullfiled all of my requirements, so I decided to build Yaade.
+I was looking for a web-based Postman alternative so that API collections can easily be shared between teammates. Even though popular solutions like <a href="https://hoppscotch.io/de/">Hoppscotch</a> exist, their self-hosted app does not come with authentication and relies on Firebase for persistency. Yaade is developed from the ground up with self-hosting and security in mind. That means sensitive information in API requests can safely be stored on your own server!
 
 ## 🌟 Features
 
 1. Self-hosted: data never leaves your own server.
 2. Secured: if you don't know the password, you can't get in
-3. Persistent: even across container restarts
+3. Persistent: even across container or server restarts
 4. Easy single-file data import / export
 5. Requests are executed on your machine so you can call localhost as well as remote servers
 6. Most importantly: dark mode default
 
 ## ⚡ Install
 
-To have the best experience with Yaade run the docker container on your sever and install the browser extension on your local machine.
+To have the best experience with Yaade run the docker container on your server and install the browser extension on your local machine.
 
 ### 1. 🐋 Docker
 
@@ -94,4 +93,4 @@ $ ./build.sh
 
 ## 🤝  How can I contribute?
 
-Your contribution is very welcome! First open an issue about the topic you want to contribute on, eg. adding a new feature, bugfixing or refactoring. We will then discuss further details. Eventually I will review your Pull Request and merge / release it.
+Your contribution is very welcome! First open an issue about the topic you want to contribute on, eg. adding a new feature, bugfixing or refactoring. We will then discuss further details. Eventually, I will review your Pull Request and merge / release it.
