@@ -25,7 +25,7 @@ import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import Response from '../../model/Response';
-import { errorToast, parseResponseEvent, successToast } from '../../utils';
+import { appendHttpIfNoProtocol, errorToast, parseResponseEvent, successToast } from '../../utils';
 import { useKeyPress } from '../../utils/useKeyPress';
 import styles from './Dashboard.module.css';
 
@@ -181,6 +181,7 @@ function Dashboard() {
       setRequest({ ...request, isLoading: false });
       return;
     }
+    const url = appendHttpIfNoProtocol(request.data.uri);
 
     const headers: Record<string, string> = {};
     request.data.headers.forEach(({ key, value }: KVRow) => {
@@ -197,7 +198,7 @@ function Dashboard() {
 
     window.postMessage(
       {
-        url: request.data.uri,
+        url,
         type: 'send-request',
         options: options,
       },

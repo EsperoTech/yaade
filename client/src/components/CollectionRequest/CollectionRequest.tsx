@@ -143,7 +143,19 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
 
   const currentModal = state.currentModal === 'rename' ? renameModal : deleteModal;
 
-  const methodName = request.data.method === 'DELETE' ? 'DEL' : request.data.method;
+  let methodName = request.data.method;
+
+  if (methodName === 'DELETE') {
+    methodName = 'DEL';
+  } else if (methodName === 'OPTIONS') {
+    methodName = 'OPT';
+  } else if (methodName === 'PATCH') {
+    methodName = 'PTCH';
+  } else if (methodName === 'TRACE') {
+    methodName = 'TRCE';
+  } else if (methodName === 'CONNECT') {
+    methodName = 'CON';
+  }
 
   return (
     <div

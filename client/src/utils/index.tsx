@@ -25,6 +25,10 @@ function getMethodColor(method: string): any {
       return {
         color: 'var(--chakra-colors-red-500)',
       };
+    default:
+      return {
+        color: 'var(--chakra-colors-gray-500)',
+      };
   }
 }
 
@@ -59,4 +63,21 @@ function beautifyBody(body: string, contentType: string): string {
   return body;
 }
 
-export { beautifyBody, cn, errorToast, getMethodColor, parseResponseEvent, successToast };
+function appendHttpIfNoProtocol(uri?: string): string {
+  if (!uri) return '';
+  if (!uri.includes('://')) {
+    return 'http://' + uri;
+  } else {
+    return uri;
+  }
+}
+
+export {
+  appendHttpIfNoProtocol,
+  beautifyBody,
+  cn,
+  errorToast,
+  getMethodColor,
+  parseResponseEvent,
+  successToast,
+};

@@ -15,16 +15,7 @@ type UriBarProps = {
 
 type MethodOptionProps = {
   method: string;
-  colorMode: string;
 };
-
-function MethodOption({ method, colorMode }: MethodOptionProps) {
-  return (
-    <option className={cn(styles, 'option', [colorMode])} value={method}>
-      {method}
-    </option>
-  );
-}
 
 function UriBar({
   uri,
@@ -42,6 +33,14 @@ function UriBar({
     handleSendButtonClick();
   }
 
+  function MethodOption({ method }: MethodOptionProps) {
+    return (
+      <option className={cn(styles, 'option', [colorMode])} value={method}>
+        {method}
+      </option>
+    );
+  }
+
   return (
     <form className={styles.container} onSubmit={handleSubmit}>
       <select
@@ -49,10 +48,15 @@ function UriBar({
         value={method}
         onChange={(e) => setMethod(e.target.value)}
       >
-        <MethodOption method="GET" colorMode={colorMode} />
-        <MethodOption method="POST" colorMode={colorMode} />
-        <MethodOption method="PUT" colorMode={colorMode} />
-        <MethodOption method="DELETE" colorMode={colorMode} />
+        <MethodOption method="GET" />
+        <MethodOption method="POST" />
+        <MethodOption method="PUT" />
+        <MethodOption method="DELETE" />
+        <MethodOption method="HEAD" />
+        <MethodOption method="OPTIONS" />
+        <MethodOption method="PATCH" />
+        <MethodOption method="CONNECT" />
+        <MethodOption method="TRACE" />
       </select>
       <input
         className={cn(styles, 'input', [colorMode])}
