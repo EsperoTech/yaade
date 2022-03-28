@@ -64,11 +64,13 @@ class RequestDb {
 
     companion object {
         fun fromUpdateRequest(request: JsonObject): RequestDb {
-            return RequestDb(id = request.getLong("id"),
+            return RequestDb(
+                id = request.getLong("id"),
                 collectionId = request.getLong("collectionId"),
                 type = request.getString("type"),
                 version = request.getString("version"),
-                data = request.getJsonObject("data"))
+                data = request.getJsonObject("data")
+            )
         }
     }
 }
