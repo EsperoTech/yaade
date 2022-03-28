@@ -10,7 +10,7 @@ Yaade is an open-source, self-hosted, collaborative API development environment.
 
 ## 🤔 Why did you develop Yaade?
 
-I was looking for a web-based Postman alternative so that API collections can easily be shared between teammates. Even though popular solutions like <a href="https://hoppscotch.io/de/">Hoppscotch</a> exist, their self-hosted app does not come with authentication and relies on Firebase for persistency. Yaade is developed from the ground up with self-hosting and security in mind. That means sensitive information in API requests can safely be stored on your own server!
+I was looking for a self-hosted Postman alternative so that API collections can easily be shared between teammates. Even though popular solutions like <a href="https://hoppscotch.io/de/">Hoppscotch</a> exist, their self-hosted app does not come with authentication and relies on Firebase for persistency. Yaade is developed from the ground up with self-hosting and security in mind. That means sensitive information in API requests can safely be stored on your own server!
 
 ## 🌟 Features
 
@@ -32,11 +32,13 @@ $ docker volume create yaade
 $ docker run -d --restart=always -p 9339:9339 -e YAADE_ADMIN_USERNAME=admin -v yaade:/app/data --name yaade esperotech/yaade:latest
 ```
 
-The default password is `password`. After login go to `⚙️ > Account` and change the password.
+The default password is `password`. After login go to ⚙️ > Account and change the password.
 
 ### 2. 🔧 Extension
 
 Yaade uses a browser extension as a proxy to enable CORS requests. Install the extension using your browsers extension store. Currently only a chrome extension is available. You can find it <a href="https://chrome.google.com/webstore/detail/yaade-extension/mddoackclclnbkmofficmmepfnadolfa">here</a>. Then open it and input your server URL, eg. `https://yaade.example.com/`. From that point all requests originating from your Yaade browser tabs will be proxied through the extension.
+
+⚠️ DO NO FORGET TO ADD A TRAILING SLASH TO YOUR URL `https://yaade.example.com -> https://yaade.example.com/`.
 
 ## 💾 Technology
 
