@@ -10,10 +10,11 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { FunctionComponent } from 'react';
+import { Dispatch, FunctionComponent, SetStateAction, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
+import { CollectionsContext } from '../../context/collectionsContext/CollectionsContext';
 import Request from '../../model/Request';
 import { errorToast, successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
@@ -22,9 +23,7 @@ import styles from './CollectionRequest.module.css';
 
 type CollectionRequestProps = {
   request: Request;
-  handleRequestClick: Function;
-  setRequest: any;
-  removeRequest: any;
+  setCurrentRequest: Dispatch<SetStateAction<Request>>;
 };
 
 type CollectionRequestState = {
@@ -40,9 +39,7 @@ function handleOnKeyDown(e: any, action: any) {
 
 const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
   request,
-  handleRequestClick,
-  removeRequest,
-  setRequest,
+  setCurrentRequest,
 }) => {
   const [state, setState] = useState<CollectionRequestState>({
     name: request.data.name,
@@ -51,8 +48,14 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
   const initialRef = useRef(null);
   const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { writeRequestToCollections, removeRequest } = useContext(CollectionsContext);
   const toast = useToast();
-  const variants = request.selected ? ['selected'] : [];
+  const variants = [''];
+
+  function handleRequestClick() {
+    // TODO: ask user to save request before loading new content
+    setCurrentRequest(request);
+  }
 
   async function handleRenameRequestClick() {
     try {
@@ -71,13 +74,15 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
       });
       if (response.status !== 200) throw new Error();
 
-      setRequest({
+      const renamedRequest = {
         ...request,
         data: {
           ...request.data,
           name: state.name,
         },
-      });
+      };
+
+      writeRequestToCollections(renamedRequest);
       onCloseClear();
       successToast('Request was renamed.', toast);
     } catch (e) {
@@ -89,7 +94,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
     try {
       const response = await fetch(`/api/request/${request.id}`, { method: 'DELETE' });
       if (response.status !== 200) throw new Error();
-      removeRequest();
+      removeRequest(request);
       successToast('Request was deleted.', toast);
     } catch (e) {
       errorToast('Could not delete request.', toast);
@@ -160,8 +165,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
   return (
     <div
       className={cn(styles, 'request', [...variants, colorMode])}
-      onClick={() => handleRequestClick(request)}
-      onKeyDown={(e) => handleOnKeyDown(e, () => handleRequestClick(request))}
+      onClick={handleRequestClick}
+      onKeyDown={(e) => handleOnKeyDown(e, handleRequestClick)}
       role="button"
       tabIndex={0}
     >

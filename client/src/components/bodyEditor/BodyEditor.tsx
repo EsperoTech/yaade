@@ -5,7 +5,7 @@ import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
-import xmlFormat from 'xml-formatter';
+import React from 'react';
 
 import { beautifyBody, errorToast } from '../../utils';
 import styles from './BodyEditor.module.css';
@@ -100,4 +100,4 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
   );
 }
 
-export default BodyEditor;
+export default React.memo(BodyEditor);

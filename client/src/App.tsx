@@ -1,6 +1,8 @@
 import { ChakraProvider } from '@chakra-ui/react';
 import { createContext, useState } from 'react';
 
+import CollectionProvider from './context/collectionsContext';
+import Collection from './model/Collection';
 import User from './model/User';
 import Dashboard from './pages/dashboard';
 import Login from './pages/login';
@@ -22,7 +24,7 @@ function App() {
   return (
     <ChakraProvider theme={theme}>
       <UserContext.Provider value={{ user, setUser }}>
-        {user ? <Dashboard /> : <Login />}
+        <CollectionProvider>{user ? <Dashboard /> : <Login />}</CollectionProvider>
       </UserContext.Provider>
     </ChakraProvider>
   );

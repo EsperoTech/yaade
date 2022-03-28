@@ -14,6 +14,7 @@ import {
 import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
+import React from 'react';
 
 import KVRow from '../../model/KVRow';
 import Response from '../../model/Response';
@@ -114,4 +115,4 @@ function ResponsePanel({ response }: ResponsePanelProps) {
   );
 }
 
-export default ResponsePanel;
+export default React.memo(ResponsePanel);

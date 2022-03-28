@@ -47,18 +47,4 @@ class UserDb {
             .put("version", version)
             .put("data", JsonObject(data.decodeToString()))
     }
-
-    companion object {
-        fun fromUpdatePasswordRequest(oldUser: UserDb, hashedPassword: String): UserDb {
-            return UserDb(
-                id = oldUser.id,
-                username = oldUser.username,
-                hashedPassword = hashedPassword,
-                version = oldUser.version,
-                data = oldUser.data
-            )
-        }
-
-
-    }
 }

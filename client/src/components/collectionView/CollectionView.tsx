@@ -10,9 +10,10 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
+import { CollectionsContext } from '../../context/collectionsContext/CollectionsContext';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
 import { errorToast, successToast } from '../../utils';
@@ -23,10 +24,7 @@ import styles from './CollectionView.module.css';
 
 type CollectionProps = {
   collection: Collection;
-  handleCollectionClick: any;
-  handleRequestClick: any;
-  setCollection: any;
-  removeCollection: any;
+  setCurrentRequest: Dispatch<SetStateAction<Request>>;
 };
 
 type CollectionState = {
@@ -35,19 +33,15 @@ type CollectionState = {
   currentModal: string;
 };
 
-function CollectionView({
-  collection,
-  handleCollectionClick,
-  handleRequestClick,
-  setCollection,
-  removeCollection,
-}: CollectionProps) {
+function CollectionView({ collection, setCurrentRequest }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
     name: collection.data.name,
     newRequestName: '',
     currentModal: '',
   });
   const initialRef = useRef(null);
+  const { removeCollection, saveCollection, writeRequestToCollections } =
+    useContext(CollectionsContext);
   const { colorMode } = useColorMode();
   const variants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -75,10 +69,8 @@ function CollectionView({
 
       const newRequest = (await response.json()) as Request;
 
-      setCollection({
-        ...collection,
-        requests: [...collection.requests, newRequest],
-      });
+      writeRequestToCollections(newRequest);
+      setCurrentRequest(newRequest);
       onCloseClear();
       successToast('A new request was created.', toast);
     } catch (e) {
@@ -104,7 +96,7 @@ function CollectionView({
       });
       if (response.status !== 200) throw new Error();
 
-      setCollection({
+      saveCollection({
         ...collection,
         data: {
           ...collection.data,
@@ -118,39 +110,25 @@ function CollectionView({
     }
   }
 
+  function handleCollectionClick() {
+    saveCollection({
+      ...collection,
+      open: !collection.open,
+    });
+  }
+
   async function handleDeleteCollectionClick() {
     try {
       const response = await fetch(`/api/collection/${collection.id}`, {
         method: 'DELETE',
       });
       if (response.status !== 200) throw new Error();
-      removeCollection();
+      removeCollection(collection.id);
       onCloseClear();
       successToast('Collection was deleted.', toast);
     } catch (e) {
       errorToast('Could not delete collection.', toast);
     }
-  }
-
-  function removeRequest(requestId: number) {
-    const newRequests = [...collection.requests];
-    const i = newRequests.findIndex((r) => r.id === requestId);
-    newRequests.splice(i, 1);
-    setCollection({
-      ...collection,
-      requests: newRequests,
-    });
-  }
-
-  function updateRequest(request: Request) {
-    const i = collection.requests.findIndex((r) => r.id === request.id);
-    const newRequests = [...collection.requests];
-    newRequests.splice(i, 1, request);
-    const newCollection = {
-      ...collection,
-      requests: newRequests,
-    };
-    setCollection(newCollection);
   }
 
   function onCloseClear() {
@@ -293,9 +271,7 @@ function CollectionView({
             <CollectionRequest
               key={`request-${request.id}`}
               request={request}
-              handleRequestClick={handleRequestClick}
-              removeRequest={() => removeRequest(request.id)}
-              setRequest={updateRequest}
+              setCurrentRequest={setCurrentRequest}
             />
           );
         })}

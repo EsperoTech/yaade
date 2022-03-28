@@ -7,8 +7,9 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { Dispatch, SetStateAction, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
 
+import { CollectionsContext } from '../../context/collectionsContext/CollectionsContext';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
 import { cn, errorToast, successToast } from '../../utils';
@@ -16,20 +17,19 @@ import BasicModal from '../basicModal';
 import CollectionView from '../collectionView';
 import styles from './Sidebar.module.css';
 
-type SideBarProps = {
-  collections: Array<Collection>;
-  setCollections: Dispatch<SetStateAction<Collection[]>>;
-  handleRequestClick: (selectedRequest: Request) => void;
-};
-
 type StateProps = {
   clickedCollectionId: number;
   name: string;
   searchTerm: string;
 };
 
-function Sidebar({ collections, setCollections, handleRequestClick }: SideBarProps) {
+type SideBarProps = {
+  setCurrentRequest: Dispatch<SetStateAction<Request>>;
+};
+
+function Sidebar({ setCurrentRequest }: SideBarProps) {
   const toast = useToast();
+  const { collections, saveCollection } = useContext(CollectionsContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [state, setState] = useState<StateProps>({
     clickedCollectionId: -1,
@@ -42,28 +42,6 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
   const filteredCollections = collections.filter((c) =>
     c.data.name.toLowerCase().includes(state.searchTerm.toLowerCase()),
   );
-
-  function handleCollectionClick(collectionId: number) {
-    const newCollections = [...collections];
-    const i = newCollections.findIndex((c) => c.id === collectionId);
-    const newCollection = { ...collections[i], open: !collections[i].open };
-    newCollections[i] = newCollection;
-    setCollections(newCollections);
-  }
-
-  function updateCollection(collection: Collection) {
-    const i = collections.findIndex((c) => c.id === collection.id);
-    const newCollections = [...collections];
-    newCollections.splice(i, 1, collection);
-    setCollections(newCollections);
-  }
-
-  function removeCollection(collectionId: number) {
-    const newCollections = [...collections];
-    const i = newCollections.findIndex((c) => c.id === collectionId);
-    newCollections.splice(i, 1);
-    setCollections(newCollections);
-  }
 
   function onCloseClear() {
     setState({ ...state, name: '' });
@@ -80,9 +58,9 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
         body: JSON.stringify({ name: state.name }),
       });
       if (response.status !== 200) throw new Error();
-      const newCollection = await response.json();
+      const newCollection = (await response.json()) as Collection;
 
-      setCollections((collections: Array<Collection>) => [...collections, newCollection]);
+      saveCollection(newCollection);
       successToast('A new collection was created and saved', toast);
       onCloseClear();
     } catch (e) {
@@ -112,10 +90,7 @@ function Sidebar({ collections, setCollections, handleRequestClick }: SideBarPro
           <CollectionView
             key={`sidebar-collection-${collection.id}`}
             collection={collection}
-            handleCollectionClick={() => handleCollectionClick(collection.id)}
-            handleRequestClick={handleRequestClick}
-            setCollection={updateCollection}
-            removeCollection={() => removeCollection(collection.id)}
+            setCurrentRequest={setCurrentRequest}
           />
         ))}
       </div>

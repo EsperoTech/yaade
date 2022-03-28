@@ -1,6 +1,7 @@
 import { DeleteIcon } from '@chakra-ui/icons';
 import { IconButton } from '@chakra-ui/react';
 import { useColorMode } from '@chakra-ui/react';
+import React from 'react';
 
 import KVRow from '../../model/KVRow';
 import styles from './KVEditor.module.css';
@@ -83,4 +84,4 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   );
 }
 
-export default KVEditor;
+export default React.memo(KVEditor);
