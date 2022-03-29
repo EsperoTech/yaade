@@ -14,7 +14,7 @@ import { Dispatch, FunctionComponent, SetStateAction, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
-import { CollectionsContext } from '../../context/collectionsContext/CollectionsContext';
+import { CollectionsContext, CurrentRequestContext } from '../../context';
 import Request from '../../model/Request';
 import { errorToast, successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
@@ -45,12 +45,13 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
     name: request.data.name,
     currentModal: '',
   });
+  const { currentRequest } = useContext(CurrentRequestContext);
   const initialRef = useRef(null);
   const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { writeRequestToCollections, removeRequest } = useContext(CollectionsContext);
   const toast = useToast();
-  const variants = [''];
+  const variants = currentRequest.id === request.id ? ['selected'] : [];
 
   function handleRequestClick() {
     // TODO: ask user to save request before loading new content

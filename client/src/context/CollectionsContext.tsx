@@ -6,8 +6,8 @@ import {
   useState,
 } from 'react';
 
-import Collection from '../../model/Collection';
-import Request from '../../model/Request';
+import Collection from '../model/Collection';
+import Request from '../model/Request';
 
 interface ICollectionContext {
   collections: Array<Collection>;

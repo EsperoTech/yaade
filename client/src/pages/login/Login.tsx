@@ -10,7 +10,7 @@ import {
 import { FormEvent, useContext } from 'react';
 import { useEffect, useState } from 'react';
 
-import { UserContext } from '../../App';
+import { UserContext } from '../../context';
 import User from '../../model/User';
 import { errorToast, successToast } from '../../utils';
 import styles from './Login.module.css';

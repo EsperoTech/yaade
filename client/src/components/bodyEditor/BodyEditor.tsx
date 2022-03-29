@@ -6,6 +6,7 @@ import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
 import React from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 import { beautifyBody, errorToast } from '../../utils';
 import styles from './BodyEditor.module.css';
@@ -24,6 +25,7 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
     contentType: 'application/json',
   });
   const { colorMode } = useColorMode();
+  const setContentDebounced = useDebouncedCallback((c) => setContent(c), 100);
   const toast = useToast();
 
   const extensions = [];
@@ -88,7 +90,7 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
       <div className={styles.container}>
         <CodeMirror
           onChange={(value) => {
-            setContent(value);
+            setContentDebounced(value);
           }}
           extensions={extensions}
           theme={colorMode}

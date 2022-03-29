@@ -1,5 +1,6 @@
 import { Spinner, useColorMode } from '@chakra-ui/react';
 import { FormEvent } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 import { cn } from '../../utils';
 import styles from './UriBar.module.css';
@@ -26,6 +27,7 @@ function UriBar({
   handleSendButtonClick,
 }: UriBarProps) {
   const { colorMode } = useColorMode();
+  const setUriDebounced = useDebouncedCallback((value) => setUri(value), 5);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -63,7 +65,7 @@ function UriBar({
         type="text"
         placeholder="URL"
         value={uri}
-        onChange={(e) => setUri(e.target.value)}
+        onChange={(e) => setUriDebounced(e.target.value)}
       />
       <button
         className={cn(styles, 'button', [colorMode])}

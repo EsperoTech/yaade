@@ -21,7 +21,8 @@ import Header from '../../components/header';
 import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
-import { CollectionsContext } from '../../context/collectionsContext/CollectionsContext';
+import { CurrentRequestContext } from '../../context';
+import { CollectionsContext } from '../../context/CollectionsContext';
 import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
@@ -34,35 +35,9 @@ import {
 import { useKeyPress } from '../../utils/useKeyPress';
 import styles from './Dashboard.module.css';
 
-const defaultRequest: Request = {
-  id: -1,
-  type: 'REST',
-  data: {
-    name: '',
-    uri: '',
-    method: 'GET',
-    params: [
-      {
-        key: '',
-        value: '',
-      },
-    ],
-    headers: [
-      {
-        key: '',
-        value: '',
-      },
-    ],
-    body: '',
-  },
-  isLoading: false,
-  collectionId: -1,
-  selected: false,
-};
-
 function Dashboard() {
   const { setCollections } = useContext(CollectionsContext);
-  const [currentRequest, setCurrentRequest] = useState<Request>(defaultRequest);
+  const { setCurrentRequest, currentRequest } = useContext(CurrentRequestContext);
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
   const setIsExtInitialized = (result: boolean) => {
@@ -186,7 +161,7 @@ function Dashboard() {
                 />
               </div>
               <div className={styles.responsePanel}>
-                <ResponsePanel response={currentRequest.data.response} />
+                <ResponsePanel response={currentRequest?.data?.response} />
               </div>
             </Allotment>
           </div>

@@ -9,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
 
-import { CollectionsContext } from '../../context/collectionsContext/CollectionsContext';
+import { CollectionsContext } from '../../context';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
 import { cn, errorToast, successToast } from '../../utils';

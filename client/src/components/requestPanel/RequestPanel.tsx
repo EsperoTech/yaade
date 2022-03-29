@@ -3,7 +3,7 @@ import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/
 import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
-import { CollectionsContext } from '../../context/collectionsContext/CollectionsContext';
+import { CollectionsContext } from '../../context';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import { appendHttpIfNoProtocol, errorToast, successToast } from '../../utils';

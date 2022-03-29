@@ -18,7 +18,7 @@ import {
 } from '@chakra-ui/react';
 import { useContext, useState } from 'react';
 
-import { UserContext } from '../../App';
+import { UserContext } from '../../context';
 import { cn, errorToast, successToast } from '../../utils';
 import styles from './Settings.module.css';
 
