@@ -193,6 +193,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       secondaryButtonText="Discard"
       onSecondaryButtonClick={() => {
         onClose();
+        writeRequestToCollections({ ...currentRequest, changed: false });
         setCurrentRequest(request);
       }}
     >

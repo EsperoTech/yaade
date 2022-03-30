@@ -54,6 +54,7 @@ const CurrentRequestProvider: FunctionComponent = ({ children }) => {
   const [currentRequest, setCurrentRequest] = useState<Request>(defaultRequest);
 
   function changeCurrentRequest(request: Request) {
+    console.log('CHAANGED');
     setCurrentRequest({
       ...request,
       changed: true,
