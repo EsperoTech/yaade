@@ -29,6 +29,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       if (request.type === "send-request") {
         sendRequest(request, sendResponse);
       } else if (request.type === "ping") {
+        console.log("Connected:", host)
         sendResponse();
       } else {
         console.log("bad request type", request.type);

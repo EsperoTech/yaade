@@ -41,7 +41,7 @@ function Login() {
 
         const user = (await response.json()) as User;
 
-        setUser({ username: user.username, settings: {} });
+        setUser(user);
         setState((state) => ({ ...state, loading: false }));
       } catch (e) {
         console.log(e);

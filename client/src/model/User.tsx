@@ -1,6 +1,7 @@
 interface User {
+  id: number;
   username: String;
-  settings: any;
+  data: any;
 }
 
 export default User;

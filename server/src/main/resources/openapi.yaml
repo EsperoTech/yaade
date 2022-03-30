@@ -171,6 +171,20 @@ paths:
       responses:
         '200':
           description: "Success"
+  /api/user/changeSetting:
+    put:
+      summary: Change a value of the user settings
+      operationId: changeSetting
+      requestBody:
+        description: The new setting key-value pair
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeSettingRequest"
+      responses:
+        '200':
+          description: "Success"
 components:
   schemas:
     HealthResponse:
@@ -210,7 +224,6 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Collection"
-
     ########## Requests ##########
     CreateCollectionRequest:
       type: object
@@ -251,5 +264,13 @@ components:
         currentPassword:
           type: string
         newPassword:
+          type: string
+    ChangeSettingRequest:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
           type: string
 

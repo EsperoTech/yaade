@@ -20,6 +20,8 @@ type BasicModalProps = {
   onClick: () => void;
   buttonText: string;
   buttonColor: string;
+  secondaryButtonText?: string;
+  onSecondaryButtonClick?: () => void;
 };
 
 const BasicModal: FunctionComponent<BasicModalProps> = ({
@@ -32,12 +34,17 @@ const BasicModal: FunctionComponent<BasicModalProps> = ({
   buttonText,
   buttonColor,
   children,
+  secondaryButtonText,
+  onSecondaryButtonClick,
 }) => {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (isButtonDisabled) return;
     onClick();
   }
+
+  const secondaryBtnText = secondaryButtonText ?? 'Close';
+  const onSecondaryBtnClick = onSecondaryButtonClick ?? onClose;
 
   const defaultRef = useRef(null);
   return (
@@ -49,8 +56,8 @@ const BasicModal: FunctionComponent<BasicModalProps> = ({
         <form onSubmit={handleSubmit}>
           <ModalBody>{children}</ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Close
+            <Button variant="ghost" mr={3} onClick={onSecondaryBtnClick}>
+              {secondaryBtnText}
             </Button>
             <Button
               colorScheme={buttonColor}

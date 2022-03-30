@@ -80,4 +80,14 @@ class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         ctx.session().destroy()
         ctx.response().end(response.encode()).await()
     }
+
+    suspend fun changeSetting(ctx: RoutingContext) {
+        val userId = ctx.user().principal().getString("id")
+        val user = daoManager.userDao.getById(userId)
+        val body = ctx.bodyAsJson
+        user.changeSetting(body.getString("key"), body.getValue("value"))
+        daoManager.userDao.update(user)
+        ctx.user().principal().put("data", JsonObject(user.data.decodeToString()))
+        ctx.response().end().await()
+    }
 }

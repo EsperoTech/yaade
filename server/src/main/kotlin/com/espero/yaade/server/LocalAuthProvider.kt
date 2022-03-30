@@ -18,8 +18,7 @@ class LocalAuthProvider(private val daoManager: DaoManager) : AuthenticationProv
             if (!Password.check(password, user.password).withArgon2()) {
                 throw RuntimeException("Password does not match")
             }
-            val sessionUser = User.fromName(username)
-            sessionUser.principal().put("id", user.id)
+            val sessionUser = user.toSessionUser()
             resultHandler.handle(Future.succeededFuture(sessionUser))
         } catch (t: Throwable) {
             resultHandler.handle(Future.failedFuture(t))

@@ -4,9 +4,11 @@ import {
   Checkbox,
   Divider,
   Heading,
+  HStack,
   IconButton,
   ModalCloseButton,
   Stack,
+  Switch,
   Tab,
   TabList,
   TabPanel,
@@ -15,6 +17,7 @@ import {
   Text,
   useColorMode,
   useToast,
+  VStack,
 } from '@chakra-ui/react';
 import { useContext, useState } from 'react';
 
@@ -70,6 +73,8 @@ function Settings() {
   const { colorMode, setColorMode } = useColorMode();
   const toast = useToast();
 
+  console.log(user?.data.settings.saveOnClose);
+
   async function handleChangePasswordClick() {
     try {
       const response = await fetch('/api/user', {
@@ -105,6 +110,35 @@ function Settings() {
       a.click();
     } catch (e) {
       errorToast('Data could not be exported.', toast);
+    }
+  }
+
+  async function handleSettingChanged(key: string, value: number | boolean | string) {
+    try {
+      const response = await fetch('/api/user/changeSetting', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          key,
+          value,
+        }),
+      });
+      if (response.status !== 200) throw new Error();
+      setUser({
+        ...user!,
+        data: {
+          ...user?.data,
+          settings: {
+            ...user?.data.settings,
+            [key]: value,
+          },
+        },
+      });
+      successToast('Settings saved.', toast);
+    } catch (e) {
+      errorToast('Setting could not be changed.', toast);
     }
   }
 
@@ -149,6 +183,9 @@ function Settings() {
           <TabList className={styles.tabs} sx={{ borderLeft: '0px' }} tabIndex={-1}>
             <Tab sx={sx} _selected={selected} tabIndex={-1}>
               General
+            </Tab>
+            <Tab sx={sx} _selected={selected} tabIndex={-1}>
+              Behavior
             </Tab>
             <Tab sx={sx} _selected={selected}>
               Account
@@ -233,6 +270,35 @@ function Settings() {
               >
                 Import
               </Button>
+            </SettingsTab>
+          </TabPanel>
+          <TabPanel>
+            <SettingsTab name="Behavior">
+              <Heading as="h4" size="md" mb="4" mt="4">
+                Auto Save Requests
+              </Heading>
+              <HStack mb="2">
+                <Text w="200px">Save after successful send</Text>
+                <Switch
+                  colorScheme="green"
+                  size="md"
+                  onChange={(e) => handleSettingChanged('saveOnSend', e.target.checked)}
+                  isChecked={user?.data.settings.saveOnSend}
+                >
+                  {user?.data.settings.saveOnSend ? 'ON' : 'OFF'}
+                </Switch>
+              </HStack>
+              <HStack>
+                <Text w="200px">Save on close</Text>
+                <Switch
+                  colorScheme="green"
+                  size="md"
+                  onChange={(e) => handleSettingChanged('saveOnClose', e.target.checked)}
+                  isChecked={user?.data.settings.saveOnClose}
+                >
+                  {user?.data.settings.saveOnClose ? 'ON' : 'OFF'}
+                </Switch>
+              </HStack>
             </SettingsTab>
           </TabPanel>
           <TabPanel>

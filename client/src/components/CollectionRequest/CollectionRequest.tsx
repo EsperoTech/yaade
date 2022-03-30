@@ -14,7 +14,8 @@ import { Dispatch, FunctionComponent, SetStateAction, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
-import { CollectionsContext, CurrentRequestContext } from '../../context';
+import { CollectionsContext, CurrentRequestContext, UserContext } from '../../context';
+import { defaultRequest } from '../../context/CurrentRequestContext';
 import Request from '../../model/Request';
 import { errorToast, successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
@@ -37,15 +38,14 @@ function handleOnKeyDown(e: any, action: any) {
   }
 }
 
-const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
-  request,
-  setCurrentRequest,
-}) => {
+const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request }) => {
   const [state, setState] = useState<CollectionRequestState>({
     name: request.data.name,
     currentModal: '',
   });
-  const { currentRequest } = useContext(CurrentRequestContext);
+  const { currentRequest, saveRequest, setCurrentRequest } =
+    useContext(CurrentRequestContext);
+  const { user } = useContext(UserContext);
   const initialRef = useRef(null);
   const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -53,9 +53,36 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
   const toast = useToast();
   const variants = currentRequest.id === request.id ? ['selected'] : [];
 
-  function handleRequestClick() {
-    // TODO: ask user to save request before loading new content
-    setCurrentRequest(request);
+  async function handleSaveRequest() {
+    try {
+      await saveRequest();
+      const savedCurrentRequest = {
+        ...currentRequest,
+        changed: false,
+      };
+      writeRequestToCollections(savedCurrentRequest);
+      setCurrentRequest(request);
+    } catch (e) {
+      errorToast('Could not save request', toast);
+    }
+  }
+  async function handleRequestClick() {
+    if (
+      user?.data.settings.saveOnClose &&
+      currentRequest.changed &&
+      currentRequest.id !== -1
+    ) {
+      await handleSaveRequest();
+    } else if (
+      !user?.data.settings?.saveOnClose &&
+      currentRequest.changed &&
+      currentRequest.id !== -1
+    ) {
+      setState({ ...state, currentModal: 'save' });
+      onOpen();
+    } else {
+      setCurrentRequest(request);
+    }
   }
 
   async function handleRenameRequestClick() {
@@ -95,6 +122,9 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
     try {
       const response = await fetch(`/api/request/${request.id}`, { method: 'DELETE' });
       if (response.status !== 200) throw new Error();
+      if (request.id === currentRequest.id) {
+        setCurrentRequest(defaultRequest);
+      }
       removeRequest(request);
       successToast('Request was deleted.', toast);
     } catch (e) {
@@ -147,7 +177,41 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
     </BasicModal>
   );
 
-  const currentModal = state.currentModal === 'rename' ? renameModal : deleteModal;
+  const requestNotSavedModal = (
+    <BasicModal
+      isOpen={isOpen}
+      initialRef={undefined}
+      onClose={onCloseClear}
+      heading={`Request not saved`}
+      onClick={() => {
+        handleSaveRequest();
+        onCloseClear();
+      }}
+      buttonText="Save"
+      buttonColor="green"
+      isButtonDisabled={false}
+      secondaryButtonText="Discard"
+      onSecondaryButtonClick={() => {
+        onClose();
+        setCurrentRequest(request);
+      }}
+    >
+      The request has unsaved changes which will be lost if you choose to change the tab
+      now.
+      <br />
+      Do you want to save the changes now?
+    </BasicModal>
+  );
+
+  let currentModal;
+
+  if (state.currentModal === 'rename') {
+    currentModal = renameModal;
+  } else if (state.currentModal === 'delete') {
+    currentModal = deleteModal;
+  } else if (state.currentModal === 'save') {
+    currentModal = requestNotSavedModal;
+  }
 
   let methodName = request.data.method;
 

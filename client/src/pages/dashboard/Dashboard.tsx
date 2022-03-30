@@ -2,42 +2,34 @@ import 'allotment/dist/style.css';
 
 import {
   Button,
-  Input,
   Modal,
   ModalBody,
   ModalContent,
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Select,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useEventListener } from 'usehooks-ts';
 
-import BasicModal from '../../components/basicModal';
 import Header from '../../components/header';
 import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
-import { CurrentRequestContext } from '../../context';
+import { CurrentRequestContext, UserContext } from '../../context';
 import { CollectionsContext } from '../../context/CollectionsContext';
-import Collection from '../../model/Collection';
-import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
-import {
-  appendHttpIfNoProtocol,
-  errorToast,
-  parseResponseEvent,
-  successToast,
-} from '../../utils';
-import { useKeyPress } from '../../utils/useKeyPress';
+import { errorToast, parseResponseEvent } from '../../utils';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
-  const { setCollections } = useContext(CollectionsContext);
-  const { setCurrentRequest, currentRequest } = useContext(CurrentRequestContext);
+  const { setCollections, writeRequestToCollections } = useContext(CollectionsContext);
+  const { currentRequest, setCurrentRequest, saveRequest } =
+    useContext(CurrentRequestContext);
+  const { user } = useContext(UserContext);
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
   const setIsExtInitialized = (result: boolean) => {
@@ -47,31 +39,7 @@ function Dashboard() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  const handleResponseMessage = useCallback(
-    (event: MessageEvent<any>) => {
-      if (event.data.type === 'receive-response') {
-        if (event.data.response.err) {
-          setCurrentRequest((request) => ({ ...request, isLoading: false }));
-          errorToast(event.data.response.err, toast);
-          return;
-        }
-
-        const response = parseResponseEvent(event);
-
-        setCurrentRequest((request) => ({
-          ...request,
-          data: {
-            ...request.data,
-            response: response,
-          },
-          isLoading: false,
-        }));
-      }
-    },
-    [toast, setCurrentRequest],
-  );
-
-  const getCollections = useCallback(async () => {
+  const getCollections = async () => {
     try {
       const response = await fetch('/api/collection');
       const collections = await response.json();
@@ -79,67 +47,72 @@ function Dashboard() {
     } catch (e) {
       errorToast('Could not retrieve collections', toast);
     }
-  }, [toast, setCollections]);
-
-  const handlePongMessage = useCallback(
-    (event: MessageEvent<any>) => {
-      if (event.data.type === 'pong') {
-        setIsExtInitialized(true);
-        window.addEventListener('message', handleResponseMessage);
-        onClose();
-        getCollections();
-      }
-    },
-    [getCollections, onClose, handleResponseMessage],
-  );
+  };
 
   const initExtension = useCallback(() => {
-    window.addEventListener('message', handlePongMessage);
     setTimeout(() => {
       if (!isExtInitialized.current) {
         onOpen();
       }
     }, 600);
+    console.log('Checking extension');
     window.postMessage({ type: 'ping' }, '*');
-  }, [onOpen, handlePongMessage]);
+  }, [onOpen]);
 
   useEffect(() => {
     if (isExtInitialized.current) return;
     initExtension();
-    return () => {
-      window.removeEventListener('message', handlePongMessage);
-    };
-  }, [initExtension, handlePongMessage]);
+  }, [initExtension]);
 
-  function handleSendButtonClick() {
-    if (currentRequest.isLoading) {
-      setCurrentRequest({ ...currentRequest, isLoading: false });
-      return;
+  const handlePongMessage = (event: MessageEvent<any>) => {
+    if (event.data.type === 'pong') {
+      console.log('Extension connected');
+      setIsExtInitialized(true);
+      onClose();
+      getCollections();
     }
-    const url = appendHttpIfNoProtocol(currentRequest.data.uri);
+  };
 
-    const headers: Record<string, string> = {};
-    currentRequest.data.headers.forEach(({ key, value }: KVRow) => {
-      if (key === '') return;
-      headers[key] = value;
-    });
+  const handleResponseMessage = async (event: MessageEvent<any>) => {
+    if (event.data.type === 'receive-response') {
+      console.log('event received', event);
+      if (event.data.response.err) {
+        setCurrentRequest((request: Request) => ({ ...request, isLoading: false }));
+        errorToast(event.data.response.err, toast);
+        return;
+      }
 
-    const options: any = { headers, method: currentRequest.data.method };
-    if (currentRequest.data.body) {
-      options['body'] = currentRequest.data.body;
+      const response = parseResponseEvent(event);
+
+      const newRequest = {
+        ...currentRequest,
+        data: {
+          ...currentRequest.data,
+          response: response,
+        },
+        isLoading: false,
+      };
+
+      if (currentRequest.id !== -1 && user?.data.settings.saveOnSend) {
+        const response = await fetch('/api/request', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newRequest),
+        });
+        if (response.status !== 200) throw new Error();
+        const savedRequest = { ...newRequest, changed: false };
+        writeRequestToCollections(savedRequest);
+        setCurrentRequest(savedRequest);
+      } else {
+        setCurrentRequest(newRequest);
+      }
     }
+  };
 
-    setCurrentRequest({ ...currentRequest, isLoading: true });
-
-    window.postMessage(
-      {
-        url,
-        type: 'send-request',
-        options: options,
-      },
-      '*',
-    );
-  }
+  useEventListener('message', handlePongMessage);
+  useEventListener('message', handleResponseMessage);
 
   return (
     <div className={styles.parent}>
@@ -154,14 +127,10 @@ function Dashboard() {
           <div className={styles.main}>
             <Allotment vertical defaultSizes={[200, 100]} snap>
               <div className={styles.requestPanel}>
-                <RequestPanel
-                  request={currentRequest}
-                  setRequest={setCurrentRequest}
-                  handleSendButtonClick={handleSendButtonClick}
-                />
+                <RequestPanel />
               </div>
               <div className={styles.responsePanel}>
-                <ResponsePanel response={currentRequest?.data?.response} />
+                <ResponsePanel />
               </div>
             </Allotment>
           </div>

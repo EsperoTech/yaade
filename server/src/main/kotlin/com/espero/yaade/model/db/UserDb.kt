@@ -4,6 +4,11 @@ import com.j256.ormlite.field.DataType
 import com.j256.ormlite.field.DatabaseField
 import com.j256.ormlite.table.DatabaseTable
 import io.vertx.core.json.JsonObject
+import io.vertx.ext.auth.User
+
+val defaultSettings: JsonObject = JsonObject()
+    .put("saveOnSend", true)
+    .put("saveOnClose", true)
 
 @DatabaseTable(tableName = "users")
 class UserDb {
@@ -29,7 +34,16 @@ class UserDb {
         this.password = hashedPassword
         this.version = "1.0.0"
         this.data = JsonObject()
+            .put("settings", defaultSettings)
             .encode().toByteArray()
+    }
+
+    fun changeSetting(key: String, value: Any) {
+        val newData = JsonObject(data.decodeToString())
+        val newSettings = newData.getJsonObject("settings")
+        newSettings.put(key, value)
+        newData.put("settings", newSettings)
+        data = newData.encode().toByteArray()
     }
 
     constructor(id: Long, username: String, hashedPassword: String, version: String, data: ByteArray) {
@@ -46,5 +60,15 @@ class UserDb {
             .put("username", username)
             .put("version", version)
             .put("data", JsonObject(data.decodeToString()))
+    }
+
+    fun toSessionUser(): User {
+        val sessionUser = User.fromName(username)
+        sessionUser.principal()
+            .put("id", id)
+            .put("username", username)
+            .put("version", version)
+            .put("data", JsonObject(data.decodeToString()))
+        return sessionUser
     }
 }

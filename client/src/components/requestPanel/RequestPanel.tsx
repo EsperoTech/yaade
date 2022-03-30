@@ -3,7 +3,7 @@ import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/
 import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
-import { CollectionsContext } from '../../context';
+import { CollectionsContext, CurrentRequestContext } from '../../context';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import { appendHttpIfNoProtocol, errorToast, successToast } from '../../utils';
@@ -13,12 +13,6 @@ import BodyEditor from '../bodyEditor';
 import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
-
-type RequestPanelProps = {
-  request: Request;
-  setRequest: Dispatch<SetStateAction<Request>>;
-  handleSendButtonClick: () => void;
-};
 
 type NewReqFormState = {
   collectionId: number;
@@ -55,8 +49,15 @@ function getParamsFromUri(uri: string): Array<KVRow> {
   }
 }
 
-function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPanelProps) {
+function RequestPanel() {
   const { collections, writeRequestToCollections } = useContext(CollectionsContext);
+  const {
+    currentRequest,
+    changeCurrentRequest,
+    saveRequest,
+    saveNewRequest,
+    setCurrentRequest,
+  } = useContext(CurrentRequestContext);
   const [newReqForm, setNewReqForm] = useState<NewReqFormState>({
     collectionId: -1,
     name: '',
@@ -80,36 +81,36 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
   }
 
   const setUri = (uri: string) => {
-    setRequest((request: Request) => ({
-      ...request,
+    changeCurrentRequest({
+      ...currentRequest,
       data: {
-        ...request.data,
+        ...currentRequest.data,
         uri,
       },
-    }));
+    });
   };
 
-  const params = getParamsFromUri(request.data.uri);
+  const params = getParamsFromUri(currentRequest.data.uri);
 
   const headers =
-    request.data.headers && request.data.headers.length !== 0
-      ? request.data.headers
+    currentRequest.data.headers && currentRequest.data.headers.length !== 0
+      ? currentRequest.data.headers
       : [{ key: '', value: '' }];
 
   const setMethod = (method: string) => {
-    setRequest((request: Request) => ({
-      ...request,
+    changeCurrentRequest({
+      ...currentRequest,
       data: {
-        ...request.data,
+        ...currentRequest.data,
         method,
       },
-    }));
+    });
   };
 
   function setUriFromParams(params: Array<KVRow>) {
     try {
-      let uri = request.data.uri;
-      if (!request.data.uri.includes('?')) {
+      let uri = currentRequest.data.uri;
+      if (!currentRequest.data.uri.includes('?')) {
         uri += '?';
       }
       const base = uri.split('?')[0];
@@ -132,43 +133,37 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
   }
 
   const setHeaders = (headers: Array<KVRow>) => {
-    setRequest((request: Request) => ({
-      ...request,
+    changeCurrentRequest({
+      ...currentRequest,
       data: {
-        ...request.data,
+        ...currentRequest.data,
         headers,
       },
-    }));
+    });
   };
 
   const setBody = (body: string) => {
-    setRequest((request: Request) => ({
-      ...request,
+    changeCurrentRequest({
+      ...currentRequest,
       data: {
-        ...request.data,
+        ...currentRequest.data,
         body,
       },
-    }));
+    });
   };
 
   async function handleSaveNewRequestClick() {
     try {
-      const response = await fetch('/api/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          collectionId: newReqForm.collectionId,
-          type: 'REST',
-          data: { ...request.data, name: newReqForm.name },
-        }),
-      });
+      const body = {
+        collectionId: newReqForm.collectionId,
+        type: 'REST',
+        data: { ...currentRequest.data, name: newReqForm.name },
+      };
 
-      const newRequest = (await response.json()) as Request;
+      const newRequest = await saveNewRequest(body);
 
       writeRequestToCollections(newRequest);
-      setRequest(newRequest);
+      changeCurrentRequest(newRequest);
 
       onCloseClear();
       successToast('A new request was created.', toast);
@@ -179,19 +174,17 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
 
   async function handleSaveRequestClick() {
     try {
-      if (request.id === -1 && request.collectionId === -1) {
+      if (currentRequest.id === -1 && currentRequest.collectionId === -1) {
         onOpen();
+        return;
       } else {
-        const response = await fetch('/api/request', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(request),
-        });
-        if (response.status !== 200) throw new Error();
-
-        writeRequestToCollections(request);
+        await saveRequest();
+        const savedCurrentRequest = {
+          ...currentRequest,
+          changed: false,
+        };
+        writeRequestToCollections(savedCurrentRequest);
+        setCurrentRequest(savedCurrentRequest);
         successToast('The request was successfully saved.', toast);
       }
     } catch (e) {
@@ -200,16 +193,46 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
     }
   }
 
+  function handleSendButtonClick() {
+    if (currentRequest.isLoading) {
+      setCurrentRequest({ ...currentRequest, isLoading: false });
+      return;
+    }
+    const url = appendHttpIfNoProtocol(currentRequest.data.uri);
+
+    const headers: Record<string, string> = {};
+    currentRequest.data.headers.forEach(({ key, value }: KVRow) => {
+      if (key === '') return;
+      headers[key] = value;
+    });
+
+    const options: any = { headers, method: currentRequest.data.method };
+    if (currentRequest.data.body) {
+      options['body'] = currentRequest.data.body;
+    }
+
+    setCurrentRequest({ ...currentRequest, isLoading: true });
+
+    window.postMessage(
+      {
+        url,
+        type: 'send-request',
+        options: options,
+      },
+      '*',
+    );
+  }
+
   return (
     <Box className={styles.box} bg="panelBg" h="100%">
       <div style={{ display: 'flex' }}>
         <UriBar
-          uri={request.data.uri}
+          uri={currentRequest.data.uri}
           setUri={setUri}
-          method={request.data.method}
+          method={currentRequest.data.method}
           setMethod={setMethod}
           handleSendButtonClick={handleSendButtonClick}
-          isLoading={request.isLoading}
+          isLoading={currentRequest.isLoading}
         />
         <IconButton
           aria-label="save-request-button"
@@ -218,6 +241,7 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
           size="sm"
           ml="2"
           onClick={handleSaveRequestClick}
+          disabled={!currentRequest.changed}
         />
       </div>
 
@@ -243,7 +267,7 @@ function RequestPanel({ request, setRequest, handleSendButtonClick }: RequestPan
             <KVEditor name="headers" kvs={headers} setKvs={setHeaders} />
           </TabPanel>
           <TabPanel h="100%">
-            <BodyEditor content={request.data.body} setContent={setBody} />
+            <BodyEditor content={currentRequest.data.body} setContent={setBody} />
           </TabPanel>
         </TabPanels>
       </Tabs>

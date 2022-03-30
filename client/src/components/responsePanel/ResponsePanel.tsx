@@ -14,8 +14,9 @@ import {
 import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
-import React from 'react';
+import React, { useContext } from 'react';
 
+import { CurrentRequestContext } from '../../context';
 import KVRow from '../../model/KVRow';
 import Response from '../../model/Response';
 import { cn, successToast } from '../../utils';
@@ -40,11 +41,10 @@ function getExtensions(contentType: string): Array<any> {
 const getContentType = (headers: Array<KVRow>) =>
   headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
-type ResponsePanelProps = {
-  response?: Response;
-};
 
-function ResponsePanel({ response }: ResponsePanelProps) {
+function ResponsePanel() {
+  const { currentRequest } = useContext(CurrentRequestContext);
+  const response = currentRequest?.data?.response;
   const { colorMode } = useColorMode();
   const toast = useToast();
   const { onCopy } = useClipboard(response?.body ?? '');

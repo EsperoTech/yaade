@@ -44,6 +44,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .authorizedCoroutineHandler(this, userRoute::exportBackup)
             routerBuilder.operation("importBackup")
                 .authorizedCoroutineHandler(this, userRoute::importBackup)
+            routerBuilder.operation("changeSetting")
+                .authorizedCoroutineHandler(this, userRoute::changeSetting)
 
             routerBuilder.operation("getAllCollections")
                 .authorizedCoroutineHandler(this, collectionRoute::getAllCollections)

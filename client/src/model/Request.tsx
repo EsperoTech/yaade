@@ -3,7 +3,7 @@ interface Request {
   collectionId: number;
   type: string;
   data: any;
-  selected: boolean;
+  changed: boolean;
   isLoading: boolean;
 }
 
