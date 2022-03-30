@@ -72,6 +72,23 @@ paths:
       responses:
         '200':
           description: "Success"
+  /api/collection/importOpenApi:
+    post:
+      summary: Import a collection from an OpenAPI file
+      operationId: importOpenApi
+      parameters:
+        - in: query
+          name: basePath
+          schema:
+            type: string
+          description: The basePath of the OpenAPI file
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
   /api/request:
     post:
       summary: Creata a new request

@@ -75,7 +75,6 @@ function Dashboard() {
 
   const handleResponseMessage = async (event: MessageEvent<any>) => {
     if (event.data.type === 'receive-response') {
-      console.log('event received', event);
       if (event.data.response.err) {
         setCurrentRequest((request: Request) => ({ ...request, isLoading: false }));
         errorToast(event.data.response.err, toast);

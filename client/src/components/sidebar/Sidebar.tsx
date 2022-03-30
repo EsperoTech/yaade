@@ -3,6 +3,12 @@ import {
   Box,
   IconButton,
   Input,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
   useColorMode,
   useDisclosure,
   useToast,
@@ -21,6 +27,8 @@ type StateProps = {
   clickedCollectionId: number;
   name: string;
   searchTerm: string;
+  openApiFile: any;
+  basePath: string;
 };
 
 type SideBarProps = {
@@ -35,6 +43,8 @@ function Sidebar({ setCurrentRequest }: SideBarProps) {
     clickedCollectionId: -1,
     name: '',
     searchTerm: '',
+    openApiFile: undefined,
+    basePath: '',
   });
   const { colorMode } = useColorMode();
   const initialRef = useRef(null);
@@ -50,13 +60,27 @@ function Sidebar({ setCurrentRequest }: SideBarProps) {
 
   async function handleCreateCollectionClick() {
     try {
-      const response = await fetch('/api/collection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: state.name }),
-      });
+      let response;
+      if (state.openApiFile) {
+        const data = new FormData();
+        data.append('File', state.openApiFile, 'openapi.yaml');
+
+        response = await fetch(
+          `/api/collection/importOpenApi?basePath=${state.basePath}`,
+          {
+            method: 'POST',
+            body: data,
+          },
+        );
+      } else {
+        response = await fetch('/api/collection', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: state.name }),
+        });
+      }
       if (response.status !== 200) throw new Error();
       const newCollection = (await response.json()) as Collection;
 
@@ -105,15 +129,57 @@ function Sidebar({ setCurrentRequest }: SideBarProps) {
         buttonText="Create"
         buttonColor="green"
       >
-        <Input
-          placeholder="Name"
-          w="100%"
-          borderRadius={20}
+        <Tabs
           colorScheme="green"
-          value={state.name}
-          onChange={(e) => setState({ ...state, name: e.target.value })}
-          ref={initialRef}
-        />
+          display="flex"
+          flexDirection="column"
+          maxHeight="100%"
+          h="100%"
+        >
+          <TabList>
+            <Tab>Basic</Tab>
+            <Tab>OpenAPI</Tab>
+          </TabList>
+          <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
+            <TabPanel>
+              <Input
+                placeholder="Name"
+                w="100%"
+                mt="4"
+                borderRadius={20}
+                colorScheme="green"
+                value={state.name}
+                onChange={(e) => setState({ ...state, name: e.target.value })}
+                ref={initialRef}
+              />
+            </TabPanel>
+            <TabPanel>
+              <Text>Upload an OpenAPI 3.0 file</Text>
+              <input
+                className={cn(styles, 'fileInput', [colorMode])}
+                type="file"
+                accept=".yaml,.json"
+                onChange={(e) => {
+                  const openApiFile = e.target.files ? e.target.files[0] : undefined;
+                  setState({
+                    ...state,
+                    openApiFile,
+                    name: openApiFile?.name ?? 'filename',
+                  });
+                }}
+              />
+              <Input
+                placeholder="Base Path"
+                mt="4"
+                w="100%"
+                borderRadius={20}
+                colorScheme="green"
+                value={state.basePath}
+                onChange={(e) => setState({ ...state, basePath: e.target.value })}
+              />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </BasicModal>
     </Box>
   );

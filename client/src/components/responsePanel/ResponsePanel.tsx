@@ -41,7 +41,6 @@ function getExtensions(contentType: string): Array<any> {
 const getContentType = (headers: Array<KVRow>) =>
   headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
-
 function ResponsePanel() {
   const { currentRequest } = useContext(CurrentRequestContext);
   const response = currentRequest?.data?.response;

@@ -33,6 +33,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.1")
     implementation("com.password4j:password4j:1.5.4")
     implementation("net.lingala.zip4j:zip4j:2.9.1")
+    implementation("io.swagger.parser.v3:swagger-parser:2.0.31")
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")

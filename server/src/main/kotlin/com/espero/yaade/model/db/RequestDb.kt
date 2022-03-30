@@ -3,6 +3,7 @@ package com.espero.yaade.model.db
 import com.j256.ormlite.field.DataType
 import com.j256.ormlite.field.DatabaseField
 import com.j256.ormlite.table.DatabaseTable
+import io.swagger.v3.oas.models.Operation
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 
@@ -71,6 +72,46 @@ class RequestDb {
                 version = request.getString("version"),
                 data = request.getJsonObject("data")
             )
+        }
+
+        fun fromOpenApiOperation(
+            path: String,
+            operation: Operation,
+            basePath: String,
+            collectionId: Long,
+            method: String
+        ): RequestDb {
+            val params = parseParams(operation)
+            val headers = parseHeaders(operation)
+            val data = JsonObject()
+                .put("name", operation.operationId ?: path)
+                .put("uri", basePath + path + params)
+                .put("method", method)
+                .put("headers", headers)
+                .put("body", "")
+            return RequestDb(collectionId, data)
+        }
+
+        private fun parseHeaders(operation: Operation): JsonArray {
+            val result = JsonArray()
+            operation.parameters?.forEach { param ->
+                if (param.`in` == "header") {
+                    val header = JsonObject().put("key", param.name).put("value", "")
+                    result.add(header)
+                }
+            }
+            return result
+        }
+
+        private fun parseParams(operation: Operation): String {
+            var result = ""
+            operation.parameters?.forEach { param ->
+                if (param.`in` == "query") {
+                    result = if (result == "") "?" else "$result&"
+                    result += "${param.name}="
+                }
+            }
+            return result
         }
     }
 }

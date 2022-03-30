@@ -73,8 +73,6 @@ function Settings() {
   const { colorMode, setColorMode } = useColorMode();
   const toast = useToast();
 
-  console.log(user?.data.settings.saveOnClose);
-
   async function handleChangePasswordClick() {
     try {
       const response = await fetch('/api/user', {

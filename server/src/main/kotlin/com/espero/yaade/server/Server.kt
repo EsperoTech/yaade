@@ -20,7 +20,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
 
     override suspend fun start() {
         try {
-            val collectionRoute = CollectionRoute(daoManager)
+            val collectionRoute = CollectionRoute(daoManager, vertx)
             val requestRoute = RequestRoute(daoManager)
             val userRoute = UserRoute(daoManager, vertx)
 
@@ -55,6 +55,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .authorizedCoroutineHandler(this, collectionRoute::putCollection)
             routerBuilder.operation("deleteCollection")
                 .authorizedCoroutineHandler(this, collectionRoute::deleteCollection)
+            routerBuilder.operation("importOpenApi")
+                .authorizedCoroutineHandler(this, collectionRoute::importOpenApiCollection)
 
             routerBuilder.operation("postRequest")
                 .authorizedCoroutineHandler(this, requestRoute::postRequest)

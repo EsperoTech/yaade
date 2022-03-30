@@ -49,7 +49,7 @@ function Login() {
       }
     }
     tryAutoLogin();
-  }, []);
+  }, [setUser]);
 
   async function handleFormSubmit(e: FormEvent) {
     e.preventDefault();
