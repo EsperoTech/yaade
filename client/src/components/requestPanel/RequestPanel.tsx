@@ -1,9 +1,17 @@
 import { Box, Input, Select, useDisclosure, useToast } from '@chakra-ui/react';
 import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
-import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
+import {
+  Dispatch,
+  MutableRefObject,
+  SetStateAction,
+  useContext,
+  useRef,
+  useState,
+} from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import { CollectionsContext, CurrentRequestContext } from '../../context';
+import { parseRequest } from '../../context/CurrentRequestContext';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import { appendHttpIfNoProtocol, errorToast, successToast } from '../../utils';
@@ -49,7 +57,12 @@ function getParamsFromUri(uri: string): Array<KVRow> {
   }
 }
 
-function RequestPanel() {
+type RequestPanelProps = {
+  isExtInitialized: MutableRefObject<boolean>;
+  openExtModal: () => void;
+};
+
+function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
   const { collections, writeRequestToCollections } = useContext(CollectionsContext);
   const {
     currentRequest,
@@ -163,7 +176,7 @@ function RequestPanel() {
       const newRequest = await saveNewRequest(body);
 
       writeRequestToCollections(newRequest);
-      changeCurrentRequest(newRequest);
+      changeCurrentRequest(parseRequest(newRequest));
 
       onCloseClear();
       successToast('A new request was created.', toast);
@@ -194,6 +207,10 @@ function RequestPanel() {
   }
 
   function handleSendButtonClick() {
+    if (!isExtInitialized.current) {
+      openExtModal();
+      return;
+    }
     if (currentRequest.isLoading) {
       setCurrentRequest({ ...currentRequest, isLoading: false });
       return;

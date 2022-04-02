@@ -21,6 +21,7 @@ import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { CurrentRequestContext, UserContext } from '../../context';
 import { CollectionsContext } from '../../context/CollectionsContext';
+import CurrentRequest from '../../model/CurrentRequest';
 import Request from '../../model/Request';
 import { errorToast, parseResponseEvent } from '../../utils';
 import styles from './Dashboard.module.css';
@@ -39,7 +40,7 @@ function Dashboard() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  const getCollections = async () => {
+  const getCollections = useCallback(async () => {
     try {
       const response = await fetch('/api/collection');
       const collections = await response.json();
@@ -47,36 +48,36 @@ function Dashboard() {
     } catch (e) {
       errorToast('Could not retrieve collections', toast);
     }
-  };
-
-  const initExtension = useCallback(() => {
-    setTimeout(() => {
-      if (!isExtInitialized.current) {
-        onOpen();
-      }
-    }, 600);
-    console.log('Checking extension');
-    window.postMessage({ type: 'ping' }, '*');
-  }, [onOpen]);
+  }, [toast, setCollections]);
 
   useEffect(() => {
     if (isExtInitialized.current) return;
-    initExtension();
-  }, [initExtension]);
+    const periodic = setInterval(() => {
+      console.log('Checking extension');
+      if (isExtInitialized.current) {
+        clearInterval(periodic);
+      } else {
+        window.postMessage({ type: 'ping' }, '*');
+      }
+    }, 2000);
+    getCollections();
+  }, [getCollections]);
 
   const handlePongMessage = (event: MessageEvent<any>) => {
     if (event.data.type === 'pong') {
       console.log('Extension connected');
       setIsExtInitialized(true);
       onClose();
-      getCollections();
     }
   };
 
   const handleResponseMessage = async (event: MessageEvent<any>) => {
     if (event.data.type === 'receive-response') {
       if (event.data.response.err) {
-        setCurrentRequest((request: Request) => ({ ...request, isLoading: false }));
+        setCurrentRequest((request: CurrentRequest) => ({
+          ...request,
+          isLoading: false,
+        }));
         errorToast(event.data.response.err, toast);
         return;
       }
@@ -121,12 +122,12 @@ function Dashboard() {
       <div className={styles.allotment}>
         <Allotment defaultSizes={[50, 200]} snap>
           <div className={styles.sidebar}>
-            <Sidebar setCurrentRequest={setCurrentRequest} />
+            <Sidebar />
           </div>
           <div className={styles.main}>
             <Allotment vertical defaultSizes={[200, 100]} snap>
               <div className={styles.requestPanel}>
-                <RequestPanel />
+                <RequestPanel isExtInitialized={isExtInitialized} openExtModal={onOpen} />
               </div>
               <div className={styles.responsePanel}>
                 <ResponsePanel />
@@ -144,7 +145,10 @@ function Dashboard() {
             the URL of this window into the host field of the extension. Then click retry.
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="green" onClick={initExtension}>
+            <Button
+              colorScheme="green"
+              onClick={() => window.postMessage({ type: 'ping' }, '*')}
+            >
               Retry
             </Button>
           </ModalFooter>

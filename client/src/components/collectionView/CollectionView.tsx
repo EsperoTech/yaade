@@ -10,10 +10,11 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
-import { CollectionsContext } from '../../context';
+import { CollectionsContext, CurrentRequestContext } from '../../context';
+import { parseRequest } from '../../context/CurrentRequestContext';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
 import { errorToast, successToast } from '../../utils';
@@ -24,7 +25,6 @@ import styles from './CollectionView.module.css';
 
 type CollectionProps = {
   collection: Collection;
-  setCurrentRequest: Dispatch<SetStateAction<Request>>;
 };
 
 type CollectionState = {
@@ -33,12 +33,13 @@ type CollectionState = {
   currentModal: string;
 };
 
-function CollectionView({ collection, setCurrentRequest }: CollectionProps) {
+function CollectionView({ collection }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
     name: collection.data.name,
     newRequestName: '',
     currentModal: '',
   });
+  const { setCurrentRequest } = useContext(CurrentRequestContext);
   const initialRef = useRef(null);
   const { removeCollection, saveCollection, writeRequestToCollections } =
     useContext(CollectionsContext);
@@ -70,7 +71,7 @@ function CollectionView({ collection, setCurrentRequest }: CollectionProps) {
       const newRequest = (await response.json()) as Request;
 
       writeRequestToCollections(newRequest);
-      setCurrentRequest(newRequest);
+      setCurrentRequest(parseRequest(newRequest));
       onCloseClear();
       successToast('A new request was created.', toast);
     } catch (e) {
@@ -267,13 +268,7 @@ function CollectionView({ collection, setCurrentRequest }: CollectionProps) {
       </div>
       <div className={cn(styles, 'requests', [...variants, colorMode])}>
         {collection.requests?.map((request) => {
-          return (
-            <CollectionRequest
-              key={`request-${request.id}`}
-              request={request}
-              setCurrentRequest={setCurrentRequest}
-            />
-          );
+          return <CollectionRequest key={`request-${request.id}`} request={request} />;
         })}
       </div>
       {currentModal}

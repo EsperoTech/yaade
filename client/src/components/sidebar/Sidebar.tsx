@@ -35,7 +35,7 @@ type SideBarProps = {
   setCurrentRequest: Dispatch<SetStateAction<Request>>;
 };
 
-function Sidebar({ setCurrentRequest }: SideBarProps) {
+function Sidebar() {
   const toast = useToast();
   const { collections, saveCollection } = useContext(CollectionsContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -114,7 +114,6 @@ function Sidebar({ setCurrentRequest }: SideBarProps) {
           <CollectionView
             key={`sidebar-collection-${collection.id}`}
             collection={collection}
-            setCurrentRequest={setCurrentRequest}
           />
         ))}
       </div>

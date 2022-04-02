@@ -1,7 +1,6 @@
 import { DeleteIcon } from '@chakra-ui/icons';
 import { IconButton } from '@chakra-ui/react';
 import { useColorMode } from '@chakra-ui/react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import KVRow from '../../model/KVRow';
 import styles from './KVEditor.module.css';
@@ -23,8 +22,6 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
     });
   }
 
-  const setKvsDebounced = useDebouncedCallback((kvs) => setKvs(kvs), 5);
-
   const onChangeRow = (i: number, param: string, e: any) => {
     const newKvs = [...kvs];
     const newRow = { ...newKvs[i] } as any;
@@ -38,7 +35,7 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
       });
     }
 
-    setKvsDebounced(newKvs);
+    setKvs(newKvs);
   };
 
   const onDeleteRow = (i: number) => {

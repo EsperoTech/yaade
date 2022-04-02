@@ -6,11 +6,13 @@ import {
   useState,
 } from 'react';
 
+import CurrentRequest from '../model/CurrentRequest';
 import Request from '../model/Request';
 
-const defaultRequest: Request = {
+const defaultRequest: CurrentRequest = {
   id: -1,
   type: 'REST',
+  version: '1.0.0',
   data: {
     name: '',
     uri: '',
@@ -34,12 +36,24 @@ const defaultRequest: Request = {
   changed: false,
 };
 
+function parseRequest(request: Request): CurrentRequest {
+  return {
+    id: request.id,
+    collectionId: request.collectionId,
+    type: request.type,
+    version: request.version,
+    data: request.data,
+    isLoading: false,
+    changed: false,
+  };
+}
+
 interface ICollectionContext {
-  currentRequest: Request;
-  setCurrentRequest: Dispatch<SetStateAction<Request>>;
+  currentRequest: CurrentRequest;
+  setCurrentRequest: Dispatch<SetStateAction<CurrentRequest>>;
   saveRequest: () => Promise<void>;
   saveNewRequest: (body: any) => Promise<Request>;
-  changeCurrentRequest: (request: Request) => void;
+  changeCurrentRequest: (request: CurrentRequest) => void;
 }
 
 const CurrentRequestContext = createContext<ICollectionContext>({
@@ -51,9 +65,9 @@ const CurrentRequestContext = createContext<ICollectionContext>({
 });
 
 const CurrentRequestProvider: FunctionComponent = ({ children }) => {
-  const [currentRequest, setCurrentRequest] = useState<Request>(defaultRequest);
+  const [currentRequest, setCurrentRequest] = useState<CurrentRequest>(defaultRequest);
 
-  function changeCurrentRequest(request: Request) {
+  function changeCurrentRequest(request: CurrentRequest) {
     setCurrentRequest({
       ...request,
       changed: true,
@@ -96,6 +110,6 @@ const CurrentRequestProvider: FunctionComponent = ({ children }) => {
   );
 };
 
-export { CurrentRequestContext, defaultRequest };
+export { CurrentRequestContext, defaultRequest, parseRequest };
 
 export default CurrentRequestProvider;

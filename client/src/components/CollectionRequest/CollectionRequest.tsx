@@ -10,12 +10,12 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { Dispatch, FunctionComponent, SetStateAction, useContext } from 'react';
+import { FunctionComponent, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
 import { CollectionsContext, CurrentRequestContext, UserContext } from '../../context';
-import { defaultRequest } from '../../context/CurrentRequestContext';
+import { defaultRequest, parseRequest } from '../../context/CurrentRequestContext';
 import Request from '../../model/Request';
 import { errorToast, successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
@@ -24,7 +24,6 @@ import styles from './CollectionRequest.module.css';
 
 type CollectionRequestProps = {
   request: Request;
-  setCurrentRequest: Dispatch<SetStateAction<Request>>;
 };
 
 type CollectionRequestState = {
@@ -61,7 +60,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
         changed: false,
       };
       writeRequestToCollections(savedCurrentRequest);
-      setCurrentRequest(request);
+      setCurrentRequest(parseRequest(request));
     } catch (e) {
       errorToast('Could not save request', toast);
     }
@@ -81,7 +80,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       setState({ ...state, currentModal: 'save' });
       onOpen();
     } else {
-      setCurrentRequest(request);
+      setCurrentRequest(parseRequest(request));
     }
   }
 
@@ -192,9 +191,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       isButtonDisabled={false}
       secondaryButtonText="Discard"
       onSecondaryButtonClick={() => {
-        onClose();
-        writeRequestToCollections({ ...currentRequest, changed: false });
-        setCurrentRequest(request);
+        setCurrentRequest(parseRequest(request));
+        onCloseClear();
       }}
     >
       The request has unsaved changes which will be lost if you choose to change the tab
