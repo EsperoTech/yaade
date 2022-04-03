@@ -14,12 +14,13 @@ I was looking for a self-hosted Postman alternative so that API collections can 
 
 ## 🌟 Features
 
-1. Self-hosted: data never leaves your own server.
+1. Self-hosted: data never leaves your own server
 2. Secured: if you don't know the password, you can't get in
 3. Persistent: even across container or server restarts
-4. Easy single-file data import / export
-5. Requests are executed on your machine so you can call localhost as well as remote servers
-6. Most importantly: dark mode default
+4. Import your OpenAPI v3 files
+5. Easy single-file data import / export
+7. Requests are executed on your machine so you can call localhost as well as remote servers
+8. Most importantly: dark mode default
 
 ## ⚡ Install
 
