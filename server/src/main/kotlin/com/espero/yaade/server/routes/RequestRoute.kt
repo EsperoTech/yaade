@@ -5,11 +5,10 @@ import com.espero.yaade.model.db.RequestDb
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.await
 
-
 class RequestRoute(private val daoManager: DaoManager) {
 
     suspend fun postRequest(ctx: RoutingContext) {
-        val body = ctx.bodyAsJson
+        val body = ctx.body().asJsonObject()
         val newRequest = if (body.containsKey("data"))
             RequestDb(body.getLong("collectionId"), body.getJsonObject("data"))
         else
@@ -21,15 +20,14 @@ class RequestRoute(private val daoManager: DaoManager) {
     }
 
     suspend fun putRequest(ctx: RoutingContext) {
-        val newRequest = RequestDb.fromUpdateRequest(ctx.bodyAsJson)
+        val newRequest = RequestDb.fromUpdateRequest(ctx.body().asJsonObject())
         daoManager.requestDao.update(newRequest)
         ctx.end().await()
     }
 
     suspend fun deleteRequest(ctx: RoutingContext) {
-        val id = ctx.pathParam("id")
+        val id = ctx.pathParam("id").toLong()
         daoManager.requestDao.delete(id)
         ctx.end().await()
     }
-
 }

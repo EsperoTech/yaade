@@ -1,14 +1,14 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.5.0"
+    kotlin("jvm") version "1.6.21"
     id("java")
 }
 
 group = "com.espero"
 version = "1.0-SNAPSHOT"
 
-val vertxVersion = "4.2.4"
+val vertxVersion = "4.3.1"
 
 repositories {
     mavenCentral()

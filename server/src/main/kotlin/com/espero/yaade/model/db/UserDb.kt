@@ -1,5 +1,6 @@
 package com.espero.yaade.model.db
 
+import com.espero.yaade.ADMIN_USERNAME
 import com.j256.ormlite.field.DataType
 import com.j256.ormlite.field.DatabaseField
 import com.j256.ormlite.table.DatabaseTable
@@ -29,29 +30,27 @@ class UserDb {
     @DatabaseField(dataType = DataType.BYTE_ARRAY)
     lateinit var data: ByteArray
 
-    constructor(username: String, hashedPassword: String) {
+    constructor(username: String, hashedPassword: String, version: String, data: ByteArray) {
         this.username = username
         this.password = hashedPassword
-        this.version = "1.0.0"
-        this.data = JsonObject()
-            .put("settings", defaultSettings)
-            .encode().toByteArray()
+        this.version = version
+        this.data = data
     }
 
     fun changeSetting(key: String, value: Any) {
-        val newData = JsonObject(data.decodeToString())
+        val newData = jsonData()
         val newSettings = newData.getJsonObject("settings")
         newSettings.put(key, value)
         newData.put("settings", newSettings)
         data = newData.encode().toByteArray()
     }
 
-    constructor(id: Long, username: String, hashedPassword: String, version: String, data: ByteArray) {
-        this.id = id
-        this.username = username
-        this.password = hashedPassword
-        this.version = version
-        this.data = data
+    fun jsonData(): JsonObject {
+        return JsonObject(data.decodeToString())
+    }
+
+    fun setData(data: JsonObject) {
+        this.data = data.encode().toByteArray()
     }
 
     fun toJson(): JsonObject {
@@ -59,7 +58,7 @@ class UserDb {
             .put("id", id)
             .put("username", username)
             .put("version", version)
-            .put("data", JsonObject(data.decodeToString()))
+            .put("data", jsonData())
     }
 
     fun toSessionUser(): User {
@@ -68,7 +67,39 @@ class UserDb {
             .put("id", id)
             .put("username", username)
             .put("version", version)
-            .put("data", JsonObject(data.decodeToString()))
+            .put("data", jsonData())
         return sessionUser
+    }
+
+    fun groups(): Set<String> {
+        val result = mutableSetOf<String>()
+        val groups = jsonData().getJsonArray("groups") ?: return result
+        groups.forEach { result.add(it as String) }
+        return result
+    }
+
+    fun setGroups(newGroups: Set<String>) = patchData(JsonObject().put("groups", newGroups))
+
+    fun isAdmin(): Boolean {
+        return username == ADMIN_USERNAME || groups().contains("admin")
+    }
+
+    fun patchData(data: JsonObject) {
+        val newData = jsonData()
+        data.forEach { entry ->
+            newData.put(entry.key, entry.value)
+        }
+        setData(newData)
+    }
+
+    companion object {
+        fun createWithDefaultSettings(username: String, hashedPassword: String, groups: List<String>): UserDb {
+            val data = JsonObject()
+                .put("settings", defaultSettings)
+                .put("groups", groups)
+                .encode().toByteArray()
+
+            return UserDb(username, hashedPassword, "1.0.0", data)
+        }
     }
 }
