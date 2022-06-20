@@ -14,8 +14,8 @@ class AuthHandler(authProvider: AuthenticationProvider) :
     AuthenticationHandlerImpl<AuthenticationProvider>(authProvider) {
     override fun authenticate(ctx: RoutingContext, handler: Handler<AsyncResult<User>>) {
         try {
-            val username = ctx.bodyAsJson.getString("username")
-            val password = ctx.bodyAsJson.getString("password")
+            val username = ctx.body().asJsonObject().getString("username")
+            val password = ctx.body().asJsonObject().getString("password")
 
             if (username == null || password == null) {
                 handler.handle(Future.failedFuture(HttpException(400)))

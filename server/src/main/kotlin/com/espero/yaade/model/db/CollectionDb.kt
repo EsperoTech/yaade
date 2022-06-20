@@ -21,12 +21,10 @@ class CollectionDb {
     @DatabaseField(dataType = DataType.BYTE_ARRAY)
     lateinit var data: ByteArray
 
-    constructor(name: String, ownerId: Long) {
+    constructor(data: JsonObject, ownerId: Long) {
         this.ownerId = ownerId
         this.version = "1.0.0"
-        this.data = JsonObject()
-            .put("name", name)
-            .encode().toByteArray()
+        this.data = data.encode().toByteArray()
     }
 
     constructor(id: Long, ownerId: Long, version: String, data: JsonObject) {
@@ -34,6 +32,27 @@ class CollectionDb {
         this.ownerId = ownerId
         this.version = version
         this.data = data.encode().toByteArray()
+    }
+
+    fun canRead(user: UserDb): Boolean {
+        return user.isAdmin() || isOwner(user) || user.groups().intersect(this.groups()).isNotEmpty()
+    }
+
+    fun groups(): Set<String> {
+        val result = mutableSetOf<String>()
+        val data = JsonObject(data.decodeToString())
+        val groups = data.getJsonArray("groups") ?: return result
+        groups.forEach { result.add(it as String) }
+        return result
+    }
+
+    fun isOwner(user: UserDb): Boolean {
+        return user.id == this.ownerId
+    }
+
+    fun getName(): String {
+        val json = JsonObject(data.decodeToString())
+        return json.getString("name")
     }
 
     fun toJson(): JsonObject {

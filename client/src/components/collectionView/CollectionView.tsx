@@ -17,7 +17,7 @@ import { CollectionsContext, CurrentRequestContext } from '../../context';
 import { parseRequest } from '../../context/CurrentRequestContext';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
-import { errorToast, successToast } from '../../utils';
+import { errorToast, groupsArrayToStr, successToast } from '../../utils';
 import { cn } from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionRequest from '../CollectionRequest/CollectionRequest';
@@ -29,6 +29,7 @@ type CollectionProps = {
 
 type CollectionState = {
   name: string;
+  groups: string;
   newRequestName: string;
   currentModal: string;
 };
@@ -36,6 +37,7 @@ type CollectionState = {
 function CollectionView({ collection }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
     name: collection.data.name,
+    groups: groupsArrayToStr(collection.data?.groups),
     newRequestName: '',
     currentModal: '',
   });
@@ -80,7 +82,7 @@ function CollectionView({ collection }: CollectionProps) {
     }
   }
 
-  async function handleRenameCollectionClick() {
+  async function handleEditCollectionClick() {
     try {
       const response = await fetch('/api/collection', {
         method: 'PUT',
@@ -92,6 +94,7 @@ function CollectionView({ collection }: CollectionProps) {
           data: {
             ...collection.data,
             name: state.name,
+            groups: state.groups.split(','),
           },
         }),
       });
@@ -102,12 +105,14 @@ function CollectionView({ collection }: CollectionProps) {
         data: {
           ...collection.data,
           name: state.name,
+          groups: state.groups.split(','),
         },
       });
-      onCloseClear();
-      successToast('Collection was renamed.', toast);
+      onClose();
+      successToast('Collection was changed.', toast);
     } catch (e) {
-      errorToast('The collection could not be renamed.', toast);
+      console.log(e, state);
+      errorToast('The collection could not be changed.', toast);
     }
   }
 
@@ -133,7 +138,12 @@ function CollectionView({ collection }: CollectionProps) {
   }
 
   function onCloseClear() {
-    setState({ ...state, newRequestName: '', name: collection.data.name });
+    setState({
+      ...state,
+      newRequestName: '',
+      name: collection.data.name,
+      groups: collection.data.groups?.join(',') ?? '',
+    });
     onClose();
   }
 
@@ -160,15 +170,15 @@ function CollectionView({ collection }: CollectionProps) {
     </BasicModal>
   );
 
-  const renameModal = (
+  const editModal = (
     <BasicModal
       isOpen={isOpen}
       onClose={onCloseClear}
       initialRef={initialRef}
-      heading={`Rename ${collection.data.name}`}
-      onClick={handleRenameCollectionClick}
-      isButtonDisabled={state.name === collection.data.name || state.name === ''}
-      buttonText="Rename"
+      heading={`Edit ${collection.data.name}`}
+      onClick={handleEditCollectionClick}
+      isButtonDisabled={state.name === ''}
+      buttonText="Edit"
       buttonColor="green"
     >
       <Input
@@ -179,6 +189,15 @@ function CollectionView({ collection }: CollectionProps) {
         value={state.name}
         onChange={(e) => setState({ ...state, name: e.target.value })}
         ref={initialRef}
+        mb="4"
+      />
+      <Input
+        placeholder="Groups"
+        w="100%"
+        borderRadius={20}
+        colorScheme="green"
+        value={state.groups}
+        onChange={(e) => setState({ ...state, groups: e.target.value })}
       />
     </BasicModal>
   );
@@ -204,8 +223,8 @@ function CollectionView({ collection }: CollectionProps) {
     switch (s) {
       case 'newRequest':
         return newRequestModal;
-      case 'rename':
-        return renameModal;
+      case 'edit':
+        return editModal;
       case 'delete':
         return deleteModal;
     }
@@ -246,11 +265,11 @@ function CollectionView({ collection }: CollectionProps) {
                 icon={<EditIcon />}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setState({ ...state, currentModal: 'rename' });
+                  setState({ ...state, currentModal: 'edit' });
                   onOpen();
                 }}
               >
-                Rename
+                Edit
               </MenuItem>
               <MenuItem
                 icon={<DeleteIcon />}
