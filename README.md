@@ -29,8 +29,8 @@ To have the best experience with Yaade run the docker container on your server a
 ### 1. 🐋 Docker
 
 ```bash
-$ docker volume create yaade
-$ docker run -d --restart=always -p 9339:9339 -e YAADE_ADMIN_USERNAME=admin -v yaade:/app/data --name yaade esperotech/yaade:latest
+docker volume create yaade
+docker run -d --restart=always -p 9339:9339 -e YAADE_ADMIN_USERNAME=admin -v yaade:/app/data --name yaade esperotech/yaade:latest
 ```
 
 The default password is `password`. After login go to ⚙️ > Account and change the password.
@@ -40,6 +40,16 @@ The default password is `password`. After login go to ⚙️ > Account and chang
 Yaade uses a browser extension as a proxy to enable CORS requests. Install the extension using your browsers extension store. Currently only a chrome extension is available. You can find it <a href="https://chrome.google.com/webstore/detail/yaade-extension/mddoackclclnbkmofficmmepfnadolfa">here</a>. Then open it and input your server URL, eg. `https://yaade.example.com/`. From that point all requests originating from your Yaade browser tabs will be proxied through the extension.
 
 ⚠️ DO NO FORGET TO ADD A TRAILING SLASH TO YOUR URL `https://yaade.example.com -> https://yaade.example.com/`.
+
+## ⬆️ Upgrade
+
+To upgrade the docker container with a new version, first stop the running container, pull the latest version and start a new container with the old volume.
+
+```bash
+docker rm -f <container-id>
+docker pull esperotech/yaade:latest
+docker run -d --restart=always -p 9339:9339 -e YAADE_ADMIN_USERNAME=admin -v yaade:/app/data --name yaade esperotech/yaade:latest
+```
 
 ## 💾 Technology
 
@@ -57,31 +67,31 @@ Yaade uses a browser extension as a proxy to enable CORS requests. Install the e
 2. Clone the repository
 3. Install the project specific dependencies
 ```bash
-$ cd scripts/
-$ chmod +x install.sh
-$ ./install.sh
+cd scripts/
+chmod +x install.sh
+./install.sh
 ```
 4. Start the server on port 9339 using your IDE of choice (I use IntelliJ IDEA)
     - you can also run it by using the jar file directly `$ java -jar server/build/libs/yaade-server-1.0-SNAPSHOT`
     - note that you must set the environment variable `YAADE_ADMIN_USERNAME` to run
 5. Start the vite dev server on port 9338
 ```bash
-$ cd client/
-$ npm run dev
+cd client/
+npm run dev
 ```
 6. Start the dev-proxy on port 9337
 ```bash
-$ cd dev-proxy/
-$ node index.js
+cd dev-proxy/
+node index.js
 ```
 7. Now open your browser and visit http://localhost:9337
 
 ## 🔨 Build
 
 ```bash
-$ cd scripts/
-$ chmod +x build.sh
-$ ./build.sh
+cd scripts/
+chmod +x build.sh
+./build.sh
 ```
 
 ## Screenshots
