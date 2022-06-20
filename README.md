@@ -39,8 +39,6 @@ The default password is `password`. After login go to ⚙️ > Account and chang
 
 Yaade uses a browser extension as a proxy to enable CORS requests. Install the extension using your browsers extension store. Currently only a chrome extension is available. You can find it <a href="https://chrome.google.com/webstore/detail/yaade-extension/mddoackclclnbkmofficmmepfnadolfa">here</a>. Then open it and input your server URL, eg. `https://yaade.example.com/`. From that point all requests originating from your Yaade browser tabs will be proxied through the extension.
 
-⚠️ DO NO FORGET TO ADD A TRAILING SLASH TO YOUR URL `https://yaade.example.com -> https://yaade.example.com/`.
-
 ## ⬆️ Upgrade
 
 To upgrade the docker container with a new version, first stop the running container, pull the latest version and start a new container with the old volume.

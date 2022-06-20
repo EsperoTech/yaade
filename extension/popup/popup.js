@@ -11,7 +11,12 @@ chrome.storage.sync.get("host", ({ host }) => {
 });
 
 function saveHost() {
-  chrome.storage.sync.set({ host: hostInput.value });
+  var newHost = hostInput.value
+  if (!newHost.endsWith("/")) {
+    newHost += "/"
+  }
+
+  chrome.storage.sync.set({ host: newHost });
   var btn = document.getElementById("save")
   var success = document.getElementById("success")
   btn.style.setProperty("display", "none")
