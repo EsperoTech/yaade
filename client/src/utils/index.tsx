@@ -1,5 +1,6 @@
 import beautify from 'beautify';
 
+import User from '../model/User';
 import parseResponseEvent from './parseResponseEvent';
 
 function cn(styles: any, name: string, variants: Array<string>): string {
@@ -72,12 +73,22 @@ function appendHttpIfNoProtocol(uri?: string): string {
   }
 }
 
+function groupsArrayToStr(groups?: Array<string>): string {
+  return groups?.join(',') ?? '';
+}
+
+function groupsStrToArray(groups: string): Array<string> {
+  return groups.split(',').filter((el) => el !== '');
+}
+
 export {
   appendHttpIfNoProtocol,
   beautifyBody,
   cn,
   errorToast,
   getMethodColor,
+  groupsArrayToStr,
+  groupsStrToArray,
   parseResponseEvent,
   successToast,
 };

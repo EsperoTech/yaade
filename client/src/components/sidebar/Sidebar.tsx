@@ -15,10 +15,16 @@ import {
 } from '@chakra-ui/react';
 import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
 
-import { CollectionsContext } from '../../context';
+import { CollectionsContext, UserContext } from '../../context';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
-import { cn, errorToast, successToast } from '../../utils';
+import {
+  cn,
+  errorToast,
+  groupsArrayToStr,
+  groupsStrToArray,
+  successToast,
+} from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionView from '../collectionView';
 import styles from './Sidebar.module.css';
@@ -26,6 +32,7 @@ import styles from './Sidebar.module.css';
 type StateProps = {
   clickedCollectionId: number;
   name: string;
+  groups: string;
   searchTerm: string;
   openApiFile: any;
   basePath: string;
@@ -38,10 +45,12 @@ type SideBarProps = {
 function Sidebar() {
   const toast = useToast();
   const { collections, saveCollection } = useContext(CollectionsContext);
+  const { user } = useContext(UserContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [state, setState] = useState<StateProps>({
     clickedCollectionId: -1,
     name: '',
+    groups: groupsArrayToStr(user?.data?.groups),
     searchTerm: '',
     openApiFile: undefined,
     basePath: '',
@@ -54,7 +63,7 @@ function Sidebar() {
   );
 
   function onCloseClear() {
-    setState({ ...state, name: '' });
+    setState({ ...state, name: '', groups: groupsArrayToStr(user?.data?.groups) });
     onClose();
   }
 
@@ -66,7 +75,7 @@ function Sidebar() {
         data.append('File', state.openApiFile, 'openapi.yaml');
 
         response = await fetch(
-          `/api/collection/importOpenApi?basePath=${state.basePath}`,
+          `/api/collection/importOpenApi?basePath=${state.basePath}&groups=${state.groups}`,
           {
             method: 'POST',
             body: data,
@@ -78,7 +87,10 @@ function Sidebar() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ name: state.name }),
+          body: JSON.stringify({
+            name: state.name,
+            groups: groupsStrToArray(state.groups),
+          }),
         });
       }
       if (response.status !== 200) throw new Error();
@@ -151,6 +163,15 @@ function Sidebar() {
                 onChange={(e) => setState({ ...state, name: e.target.value })}
                 ref={initialRef}
               />
+              <Input
+                placeholder="Groups (Comma separated)"
+                w="100%"
+                mt="4"
+                borderRadius={20}
+                colorScheme="green"
+                value={state.groups}
+                onChange={(e) => setState({ ...state, groups: e.target.value })}
+              />
             </TabPanel>
             <TabPanel>
               <Text>Upload an OpenAPI 3.0 file</Text>
@@ -175,6 +196,15 @@ function Sidebar() {
                 colorScheme="green"
                 value={state.basePath}
                 onChange={(e) => setState({ ...state, basePath: e.target.value })}
+              />
+              <Input
+                placeholder="Groups (Comma separated)"
+                w="100%"
+                mt="4"
+                borderRadius={20}
+                colorScheme="green"
+                value={state.groups}
+                onChange={(e) => setState({ ...state, groups: e.target.value })}
               />
             </TabPanel>
           </TabPanels>

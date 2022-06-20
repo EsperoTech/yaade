@@ -8,7 +8,7 @@ class RequestDao(connectionSource: ConnectionSource) : BaseDao<RequestDb>(connec
         return dao.queryForEq("collectionId", collectionId)
     }
 
-    fun deleteAllInCollection(collectionId: String) {
+    fun deleteAllInCollection(collectionId: Long) {
         val deleteBuilder = dao.deleteBuilder()
         val where = deleteBuilder.where().eq("collectionId", collectionId)
         deleteBuilder.setWhere(where)

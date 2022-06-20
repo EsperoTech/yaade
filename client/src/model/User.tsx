@@ -1,6 +1,6 @@
 interface User {
   id: number;
-  username: String;
+  username: string;
   data: any;
 }
 
