@@ -1,14 +1,30 @@
-import { AddIcon, ChevronRightIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
 import {
+  AddIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  DeleteIcon,
+  DragHandleIcon,
+  EditIcon,
+} from '@chakra-ui/icons';
+import {
+  Flex,
+  Heading,
+  HStack,
   IconButton,
   Input,
   Menu,
   MenuButton,
   MenuItem,
   MenuList,
+  Select,
+  Tag,
+  TagCloseButton,
+  TagLabel,
   useColorMode,
   useDisclosure,
   useToast,
+  Wrap,
 } from '@chakra-ui/react';
 import { useContext, useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
@@ -21,7 +37,9 @@ import { errorToast, groupsArrayToStr, successToast } from '../../utils';
 import { cn } from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionRequest from '../CollectionRequest/CollectionRequest';
+import KVEditor from '../kvEditor';
 import styles from './CollectionView.module.css';
+import EnvironmentModal from './EnvironmentModal';
 
 type CollectionProps = {
   collection: Collection;
@@ -29,7 +47,8 @@ type CollectionProps = {
 
 type CollectionState = {
   name: string;
-  groups: string;
+  groups: Array<string>;
+  newGroup: string;
   newRequestName: string;
   currentModal: string;
 };
@@ -37,7 +56,8 @@ type CollectionState = {
 function CollectionView({ collection }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
     name: collection.data.name,
-    groups: groupsArrayToStr(collection.data?.groups),
+    groups: collection.data?.groups ?? [],
+    newGroup: '',
     newRequestName: '',
     currentModal: '',
   });
@@ -94,7 +114,7 @@ function CollectionView({ collection }: CollectionProps) {
           data: {
             ...collection.data,
             name: state.name,
-            groups: state.groups.split(','),
+            groups: state.groups,
           },
         }),
       });
@@ -105,7 +125,7 @@ function CollectionView({ collection }: CollectionProps) {
         data: {
           ...collection.data,
           name: state.name,
-          groups: state.groups.split(','),
+          groups: state.groups,
         },
       });
       onClose();
@@ -142,9 +162,26 @@ function CollectionView({ collection }: CollectionProps) {
       ...state,
       newRequestName: '',
       name: collection.data.name,
-      groups: collection.data.groups?.join(',') ?? '',
+      groups: collection.data?.groups ?? [],
     });
     onClose();
+  }
+
+  function handleAddGroupClicked() {
+    const newGroups = [...state.groups, state.newGroup];
+    setState({
+      ...state,
+      groups: newGroups,
+      newGroup: '',
+    });
+  }
+
+  function handleDeleteGroupClicked(name: string) {
+    const newGroups = state.groups.filter((el) => el !== name);
+    setState({
+      ...state,
+      groups: newGroups,
+    });
   }
 
   const newRequestModal = (
@@ -181,6 +218,9 @@ function CollectionView({ collection }: CollectionProps) {
       buttonText="Edit"
       buttonColor="green"
     >
+      <Heading as="h6" size="xs" mb="4">
+        Name
+      </Heading>
       <Input
         placeholder="Name"
         w="100%"
@@ -189,16 +229,44 @@ function CollectionView({ collection }: CollectionProps) {
         value={state.name}
         onChange={(e) => setState({ ...state, name: e.target.value })}
         ref={initialRef}
-        mb="4"
       />
-      <Input
-        placeholder="Groups"
-        w="100%"
-        borderRadius={20}
-        colorScheme="green"
-        value={state.groups}
-        onChange={(e) => setState({ ...state, groups: e.target.value })}
-      />
+      <Heading as="h6" size="xs" my="4">
+        Groups
+      </Heading>
+      <HStack mb="4">
+        <Input
+          placeholder="Add a new group"
+          w="100%"
+          borderRadius={20}
+          colorScheme="green"
+          value={state.newGroup}
+          onChange={(e) => setState({ ...state, newGroup: e.target.value })}
+        />
+        <IconButton
+          icon={<CheckIcon />}
+          variant="ghost"
+          colorScheme="green"
+          aria-label="Create new environment"
+          disabled={state.newGroup === '' || state.groups.includes(state.newGroup)}
+          onClick={handleAddGroupClicked}
+        />
+      </HStack>
+      <Wrap>
+        {state.groups.map((group) => (
+          <Tag
+            size="sm"
+            key={`collection-group-list-${collection.id}-${group}`}
+            borderRadius="full"
+            variant="solid"
+            colorScheme="green"
+            mx="0.25rem"
+            my="0.2rem"
+          >
+            <TagLabel>{group}</TagLabel>
+            <TagCloseButton onClick={() => handleDeleteGroupClicked(group)} />
+          </Tag>
+        ))}
+      </Wrap>
     </BasicModal>
   );
 
@@ -219,6 +287,16 @@ function CollectionView({ collection }: CollectionProps) {
     </BasicModal>
   );
 
+  const envModal = (
+    <EnvironmentModal
+      collection={collection}
+      saveCollection={saveCollection}
+      isOpen={isOpen}
+      onOpen={onOpen}
+      onClose={onClose}
+    />
+  );
+
   const currentModal = ((s: string) => {
     switch (s) {
       case 'newRequest':
@@ -227,6 +305,8 @@ function CollectionView({ collection }: CollectionProps) {
         return editModal;
       case 'delete':
         return deleteModal;
+      case 'env':
+        return envModal;
     }
   })(state.currentModal);
 
@@ -270,6 +350,16 @@ function CollectionView({ collection }: CollectionProps) {
                 }}
               >
                 Edit
+              </MenuItem>
+              <MenuItem
+                icon={<DragHandleIcon />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setState({ ...state, currentModal: 'env' });
+                  onOpen();
+                }}
+              >
+                Environment
               </MenuItem>
               <MenuItem
                 icon={<DeleteIcon />}

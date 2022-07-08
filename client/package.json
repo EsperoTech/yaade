@@ -28,6 +28,7 @@
     "framer-motion": "^6.2.8",
     "json-beautify": "^1.1.1",
     "prettier": "^2.5.1",
+    "random-js": "^2.1.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-icons": "^4.3.1",

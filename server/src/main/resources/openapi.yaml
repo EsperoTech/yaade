@@ -337,6 +337,81 @@ paths:
           description: Success
       operationId: deleteUser
       summary: delete user
+  "/api/collection/{id}/envs":
+    get:
+      tags:
+        - Environments
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json: { }
+          description: success
+      operationId: getAllEnvs
+      summary: get all environments for collection
+  "/api/collection/{id}/envs/{env}":
+    post:
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+        - name: env
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: success
+      operationId: createEnv
+      summary: create a new environment
+    put:
+      requestBody:
+        content:
+          application/json: { }
+        required: true
+      tags:
+        - Environments
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+        - name: env
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: success
+      operationId: setEnvData
+      summary: set the data of the environment
+    delete:
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+        - name: env
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: success
+      operationId: deleteEnv
+      summary: delete environement
 components:
   schemas:
     HealthResponse:

@@ -22,6 +22,7 @@ type BasicModalProps = {
   buttonColor: string;
   secondaryButtonText?: string;
   onSecondaryButtonClick?: () => void;
+  hideButtonBar?: boolean;
 };
 
 const BasicModal: FunctionComponent<BasicModalProps> = ({
@@ -36,6 +37,7 @@ const BasicModal: FunctionComponent<BasicModalProps> = ({
   children,
   secondaryButtonText,
   onSecondaryButtonClick,
+  hideButtonBar,
 }) => {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -55,19 +57,23 @@ const BasicModal: FunctionComponent<BasicModalProps> = ({
         <ModalCloseButton />
         <form onSubmit={handleSubmit}>
           <ModalBody>{children}</ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onSecondaryBtnClick}>
-              {secondaryBtnText}
-            </Button>
-            <Button
-              colorScheme={buttonColor}
-              disabled={isButtonDisabled}
-              type="submit"
-              ref={defaultRef}
-            >
-              {buttonText}
-            </Button>
-          </ModalFooter>
+          {hideButtonBar ? (
+            <div style={{ marginBottom: '2rem' }} />
+          ) : (
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={onSecondaryBtnClick}>
+                {secondaryBtnText}
+              </Button>
+              <Button
+                colorScheme={buttonColor}
+                disabled={isButtonDisabled}
+                type="submit"
+                ref={defaultRef}
+              >
+                {buttonText}
+              </Button>
+            </ModalFooter>
+          )}
         </form>
       </ModalContent>
     </Modal>

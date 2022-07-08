@@ -109,6 +109,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
         },
       };
 
+      console.log('xxx', renamedRequest);
+
       writeRequestToCollections(renamedRequest);
       onCloseClear();
       successToast('Request was renamed.', toast);

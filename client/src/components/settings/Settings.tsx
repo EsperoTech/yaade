@@ -1,5 +1,11 @@
-import { CloseIcon, EditIcon, MoonIcon, SunIcon } from '@chakra-ui/icons';
-import { CheckIcon, DeleteIcon } from '@chakra-ui/icons';
+import {
+  CheckIcon,
+  CloseIcon,
+  DeleteIcon,
+  EditIcon,
+  MoonIcon,
+  SunIcon,
+} from '@chakra-ui/icons';
 import {
   Button,
   Checkbox,
@@ -549,7 +555,7 @@ function Settings() {
             <TabPanel>
               <SettingsTab name="Users">
                 <Heading as="h4" size="md" mb="2" mt="2">
-                  Add new user
+                  Add a new user
                 </Heading>
                 <HStack mb="4">
                   <Input

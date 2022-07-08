@@ -14,10 +14,6 @@ class CollectionDao(connectionSource: ConnectionSource) :
         return getAll().filter { it.canRead(user) }
     }
 
-    fun getByUser(user: UserDb): List<CollectionDb> {
-        return getAll().filter { it.isOwner(user) }
-    }
-
     fun getByUserAndName(user: UserDb, name: String): List<CollectionDb> {
         return getAll().filter { it.isOwner(user) && it.getName() == name }
     }

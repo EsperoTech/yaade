@@ -14,7 +14,14 @@ import { CollectionsContext, CurrentRequestContext } from '../../context';
 import { parseRequest } from '../../context/CurrentRequestContext';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
-import { appendHttpIfNoProtocol, errorToast, successToast } from '../../utils';
+import {
+  appendHttpIfNoProtocol,
+  errorToast,
+  kvRowsToMap,
+  successToast,
+} from '../../utils';
+import interpolate from '../../utils/interpolate';
+import { getSelectedEnvData } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import BodyEditor from '../bodyEditor';
@@ -215,20 +222,32 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       setCurrentRequest({ ...currentRequest, isLoading: false });
       return;
     }
-    const url = appendHttpIfNoProtocol(currentRequest.data.uri);
 
-    const headers: Record<string, string> = {};
-    currentRequest.data.headers.forEach(({ key, value }: KVRow) => {
-      if (key === '') return;
-      headers[key] = value;
-    });
+    const requestWithoutResponse = {
+      ...currentRequest,
+      data: { ...currentRequest.data, response: null },
+    };
 
-    const options: any = { headers, method: currentRequest.data.method };
-    if (currentRequest.data.body) {
-      options['body'] = currentRequest.data.body;
+    const requestCollection = collections.find(
+      (c) => c.id === currentRequest.collectionId,
+    )!!;
+    const selectedEnvData = getSelectedEnvData(requestCollection);
+    const interpolateResult = interpolate(requestWithoutResponse, selectedEnvData);
+
+    const interpolatedRequest = interpolateResult.result;
+
+    const url = appendHttpIfNoProtocol(interpolatedRequest.data.uri);
+
+    const headers = kvRowsToMap(interpolatedRequest.data.headers);
+
+    const options: any = { headers, method: interpolatedRequest.data.method };
+    if (interpolatedRequest.data.body) {
+      options['body'] = interpolatedRequest.data.body;
     }
 
     setCurrentRequest({ ...currentRequest, isLoading: true });
+
+    console.log('Sending message', url, options);
 
     window.postMessage(
       {

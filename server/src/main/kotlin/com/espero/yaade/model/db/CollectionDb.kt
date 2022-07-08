@@ -55,12 +55,64 @@ class CollectionDb {
         return json.getString("name")
     }
 
+    fun jsonData(): JsonObject {
+        return JsonObject(data.decodeToString())
+    }
+
     fun toJson(): JsonObject {
         return JsonObject()
             .put("id", id)
             .put("ownerId", ownerId)
             .put("version", version)
             .put("data", JsonObject(data.decodeToString()))
+    }
+
+    fun getAllEnvs(): JsonObject {
+        val envs = jsonData().getJsonObject("envs") ?: return JsonObject()
+        envs.map?.forEach { (it.value as JsonObject).remove("secrets") }
+        return envs
+    }
+
+    fun createEnv(name: String, data: JsonObject?) {
+        val json = jsonData()
+        var envs = json.getJsonObject("envs")
+        if (envs == null) {
+            envs = JsonObject()
+            json.put("envs", envs)
+        }
+        val oldEnv = envs.getJsonObject(name)
+        if (oldEnv != null) throw RuntimeException("Env already exists")
+
+        val env = JsonObject().put("data", data ?: JsonObject())
+        envs.put(name, env)
+        this.data = json.encode().toByteArray()
+    }
+
+    fun setEnvData(name: String, data: JsonObject) {
+        val json = jsonData()
+        var envs = json.getJsonObject("envs")
+        if (envs == null) {
+            envs = JsonObject()
+            json.put("envs", envs)
+        }
+        var env = envs.getJsonObject(name)
+        if (env == null) {
+            env = JsonObject()
+            envs.put(name, env)
+        }
+        env.put("data", data)
+        this.data = json.encode().toByteArray()
+    }
+
+    fun deleteEnv(name: String?) {
+        val json = jsonData()
+        var envs = json.getJsonObject("envs")
+        if (envs == null) {
+            envs = JsonObject()
+            json.put("envs", envs)
+        }
+        envs.remove(name)
+        this.data = json.encode().toByteArray()
     }
 
     companion object {

@@ -12,41 +12,41 @@ type KVEditorProps = {
   readOnly?: boolean;
 };
 
+const EMPTY_ROW = { key: '', value: '' };
+const isRowEmpty = (row: KVRow) => row.key === '' && row.value === '';
+
 function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   const { colorMode } = useColorMode();
 
-  if (kvs.length === 0) {
-    setKvs({
-      key: '',
-      value: '',
-    });
+  const displayKvs = kvs ? [...kvs] : [];
+
+  if (
+    !readOnly &&
+    (displayKvs.length === 0 || !isRowEmpty(displayKvs[displayKvs.length - 1]))
+  ) {
+    displayKvs.push({ ...EMPTY_ROW });
   }
 
   const onChangeRow = (i: number, param: string, e: any) => {
-    const newKvs = [...kvs];
+    let newKvs = [...displayKvs];
     const newRow = { ...newKvs[i] } as any;
     newRow[param] = e.target.value;
     newKvs[i] = newRow;
-
-    if (i === newKvs.length - 1) {
-      newKvs.push({
-        key: '',
-        value: '',
-      });
-    }
+    newKvs = newKvs.filter((el) => !isRowEmpty(el));
 
     setKvs(newKvs);
   };
 
   const onDeleteRow = (i: number) => {
-    const newKvs = [...kvs];
+    let newKvs = [...displayKvs];
     newKvs.splice(i, 1);
+    newKvs = newKvs.filter((el) => !isRowEmpty(el));
     setKvs(newKvs);
   };
 
   return (
     <div className={styles.container}>
-      {kvs.map(({ key, value }, i) => (
+      {displayKvs.map(({ key, value }, i) => (
         <div key={`${name}-${i}`} className={styles.row}>
           <input
             className={`${styles.input} ${styles['input--left']} ${
@@ -71,9 +71,9 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
               aria-label="delete-row"
               isRound
               variant="ghost"
-              disabled={i === kvs.length - 1}
+              disabled={i === displayKvs.length - 1}
               onClick={() => onDeleteRow(i)}
-              color={colorMode === 'light' ? 'red.500' : 'red.300'}
+              colorScheme="red"
               icon={<DeleteIcon />}
             />
           )}

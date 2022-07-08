@@ -62,6 +62,15 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             routerBuilder.operation("importOpenApi")
                 .userCoroutineHandler(this, collectionRoute::importOpenApiCollection)
 
+            routerBuilder.operation("getAllEnvs")
+                .userCoroutineHandler(this, collectionRoute::getAllEnvs)
+            routerBuilder.operation("createEnv")
+                .userCoroutineHandler(this, collectionRoute::createEnv)
+            routerBuilder.operation("setEnvData")
+                .userCoroutineHandler(this, collectionRoute::setEnvData)
+            routerBuilder.operation("deleteEnv")
+                .userCoroutineHandler(this, collectionRoute::deleteEnv)
+
             routerBuilder.operation("postRequest")
                 .userCoroutineHandler(this, requestRoute::postRequest)
             routerBuilder.operation("putRequest")
