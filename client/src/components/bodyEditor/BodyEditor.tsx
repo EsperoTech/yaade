@@ -4,7 +4,7 @@ import { html } from '@codemirror/lang-html';
 import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import React from 'react';
 
 import { beautifyBody, errorToast } from '../../utils';
@@ -87,9 +87,13 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
       </div>
       <div className={styles.container}>
         <CodeMirror
-          onChange={(value) => {
-            setContent(value);
-          }}
+          onChange={useCallback((value, viewUpdate) => {
+            console.log(value, viewUpdate, content);
+            // TODO: how do i check if this was caused by a state change or user input?
+            if (value !== content) {
+              setContent(value);
+            }
+          }, [])}
           extensions={extensions}
           theme={colorMode}
           value={content}

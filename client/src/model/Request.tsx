@@ -3,7 +3,9 @@ interface Request {
   collectionId: number;
   type: string;
   version: string;
-  data: any;
+  data: {
+    [key: string]: any;
+  };
 }
 
 export default Request;

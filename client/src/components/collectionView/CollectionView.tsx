@@ -29,15 +29,18 @@ import {
 import { useContext, useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
-import { CollectionsContext, CurrentRequestContext } from '../../context';
-import { parseRequest } from '../../context/CurrentRequestContext';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
-import { errorToast, groupsArrayToStr, successToast } from '../../utils';
+import {
+  removeCollection,
+  saveCollection,
+  useGlobalState,
+  writeRequestToCollections,
+} from '../../state/GlobalState';
+import { errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionRequest from '../CollectionRequest/CollectionRequest';
-import KVEditor from '../kvEditor';
 import styles from './CollectionView.module.css';
 import EnvironmentModal from './EnvironmentModal';
 
@@ -61,10 +64,8 @@ function CollectionView({ collection }: CollectionProps) {
     newRequestName: '',
     currentModal: '',
   });
-  const { setCurrentRequest } = useContext(CurrentRequestContext);
+  const globalState = useGlobalState();
   const initialRef = useRef(null);
-  const { removeCollection, saveCollection, writeRequestToCollections } =
-    useContext(CollectionsContext);
   const { colorMode } = useColorMode();
   const variants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -93,7 +94,7 @@ function CollectionView({ collection }: CollectionProps) {
       const newRequest = (await response.json()) as Request;
 
       writeRequestToCollections(newRequest);
-      setCurrentRequest(parseRequest(newRequest));
+      globalState.currentRequest.set(newRequest);
       onCloseClear();
       successToast('A new request was created.', toast);
     } catch (e) {

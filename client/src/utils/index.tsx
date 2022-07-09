@@ -1,7 +1,7 @@
 import beautify from 'beautify';
 
 import KVRow from '../model/KVRow';
-import User from '../model/User';
+import Request from '../model/Request';
 import parseResponseEvent from './parseResponseEvent';
 
 function cn(styles: any, name: string, variants: Array<string>): string {

@@ -14,9 +14,15 @@ import { FunctionComponent, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
-import { CollectionsContext, CurrentRequestContext, UserContext } from '../../context';
-import { defaultRequest, parseRequest } from '../../context/CurrentRequestContext';
+import { UserContext } from '../../context';
 import Request from '../../model/Request';
+import {
+  defaultRequest,
+  removeRequest,
+  setCurrentRequest,
+  useGlobalState,
+  writeRequestToCollections,
+} from '../../state/GlobalState';
 import { errorToast, successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
 import BasicModal from '../basicModal';
@@ -42,45 +48,53 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
     name: request.data.name,
     currentModal: '',
   });
-  const { currentRequest, saveRequest, setCurrentRequest } =
-    useContext(CurrentRequestContext);
+  const globalState = useGlobalState();
+
   const { user } = useContext(UserContext);
   const initialRef = useRef(null);
   const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { writeRequestToCollections, removeRequest } = useContext(CollectionsContext);
   const toast = useToast();
-  const variants = currentRequest.id === request.id ? ['selected'] : [];
+  const variants = globalState.currentRequest.id.get() === request.id ? ['selected'] : [];
 
   async function handleSaveRequest() {
+    const currentRequest = globalState.currentRequest.get({ noproxy: true });
     try {
-      await saveRequest();
+      const response = await fetch('/api/request', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(currentRequest),
+      });
+      if (response.status !== 200) throw new Error();
       const savedCurrentRequest = {
         ...currentRequest,
         changed: false,
       };
       writeRequestToCollections(savedCurrentRequest);
-      setCurrentRequest(parseRequest(request));
     } catch (e) {
       errorToast('Could not save request', toast);
     }
   }
+
   async function handleRequestClick() {
     if (
       user?.data.settings.saveOnClose &&
-      currentRequest.changed &&
-      currentRequest.id !== -1
+      globalState.requestChanged.value &&
+      globalState.currentRequest.id.value !== -1
     ) {
-      await handleSaveRequest();
+      //await handleSaveRequest();
+      globalState.currentRequest.set(request);
     } else if (
       !user?.data.settings?.saveOnClose &&
-      currentRequest.changed &&
-      currentRequest.id !== -1
+      globalState.requestChanged.value &&
+      globalState.currentRequest.id.value !== -1
     ) {
       setState({ ...state, currentModal: 'save' });
       onOpen();
     } else {
-      setCurrentRequest(parseRequest(request));
+      globalState.currentRequest.set(request);
     }
   }
 
@@ -109,8 +123,9 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
         },
       };
 
-      console.log('xxx', renamedRequest);
+      console.log('renamed', renamedRequest);
 
+      setCurrentRequest(renamedRequest);
       writeRequestToCollections(renamedRequest);
       onCloseClear();
       successToast('Request was renamed.', toast);
@@ -123,8 +138,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
     try {
       const response = await fetch(`/api/request/${request.id}`, { method: 'DELETE' });
       if (response.status !== 200) throw new Error();
-      if (request.id === currentRequest.id) {
-        setCurrentRequest(defaultRequest);
+      if (request.id === globalState.currentRequest.id.value) {
+        globalState.currentRequest.set(defaultRequest);
       }
       removeRequest(request);
       successToast('Request was deleted.', toast);
@@ -186,6 +201,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       heading={`Request not saved`}
       onClick={() => {
         handleSaveRequest();
+        globalState.currentRequest.set(request);
         onCloseClear();
       }}
       buttonText="Save"
@@ -193,7 +209,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       isButtonDisabled={false}
       secondaryButtonText="Discard"
       onSecondaryButtonClick={() => {
-        setCurrentRequest(parseRequest(request));
+        globalState.currentRequest.set(request);
         onCloseClear();
       }}
     >
