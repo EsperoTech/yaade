@@ -1,27 +1,46 @@
-import { AddIcon, ChevronRightIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
 import {
+  AddIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  DeleteIcon,
+  DragHandleIcon,
+  EditIcon,
+} from '@chakra-ui/icons';
+import {
+  Heading,
+  HStack,
   IconButton,
   Input,
   Menu,
   MenuButton,
   MenuItem,
   MenuList,
+  Tag,
+  TagCloseButton,
+  TagLabel,
   useColorMode,
   useDisclosure,
   useToast,
+  Wrap,
 } from '@chakra-ui/react';
-import { useContext, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
-import { CollectionsContext, CurrentRequestContext } from '../../context';
-import { parseRequest } from '../../context/CurrentRequestContext';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
-import { errorToast, groupsArrayToStr, successToast } from '../../utils';
+import {
+  removeCollection,
+  saveCollection,
+  useGlobalState,
+  writeRequestToCollections,
+} from '../../state/GlobalState';
+import { errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionRequest from '../CollectionRequest/CollectionRequest';
 import styles from './CollectionView.module.css';
+import EnvironmentModal from './EnvironmentModal';
 
 type CollectionProps = {
   collection: Collection;
@@ -29,7 +48,8 @@ type CollectionProps = {
 
 type CollectionState = {
   name: string;
-  groups: string;
+  groups: Array<string>;
+  newGroup: string;
   newRequestName: string;
   currentModal: string;
 };
@@ -37,14 +57,13 @@ type CollectionState = {
 function CollectionView({ collection }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
     name: collection.data.name,
-    groups: groupsArrayToStr(collection.data?.groups),
+    groups: collection.data?.groups ?? [],
+    newGroup: '',
     newRequestName: '',
     currentModal: '',
   });
-  const { setCurrentRequest } = useContext(CurrentRequestContext);
+  const globalState = useGlobalState();
   const initialRef = useRef(null);
-  const { removeCollection, saveCollection, writeRequestToCollections } =
-    useContext(CollectionsContext);
   const { colorMode } = useColorMode();
   const variants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -73,7 +92,7 @@ function CollectionView({ collection }: CollectionProps) {
       const newRequest = (await response.json()) as Request;
 
       writeRequestToCollections(newRequest);
-      setCurrentRequest(parseRequest(newRequest));
+      globalState.currentRequest.set(newRequest);
       onCloseClear();
       successToast('A new request was created.', toast);
     } catch (e) {
@@ -94,7 +113,7 @@ function CollectionView({ collection }: CollectionProps) {
           data: {
             ...collection.data,
             name: state.name,
-            groups: state.groups.split(','),
+            groups: state.groups,
           },
         }),
       });
@@ -105,7 +124,7 @@ function CollectionView({ collection }: CollectionProps) {
         data: {
           ...collection.data,
           name: state.name,
-          groups: state.groups.split(','),
+          groups: state.groups,
         },
       });
       onClose();
@@ -142,91 +161,143 @@ function CollectionView({ collection }: CollectionProps) {
       ...state,
       newRequestName: '',
       name: collection.data.name,
-      groups: collection.data.groups?.join(',') ?? '',
+      groups: collection.data?.groups ?? [],
     });
     onClose();
   }
 
-  const newRequestModal = (
-    <BasicModal
-      isOpen={isOpen}
-      onClose={onCloseClear}
-      initialRef={initialRef}
-      heading="Create a new request"
-      onClick={handleCreateRequestClick}
-      isButtonDisabled={state.newRequestName === ''}
-      buttonText="Create"
-      buttonColor="green"
-    >
-      <Input
-        placeholder="Name"
-        w="100%"
-        borderRadius={20}
-        colorScheme="green"
-        value={state.newRequestName}
-        onChange={(e) => setState({ ...state, newRequestName: e.target.value })}
-        ref={initialRef}
-      />
-    </BasicModal>
-  );
+  function handleAddGroupClicked() {
+    const newGroups = [...state.groups, state.newGroup];
+    setState({
+      ...state,
+      groups: newGroups,
+      newGroup: '',
+    });
+  }
 
-  const editModal = (
-    <BasicModal
-      isOpen={isOpen}
-      onClose={onCloseClear}
-      initialRef={initialRef}
-      heading={`Edit ${collection.data.name}`}
-      onClick={handleEditCollectionClick}
-      isButtonDisabled={state.name === ''}
-      buttonText="Edit"
-      buttonColor="green"
-    >
-      <Input
-        placeholder="Name"
-        w="100%"
-        borderRadius={20}
-        colorScheme="green"
-        value={state.name}
-        onChange={(e) => setState({ ...state, name: e.target.value })}
-        ref={initialRef}
-        mb="4"
-      />
-      <Input
-        placeholder="Groups"
-        w="100%"
-        borderRadius={20}
-        colorScheme="green"
-        value={state.groups}
-        onChange={(e) => setState({ ...state, groups: e.target.value })}
-      />
-    </BasicModal>
-  );
-
-  const deleteModal = (
-    <BasicModal
-      isOpen={isOpen}
-      initialRef={undefined}
-      onClose={onCloseClear}
-      heading={`Delete "${collection.data.name}"`}
-      onClick={handleDeleteCollectionClick}
-      buttonText="Delete"
-      buttonColor="red"
-      isButtonDisabled={false}
-    >
-      Are you sure you want to delete this collection?
-      <br />
-      The collection cannot be recovered!
-    </BasicModal>
-  );
+  function handleDeleteGroupClicked(name: string) {
+    const newGroups = state.groups.filter((el) => el !== name);
+    setState({
+      ...state,
+      groups: newGroups,
+    });
+  }
 
   const currentModal = ((s: string) => {
     switch (s) {
       case 'newRequest':
-        return newRequestModal;
+        return (
+          <BasicModal
+            isOpen={isOpen}
+            onClose={onCloseClear}
+            initialRef={initialRef}
+            heading="Create a new request"
+            onClick={handleCreateRequestClick}
+            isButtonDisabled={state.newRequestName === ''}
+            buttonText="Create"
+            buttonColor="green"
+          >
+            <Input
+              placeholder="Name"
+              w="100%"
+              borderRadius={20}
+              colorScheme="green"
+              value={state.newRequestName}
+              onChange={(e) => setState({ ...state, newRequestName: e.target.value })}
+              ref={initialRef}
+            />
+          </BasicModal>
+        );
       case 'edit':
-        return editModal;
+        return (
+          <BasicModal
+            isOpen={isOpen}
+            onClose={onCloseClear}
+            initialRef={initialRef}
+            heading={`Edit ${collection.data.name}`}
+            onClick={handleEditCollectionClick}
+            isButtonDisabled={state.name === ''}
+            buttonText="Edit"
+            buttonColor="green"
+          >
+            <Heading as="h6" size="xs" mb="4">
+              Name
+            </Heading>
+            <Input
+              placeholder="Name"
+              w="100%"
+              borderRadius={20}
+              colorScheme="green"
+              value={state.name}
+              onChange={(e) => setState({ ...state, name: e.target.value })}
+              ref={initialRef}
+            />
+            <Heading as="h6" size="xs" my="4">
+              Groups
+            </Heading>
+            <HStack mb="4">
+              <Input
+                placeholder="Add a new group"
+                w="100%"
+                borderRadius={20}
+                colorScheme="green"
+                value={state.newGroup}
+                onChange={(e) => setState({ ...state, newGroup: e.target.value })}
+              />
+              <IconButton
+                icon={<CheckIcon />}
+                variant="ghost"
+                colorScheme="green"
+                aria-label="Create new environment"
+                disabled={state.newGroup === '' || state.groups.includes(state.newGroup)}
+                onClick={handleAddGroupClicked}
+              />
+            </HStack>
+            <Wrap>
+              {state.groups.map((group) => (
+                <Tag
+                  size="sm"
+                  key={`collection-group-list-${collection.id}-${group}`}
+                  borderRadius="full"
+                  variant="solid"
+                  colorScheme="green"
+                  mx="0.25rem"
+                  my="0.2rem"
+                >
+                  <TagLabel>{group}</TagLabel>
+                  <TagCloseButton onClick={() => handleDeleteGroupClicked(group)} />
+                </Tag>
+              ))}
+            </Wrap>
+          </BasicModal>
+        );
       case 'delete':
-        return deleteModal;
+        return (
+          <BasicModal
+            isOpen={isOpen}
+            initialRef={undefined}
+            onClose={onCloseClear}
+            heading={`Delete "${collection.data.name}"`}
+            onClick={handleDeleteCollectionClick}
+            buttonText="Delete"
+            buttonColor="red"
+            isButtonDisabled={false}
+          >
+            Are you sure you want to delete this collection?
+            <br />
+            The collection cannot be recovered!
+          </BasicModal>
+        );
+      case 'env':
+        return (
+          <EnvironmentModal
+            collection={collection}
+            saveCollection={saveCollection}
+            isOpen={isOpen}
+            onOpen={onOpen}
+            onClose={onClose}
+          />
+        );
     }
   })(state.currentModal);
 
@@ -270,6 +341,16 @@ function CollectionView({ collection }: CollectionProps) {
                 }}
               >
                 Edit
+              </MenuItem>
+              <MenuItem
+                icon={<DragHandleIcon />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setState({ ...state, currentModal: 'env' });
+                  onOpen();
+                }}
+              >
+                Environment
               </MenuItem>
               <MenuItem
                 icon={<DeleteIcon />}

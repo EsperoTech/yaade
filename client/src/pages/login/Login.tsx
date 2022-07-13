@@ -71,7 +71,6 @@ function Login() {
       const usr = await response.json();
 
       setUser(usr);
-      console.log(usr);
       setState({ ...state, loading: false });
       successToast('You are successfully logged in.', toast);
     } catch (e) {

@@ -15,9 +15,10 @@ import {
 } from '@chakra-ui/react';
 import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
 
-import { CollectionsContext, UserContext } from '../../context';
+import { UserContext } from '../../context';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
+import { saveCollection, useGlobalState } from '../../state/GlobalState';
 import {
   cn,
   errorToast,
@@ -38,13 +39,8 @@ type StateProps = {
   basePath: string;
 };
 
-type SideBarProps = {
-  setCurrentRequest: Dispatch<SetStateAction<Request>>;
-};
-
 function Sidebar() {
   const toast = useToast();
-  const { collections, saveCollection } = useContext(CollectionsContext);
   const { user } = useContext(UserContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [state, setState] = useState<StateProps>({
@@ -57,6 +53,9 @@ function Sidebar() {
   });
   const { colorMode } = useColorMode();
   const initialRef = useRef(null);
+  const globalState = useGlobalState();
+
+  const collections = globalState.collections.get({ noproxy: true });
 
   const filteredCollections = collections.filter((c) =>
     c.data.name.toLowerCase().includes(state.searchTerm.toLowerCase()),

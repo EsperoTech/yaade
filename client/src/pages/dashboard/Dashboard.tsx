@@ -19,17 +19,13 @@ import Header from '../../components/header';
 import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
-import { CurrentRequestContext, UserContext } from '../../context';
-import { CollectionsContext } from '../../context/CollectionsContext';
-import CurrentRequest from '../../model/CurrentRequest';
-import Request from '../../model/Request';
+import { UserContext } from '../../context';
+import { useGlobalState, writeRequestToCollections } from '../../state/GlobalState';
 import { errorToast, parseResponseEvent } from '../../utils';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
-  const { setCollections, writeRequestToCollections } = useContext(CollectionsContext);
-  const { currentRequest, setCurrentRequest, saveRequest } =
-    useContext(CurrentRequestContext);
+  const globalState = useGlobalState();
   const { user } = useContext(UserContext);
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
@@ -39,16 +35,6 @@ function Dashboard() {
   };
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
-
-  const getCollections = useCallback(async () => {
-    try {
-      const response = await fetch('/api/collection');
-      const collections = await response.json();
-      setCollections(collections);
-    } catch (e) {
-      errorToast('Could not retrieve collections', toast);
-    }
-  }, [toast, setCollections]);
 
   useEffect(() => {
     if (isExtInitialized.current) return;
@@ -60,8 +46,17 @@ function Dashboard() {
         window.postMessage({ type: 'ping' }, '*');
       }
     }, 2000);
+    const getCollections = async () => {
+      try {
+        const response = await fetch('/api/collection');
+        const collections = await response.json();
+        globalState.collections.set(collections);
+      } catch (e) {
+        errorToast('Could not retrieve collections', toast);
+      }
+    };
     getCollections();
-  }, [getCollections]);
+  }, [globalState, toast]);
 
   const handlePongMessage = (event: MessageEvent<any>) => {
     if (event.data.type === 'pong') {
@@ -73,27 +68,25 @@ function Dashboard() {
 
   const handleResponseMessage = async (event: MessageEvent<any>) => {
     if (event.data.type === 'receive-response') {
+      globalState.requestLoading.set(false);
       if (event.data.response.err) {
-        setCurrentRequest((request: CurrentRequest) => ({
-          ...request,
-          isLoading: false,
-        }));
         errorToast(event.data.response.err, toast);
         return;
       }
 
+      const curr = globalState.currentRequest.get({ noproxy: true });
+
       const response = parseResponseEvent(event);
 
       const newRequest = {
-        ...currentRequest,
+        ...curr,
         data: {
-          ...currentRequest.data,
+          ...curr.data,
           response: response,
         },
-        isLoading: false,
       };
 
-      if (currentRequest.id !== -1 && user?.data.settings.saveOnSend) {
+      if (curr.id !== -1 && user?.data.settings.saveOnSend) {
         const response = await fetch('/api/request', {
           method: 'PUT',
           headers: {
@@ -102,11 +95,10 @@ function Dashboard() {
           body: JSON.stringify(newRequest),
         });
         if (response.status !== 200) throw new Error();
-        const savedRequest = { ...newRequest, changed: false };
-        writeRequestToCollections(savedRequest);
-        setCurrentRequest(savedRequest);
+        writeRequestToCollections(newRequest);
+        globalState.currentRequest.set(newRequest);
       } else {
-        setCurrentRequest(newRequest);
+        globalState.currentRequest.set(newRequest);
       }
     }
   };

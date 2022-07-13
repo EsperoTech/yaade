@@ -11,6 +11,7 @@ import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.await
+import org.apache.http.HttpStatus
 
 class CollectionRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
 
@@ -86,5 +87,68 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         vertx.fileSystem().delete(f.uploadedFileName()).await()
 
         ctx.end(collectionJson.encode()).await()
+    }
+
+    fun canUserReadCollection(ctx: RoutingContext, collection: CollectionDb?): Boolean {
+        val username = ctx.user().principal().getString("username")
+        val user = daoManager.userDao.getByUsername(username)
+
+        if (user == null || collection == null) {
+            ctx.fail(409)
+            return false
+        }
+
+        if (!collection.canRead(user)) {
+            ctx.fail(403)
+            return false
+        }
+
+        return true
+    }
+
+    suspend fun createEnv(ctx: RoutingContext) {
+        val id = ctx.pathParam("id").toLong()
+        val collection = daoManager.collectionDao.getById(id)
+        if (!canUserReadCollection(ctx, collection)) return
+
+        try {
+            val name = ctx.pathParam("env")
+            val body: JsonObject? = ctx.body().asJsonObject()
+            collection!!.createEnv(name, body)
+            daoManager.collectionDao.update(collection)
+            ctx.end().await()
+        } catch (e: RuntimeException) {
+            ctx.fail(HttpStatus.SC_CONFLICT)
+        }
+    }
+
+    suspend fun getAllEnvs(ctx: RoutingContext) {
+        val id = ctx.pathParam("id").toLong()
+        val collection = daoManager.collectionDao.getById(id)
+        if (!canUserReadCollection(ctx, collection)) return
+        ctx.end(collection!!.getAllEnvs().encode()).await()
+    }
+
+    suspend fun setEnvData(ctx: RoutingContext) {
+        val id = ctx.pathParam("id").toLong()
+        val collection = daoManager.collectionDao.getById(id)
+        if (!canUserReadCollection(ctx, collection)) return
+
+        val data = ctx.body().asJsonObject()
+        val name = ctx.pathParam("env")
+        collection!!.setEnvData(name, data)
+        daoManager.collectionDao.update(collection)
+        ctx.end().await()
+    }
+
+    suspend fun deleteEnv(ctx: RoutingContext) {
+        val id = ctx.pathParam("id").toLong()
+        val collection = daoManager.collectionDao.getById(id)
+        if (!canUserReadCollection(ctx, collection)) return
+
+        val name = ctx.pathParam("env")
+        collection!!.deleteEnv(name)
+        daoManager.collectionDao.update(collection)
+        ctx.end().await()
     }
 }

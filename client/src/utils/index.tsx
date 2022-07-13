@@ -1,6 +1,7 @@
 import beautify from 'beautify';
 
-import User from '../model/User';
+import KVRow from '../model/KVRow';
+import Request from '../model/Request';
 import parseResponseEvent from './parseResponseEvent';
 
 function cn(styles: any, name: string, variants: Array<string>): string {
@@ -81,6 +82,21 @@ function groupsStrToArray(groups: string): Array<string> {
   return groups.split(',').filter((el) => el !== '');
 }
 
+function kvRowsToMap(rows: KVRow[]): Record<string, string> {
+  const res: Record<string, string> = {};
+  rows.forEach((row) => {
+    if (row.key === '') return;
+    res[row.key] = row.value;
+  });
+  return res;
+}
+
+function mapToKvRows(map: Record<string, string>): KVRow[] {
+  return Object.entries(map).map(([key, value]) => {
+    return { key, value };
+  });
+}
+
 export {
   appendHttpIfNoProtocol,
   beautifyBody,
@@ -89,6 +105,8 @@ export {
   getMethodColor,
   groupsArrayToStr,
   groupsStrToArray,
+  kvRowsToMap,
+  mapToKvRows,
   parseResponseEvent,
   successToast,
 };
