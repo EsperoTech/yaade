@@ -15,12 +15,11 @@ I was looking for a self-hosted Postman alternative so that API collections can 
 ## 🌟 Features
 
 1. Self-hosted: data never leaves your own server
-2. Secured: if you don't know the password, you can't get in
+2. Multi-user: manage users and their permissions
 3. Persistent: even across container or server restarts
-4. Import your OpenAPI v3 files
-5. Easy single-file data import / export
-7. Requests are executed on your machine so you can call localhost as well as remote servers
-8. Most importantly: dark mode default
+4. Easy single-file data import / export
+5. Requests are executed on your machine so you can call localhost as well as remote servers
+6. Most importantly: dark mode default
 
 ## ⚡ Install
 
@@ -44,7 +43,7 @@ Yaade uses a browser extension as a proxy to enable CORS requests. Install the e
 To upgrade the docker container with a new version, first stop the running container, pull the latest version and start a new container with the old volume.
 
 ```bash
-docker rm -f <container-id>
+docker rm -f yaade
 docker pull esperotech/yaade:latest
 docker run -d --restart=always -p 9339:9339 -e YAADE_ADMIN_USERNAME=admin -v yaade:/app/data --name yaade esperotech/yaade:latest
 ```
