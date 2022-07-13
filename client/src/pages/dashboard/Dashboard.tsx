@@ -68,7 +68,6 @@ function Dashboard() {
 
   const handleResponseMessage = async (event: MessageEvent<any>) => {
     if (event.data.type === 'receive-response') {
-      console.log('HELO');
       globalState.requestLoading.set(false);
       if (event.data.response.err) {
         errorToast(event.data.response.err, toast);
@@ -76,8 +75,6 @@ function Dashboard() {
       }
 
       const curr = globalState.currentRequest.get({ noproxy: true });
-
-      console.log('curr', curr);
 
       const response = parseResponseEvent(event);
 

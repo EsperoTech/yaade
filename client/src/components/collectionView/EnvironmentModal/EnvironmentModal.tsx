@@ -212,7 +212,8 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       ...state,
       modalState: 'default',
       newEnvName: '',
-      selectedEnvData: getEnvData(state.selectedEnvName),
+      selectedEnvName: undefined,
+      selectedEnvData: undefined,
     });
     onClose();
   }

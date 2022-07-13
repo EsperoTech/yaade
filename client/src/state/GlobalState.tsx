@@ -52,9 +52,13 @@ function writeRequestToCollections(request: Request) {
     (r) => r.id.get() === request.id,
   );
   if (requestIndex === -1) {
-    state.collections[collectionIndex].requests.merge([request]);
+    state.collections[collectionIndex].requests.merge([
+      JSON.parse(JSON.stringify(request)),
+    ]);
   } else {
-    state.collections[collectionIndex].requests[requestIndex].set(request);
+    state.collections[collectionIndex].requests[requestIndex].set(
+      JSON.parse(JSON.stringify(request)),
+    );
   }
 }
 
@@ -83,7 +87,6 @@ function saveCollection(collection: Collection) {
   const collectionIndex = state.collections.findIndex(
     (c) => c.id.get() === collection.id,
   );
-
   if (collectionIndex === -1) {
     state.collections.merge([collection]);
   } else {

@@ -224,8 +224,6 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
 
     const interpolatedRequest = interpolateResult.result;
 
-    console.log('here', interpolatedRequest);
-
     const url = appendHttpIfNoProtocol(interpolatedRequest.data.uri);
 
     const headers = kvRowsToMap(interpolatedRequest.data.headers);
@@ -236,8 +234,6 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
     }
 
     globalState.requestLoading.set(true);
-
-    console.log('Sending message', url, options);
 
     window.postMessage(
       {

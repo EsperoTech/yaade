@@ -57,8 +57,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   const toast = useToast();
   const variants = globalState.currentRequest.id.get() === request.id ? ['selected'] : [];
 
-  async function handleSaveRequest() {
-    const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  async function handleSaveRequest(currentRequest: Request) {
     try {
       const response = await fetch('/api/request', {
         method: 'PUT',
@@ -68,11 +67,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
         body: JSON.stringify(currentRequest),
       });
       if (response.status !== 200) throw new Error();
-      const savedCurrentRequest = {
-        ...currentRequest,
-        changed: false,
-      };
-      writeRequestToCollections(savedCurrentRequest);
+      writeRequestToCollections(currentRequest);
     } catch (e) {
       errorToast('Could not save request', toast);
     }
@@ -84,7 +79,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       globalState.requestChanged.value &&
       globalState.currentRequest.id.value !== -1
     ) {
-      //await handleSaveRequest();
+      const currentRequest = globalState.currentRequest.get({ noproxy: true });
+      handleSaveRequest(currentRequest);
       globalState.currentRequest.set(request);
     } else if (
       !user?.data.settings?.saveOnClose &&
@@ -122,8 +118,6 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
           name: state.name,
         },
       };
-
-      console.log('renamed', renamedRequest);
 
       setCurrentRequest(renamedRequest);
       writeRequestToCollections(renamedRequest);
@@ -200,7 +194,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       onClose={onCloseClear}
       heading={`Request not saved`}
       onClick={() => {
-        handleSaveRequest();
+        const currentRequest = globalState.currentRequest.get({ noproxy: true });
+        handleSaveRequest(currentRequest);
         globalState.currentRequest.set(request);
         onCloseClear();
       }}

@@ -87,13 +87,7 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
       </div>
       <div className={styles.container}>
         <CodeMirror
-          onChange={useCallback((value, viewUpdate) => {
-            console.log(value, viewUpdate, content);
-            // TODO: how do i check if this was caused by a state change or user input?
-            if (value !== content) {
-              setContent(value);
-            }
-          }, [])}
+          onChange={setContent}
           extensions={extensions}
           theme={colorMode}
           value={content}
