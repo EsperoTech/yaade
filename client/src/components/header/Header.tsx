@@ -15,7 +15,12 @@ import styles from './Header.module.css';
 function Header() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
-    <Box className={styles.container} bg="headerBg">
+    <Box
+      className={styles.container}
+      bg="headerBg"
+      borderBottom="1px"
+      borderColor="rgba(128, 128, 128, 0.35)"
+    >
       <img className={styles.img} src="yaade-icon.png" alt="yaade icon" />
       <Heading as="h1" size="md" ml="2">
         YAADE

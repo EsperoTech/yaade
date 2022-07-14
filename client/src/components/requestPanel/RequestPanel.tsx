@@ -211,26 +211,29 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       return;
     }
 
-    const requestWithoutResponse = {
+    let requestWithoutResponse = {
       ...currentRequest,
       data: { ...currentRequest.data, response: null },
-    };
+    } as Request;
 
     const requestCollection = collections.find(
       (c) => c.id === currentRequest.collectionId,
-    )!!;
-    const selectedEnvData = getSelectedEnvData(requestCollection);
-    const interpolateResult = interpolate(requestWithoutResponse, selectedEnvData);
+    );
 
-    const interpolatedRequest = interpolateResult.result;
+    if (requestCollection) {
+      const selectedEnvData = getSelectedEnvData(requestCollection);
+      const interpolateResult = interpolate(requestWithoutResponse, selectedEnvData);
 
-    const url = appendHttpIfNoProtocol(interpolatedRequest.data.uri);
+      requestWithoutResponse = interpolateResult.result;
+    }
 
-    const headers = kvRowsToMap(interpolatedRequest.data.headers);
+    const url = appendHttpIfNoProtocol(requestWithoutResponse.data.uri);
 
-    const options: any = { headers, method: interpolatedRequest.data.method };
-    if (interpolatedRequest.data.body) {
-      options['body'] = interpolatedRequest.data.body;
+    const headers = kvRowsToMap(requestWithoutResponse.data.headers);
+
+    const options: any = { headers, method: requestWithoutResponse.data.method };
+    if (requestWithoutResponse.data.body) {
+      options['body'] = requestWithoutResponse.data.body;
     }
 
     globalState.requestLoading.set(true);

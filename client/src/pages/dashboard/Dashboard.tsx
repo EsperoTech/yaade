@@ -56,7 +56,7 @@ function Dashboard() {
       }
     };
     getCollections();
-  }, [globalState, toast]);
+  }, []);
 
   const handlePongMessage = (event: MessageEvent<any>) => {
     if (event.data.type === 'pong') {

@@ -1,11 +1,9 @@
 .parent {
   height: 100vh;
-  gap: 1rem;
 }
 
 .allotment {
   height: calc(100% - 48px);
-  padding: 1rem;
 }
 
 .sidebar {
