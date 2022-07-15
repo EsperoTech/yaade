@@ -73,8 +73,8 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
 
   useKeyPress(handleSaveRequestClick, 's', true);
 
-  const collections = globalState.collections.get();
-  const currentRequest = globalState.currentRequest.get();
+  const collections = globalState.collections.get({ noproxy: true });
+  const currentRequest = globalState.currentRequest.get({ noproxy: true });
 
   if (collections.length > 0 && newReqForm.collectionId === -1) {
     setNewReqForm({ ...newReqForm, collectionId: collections[0].id });
