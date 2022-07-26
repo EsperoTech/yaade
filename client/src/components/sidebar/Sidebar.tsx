@@ -28,12 +28,13 @@ import {
 } from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionView from '../collectionView';
+import GroupsInput from '../groupsInput';
 import styles from './Sidebar.module.css';
 
 type StateProps = {
   clickedCollectionId: number;
   name: string;
-  groups: string;
+  groups: string[];
   searchTerm: string;
   openApiFile: any;
   basePath: string;
@@ -46,7 +47,7 @@ function Sidebar() {
   const [state, setState] = useState<StateProps>({
     clickedCollectionId: -1,
     name: '',
-    groups: groupsArrayToStr(user?.data?.groups),
+    groups: user?.data?.groups ?? [],
     searchTerm: '',
     openApiFile: undefined,
     basePath: '',
@@ -62,7 +63,7 @@ function Sidebar() {
   );
 
   function onCloseClear() {
-    setState({ ...state, name: '', groups: groupsArrayToStr(user?.data?.groups) });
+    setState({ ...state, name: '', groups: user?.data?.groups ?? [] });
     onClose();
   }
 
@@ -74,7 +75,9 @@ function Sidebar() {
         data.append('File', state.openApiFile, 'openapi.yaml');
 
         response = await fetch(
-          `/api/collection/importOpenApi?basePath=${state.basePath}&groups=${state.groups}`,
+          `/api/collection/importOpenApi?basePath=${
+            state.basePath
+          }&groups=${groupsArrayToStr(state.groups)}`,
           {
             method: 'POST',
             body: data,
@@ -88,7 +91,7 @@ function Sidebar() {
           },
           body: JSON.stringify({
             name: state.name,
-            groups: groupsStrToArray(state.groups),
+            groups: state.groups,
           }),
         });
       }
@@ -155,21 +158,22 @@ function Sidebar() {
               <Input
                 placeholder="Name"
                 w="100%"
-                mt="4"
+                my="4"
                 borderRadius={20}
                 colorScheme="green"
                 value={state.name}
                 onChange={(e) => setState({ ...state, name: e.target.value })}
                 ref={initialRef}
               />
-              <Input
-                placeholder="Groups (Comma separated)"
-                w="100%"
-                mt="4"
-                borderRadius={20}
-                colorScheme="green"
-                value={state.groups}
-                onChange={(e) => setState({ ...state, groups: e.target.value })}
+              <GroupsInput
+                groups={state.groups}
+                setGroups={(groups: string[]) =>
+                  setState({
+                    ...state,
+                    groups,
+                  })
+                }
+                isRounded
               />
             </TabPanel>
             <TabPanel>
@@ -189,21 +193,22 @@ function Sidebar() {
               />
               <Input
                 placeholder="Base Path"
-                mt="4"
+                my="4"
                 w="100%"
                 borderRadius={20}
                 colorScheme="green"
                 value={state.basePath}
                 onChange={(e) => setState({ ...state, basePath: e.target.value })}
               />
-              <Input
-                placeholder="Groups (Comma separated)"
-                w="100%"
-                mt="4"
-                borderRadius={20}
-                colorScheme="green"
-                value={state.groups}
-                onChange={(e) => setState({ ...state, groups: e.target.value })}
+              <GroupsInput
+                groups={state.groups}
+                setGroups={(groups: string[]) =>
+                  setState({
+                    ...state,
+                    groups,
+                  })
+                }
+                isRounded
               />
             </TabPanel>
           </TabPanels>

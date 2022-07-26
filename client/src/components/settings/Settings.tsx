@@ -25,6 +25,7 @@ import {
   TabPanels,
   Tabs,
   Tag,
+  TagCloseButton,
   TagLabel,
   Tbody,
   Td,
@@ -35,6 +36,8 @@ import {
   useColorMode,
   useDisclosure,
   useToast,
+  VStack,
+  Wrap,
 } from '@chakra-ui/react';
 import { useContext, useEffect, useState } from 'react';
 
@@ -48,6 +51,7 @@ import {
   successToast,
 } from '../../utils';
 import BasicModal from '../basicModal';
+import GroupsInput from '../groupsInput';
 import styles from './Settings.module.css';
 
 type SettingsTabProps = {
@@ -79,9 +83,10 @@ type SettingsState = {
 type AdminState = {
   users: Array<User>;
   userAddUsername: string;
-  userAddGroups: string;
+  userAddGroupsString: string;
+  userAddGroups: string[];
   userRowEditIdx: number;
-  userRowEditGroups: string;
+  userRowEditGroups: string[];
   deleteUser: User | undefined;
 };
 
@@ -96,9 +101,10 @@ const defaultState: SettingsState = {
 const defaultAdminState: AdminState = {
   users: [],
   userAddUsername: '',
-  userAddGroups: '',
+  userAddGroupsString: '',
+  userAddGroups: [],
   userRowEditIdx: -1,
-  userRowEditGroups: '',
+  userRowEditGroups: [],
   deleteUser: undefined,
 };
 
@@ -237,11 +243,11 @@ function Settings() {
 
   function setAdminEditUser(i: number) {
     const editUser = adminState.users[i];
-    const groupsStr = groupsArrayToStr(editUser.data?.groups);
+    const groups = editUser.data?.groups ?? [];
     setAdminState({
       ...adminState,
       userRowEditIdx: i,
-      userRowEditGroups: groupsStr,
+      userRowEditGroups: groups,
     });
   }
 
@@ -250,7 +256,7 @@ function Settings() {
       if (adminState.userRowEditIdx === -1) return;
 
       const editUser = adminState.users[adminState.userRowEditIdx];
-      editUser.data.groups = groupsStrToArray(adminState.userRowEditGroups);
+      editUser.data.groups = adminState.userRowEditGroups;
 
       const res = await fetch(`/api/users/${editUser.id}`, {
         method: 'PUT',
@@ -285,7 +291,7 @@ function Settings() {
     try {
       const newUser = {
         username: adminState.userAddUsername,
-        groups: adminState.userAddGroups.split(','),
+        groups: adminState.userAddGroups,
       };
       const res = await fetch('/api/users', {
         method: 'POST',
@@ -304,7 +310,8 @@ function Settings() {
         setAdminState({
           ...adminState,
           userAddUsername: '',
-          userAddGroups: '',
+          userAddGroupsString: '',
+          userAddGroups: [],
           users: newUsers,
         });
       } else if (res.status === 409) {
@@ -557,7 +564,7 @@ function Settings() {
                 <Heading as="h4" size="md" mb="2" mt="2">
                   Add a new user
                 </Heading>
-                <HStack mb="4">
+                <HStack mb="4" alignItems="start">
                   <Input
                     size="sm"
                     placeholder="Username"
@@ -567,24 +574,23 @@ function Settings() {
                       setAdminState({ ...adminState, userAddUsername: e.target.value })
                     }
                   />
-                  <Input
-                    size="sm"
-                    placeholder="Groups (Comma separated)"
-                    width="300px"
-                    value={adminState.userAddGroups}
-                    onChange={(e) =>
-                      setAdminState({ ...adminState, userAddGroups: e.target.value })
-                    }
-                  />
+                  <VStack alignItems="start" width="300px">
+                    <GroupsInput
+                      groups={adminState.userAddGroups}
+                      setGroups={(groups: string[]) =>
+                        setAdminState({
+                          ...adminState,
+                          userAddGroups: groups,
+                        })
+                      }
+                    />
+                  </VStack>
                   <div>
                     <IconButton
                       aria-label="add-new-user"
                       isRound
                       variant="ghost"
-                      disabled={
-                        adminState.userAddUsername === '' ||
-                        adminState.userAddGroups === ''
-                      }
+                      disabled={adminState.userAddUsername === ''}
                       onClick={addNewUser}
                       colorScheme="green"
                       icon={<CheckIcon />}
@@ -608,22 +614,21 @@ function Settings() {
                       {adminState.users.map((u, i) => {
                         return adminState.userRowEditIdx === i ? (
                           <Tr key={`admin-user-list-${i}`}>
-                            <Td p="0">{u.username}</Td>
-                            <Td p="0">
-                              <Input
-                                size="sm"
-                                variant="outline"
-                                placeholder="Groups"
-                                value={adminState.userRowEditGroups}
-                                onChange={(e) =>
+                            <Td p="0" verticalAlign="top" padding="12px 0 0 0">
+                              {u.username}
+                            </Td>
+                            <Td p="0" verticalAlign="top" padding="4px 0 0 0">
+                              <GroupsInput
+                                groups={adminState.userRowEditGroups}
+                                setGroups={(groups: string[]) =>
                                   setAdminState({
                                     ...adminState,
-                                    userRowEditGroups: e.target.value,
+                                    userRowEditGroups: groups,
                                   })
                                 }
                               />
                             </Td>
-                            <Td p="0">
+                            <Td p="0" verticalAlign="top">
                               <div
                                 style={{
                                   display: 'flex',
@@ -660,10 +665,17 @@ function Settings() {
                               width="150px"
                               maxWidth="150px"
                               overflow="hidden"
+                              verticalAlign="top"
+                              padding="12px 0 0 0"
                             >
                               {u.username}
                             </Td>
-                            <Td p="0" overflowX="hidden">
+                            <Td
+                              p="0"
+                              overflowX="hidden"
+                              verticalAlign="top"
+                              padding="8px 0 0 0"
+                            >
                               {u.data?.groups?.map((group: string) => (
                                 <Tag
                                   size="sm"
@@ -678,7 +690,7 @@ function Settings() {
                                 </Tag>
                               ))}
                             </Td>
-                            <Td p="0" isNumeric>
+                            <Td p="0" isNumeric verticalAlign="top">
                               <IconButton
                                 aria-label="edit-row"
                                 isRound
