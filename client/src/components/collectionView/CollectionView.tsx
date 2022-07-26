@@ -39,6 +39,7 @@ import { errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionRequest from '../CollectionRequest/CollectionRequest';
+import GroupsInput from '../groupsInput';
 import styles from './CollectionView.module.css';
 import EnvironmentModal from './EnvironmentModal';
 
@@ -166,23 +167,6 @@ function CollectionView({ collection }: CollectionProps) {
     onClose();
   }
 
-  function handleAddGroupClicked() {
-    const newGroups = [...state.groups, state.newGroup];
-    setState({
-      ...state,
-      groups: newGroups,
-      newGroup: '',
-    });
-  }
-
-  function handleDeleteGroupClicked(name: string) {
-    const newGroups = state.groups.filter((el) => el !== name);
-    setState({
-      ...state,
-      groups: newGroups,
-    });
-  }
-
   const currentModal = ((s: string) => {
     switch (s) {
       case 'newRequest':
@@ -235,40 +219,16 @@ function CollectionView({ collection }: CollectionProps) {
             <Heading as="h6" size="xs" my="4">
               Groups
             </Heading>
-            <HStack mb="4">
-              <Input
-                placeholder="Add a new group"
-                w="100%"
-                borderRadius={20}
-                colorScheme="green"
-                value={state.newGroup}
-                onChange={(e) => setState({ ...state, newGroup: e.target.value })}
-              />
-              <IconButton
-                icon={<CheckIcon />}
-                variant="ghost"
-                colorScheme="green"
-                aria-label="Create new environment"
-                disabled={state.newGroup === '' || state.groups.includes(state.newGroup)}
-                onClick={handleAddGroupClicked}
-              />
-            </HStack>
-            <Wrap>
-              {state.groups.map((group) => (
-                <Tag
-                  size="sm"
-                  key={`collection-group-list-${collection.id}-${group}`}
-                  borderRadius="full"
-                  variant="solid"
-                  colorScheme="green"
-                  mx="0.25rem"
-                  my="0.2rem"
-                >
-                  <TagLabel>{group}</TagLabel>
-                  <TagCloseButton onClick={() => handleDeleteGroupClicked(group)} />
-                </Tag>
-              ))}
-            </Wrap>
+            <GroupsInput
+              groups={state.groups}
+              setGroups={(groups: string[]) =>
+                setState({
+                  ...state,
+                  groups,
+                })
+              }
+              isRounded
+            />
           </BasicModal>
         );
       case 'delete':
