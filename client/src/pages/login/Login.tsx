@@ -79,6 +79,20 @@ function Login() {
     }
   }
 
+  async function doGithubLogin() {
+    try {
+      const res = await fetch('/api/login?providerid=github');
+
+      if (res.status !== 200) throw Error('bad req');
+
+      const j = await res.json();
+
+      console.log('j');
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
   return (
     <div className={styles.root}>
       <Box className={styles.container} bg="panelBg">
@@ -124,6 +138,15 @@ function Login() {
               LOGIN
             </Button>
           </Center>
+        </form>
+        <form action="/api/login?providerid=github" method="GET">
+          <input
+            style={{ display: 'none' }}
+            type="text"
+            name="providerid"
+            value="github"
+          />
+          <button type="submit">Github login</button>
         </form>
       </Box>
     </div>
