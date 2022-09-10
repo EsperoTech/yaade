@@ -7,7 +7,7 @@ import com.espero.yaade.server.Server
 import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 
-const val PORT = 9335
+const val PORT = 9339
 const val JDBC_URL = "jdbc:h2:file:./app/data/yaade-db"
 const val JDBC_USR = "sa"
 const val JDBC_PWD = ""
