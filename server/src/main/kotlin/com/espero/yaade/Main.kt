@@ -30,11 +30,6 @@ fun main() {
         }
     }
 
-    val authConfig = daoManager.configDao.getByName(ConfigDb.AUTH_CONFIG)
-    if (authConfig == null) {
-        daoManager.configDao.create(ConfigDb.createEmptyAuthConfig())
-    }
-
     val vertx = Vertx.vertx()
     vertx.deployVerticle(Server(PORT, daoManager))
 }

@@ -134,8 +134,12 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())
-            val authConfig = daoManager.configDao.getByName(ConfigDb.AUTH_CONFIG)?.getConfig()
-                ?: throw RuntimeException("Auth config was not initialized")
+            var authConfig = daoManager.configDao.getByName(ConfigDb.AUTH_CONFIG)?.getConfig()
+            if (authConfig == null) {
+                val newConfig = ConfigDb.createEmptyAuthConfig()
+                authConfig = newConfig.getConfig()
+                daoManager.configDao.create(newConfig)
+            }
             try {
                 authHandler.init(router, authConfig)
             } catch (e: Exception) {

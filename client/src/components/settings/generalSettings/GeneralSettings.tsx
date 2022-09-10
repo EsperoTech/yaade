@@ -81,9 +81,9 @@ const GeneralSettings: FunctionComponent<GeneralSettingsProps> = () => {
           colorScheme="green"
           size="md"
           onChange={(e) => handleSettingChanged('saveOnSend', e.target.checked)}
-          isChecked={user?.data.settings.saveOnSend}
+          isChecked={user?.data?.settings?.saveOnSend}
         >
-          {user?.data.settings.saveOnSend ? 'ON' : 'OFF'}
+          {user?.data?.settings?.saveOnSend ? 'ON' : 'OFF'}
         </Switch>
       </HStack>
       <HStack>
@@ -92,9 +92,9 @@ const GeneralSettings: FunctionComponent<GeneralSettingsProps> = () => {
           colorScheme="green"
           size="md"
           onChange={(e) => handleSettingChanged('saveOnClose', e.target.checked)}
-          isChecked={user?.data.settings.saveOnClose}
+          isChecked={user?.data?.settings?.saveOnClose}
         >
-          {user?.data.settings.saveOnClose ? 'ON' : 'OFF'}
+          {user?.data?.settings?.saveOnClose ? 'ON' : 'OFF'}
         </Switch>
       </HStack>
     </SettingsTab>

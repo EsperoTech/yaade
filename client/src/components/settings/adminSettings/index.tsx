@@ -1,3 +1,3 @@
-import GeneralSettings from '../generalSettings/GeneralSettings';
+import AdminSettings from './AdminSettings';
 
-export default GeneralSettings;
+export default AdminSettings;
