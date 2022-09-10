@@ -4,7 +4,10 @@ import com.espero.yaade.JDBC_PWD
 import com.espero.yaade.JDBC_URL
 import com.espero.yaade.JDBC_USR
 import com.espero.yaade.db.DaoManager
+import com.espero.yaade.model.db.ConfigDb
 import com.espero.yaade.model.db.UserDb
+import com.espero.yaade.server.Server
+import com.espero.yaade.server.errors.ServerError
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpHeaders
 import io.vertx.core.json.JsonArray
@@ -17,7 +20,12 @@ import org.apache.http.HttpStatus
 import org.h2.tools.DeleteDbFiles
 import java.util.UUID
 
-class AdminRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
+class AdminRoute(
+    private val daoManager: DaoManager,
+    private val vertx: Vertx,
+    private val validateAuthConfig: suspend (authConfig: JsonObject) -> Unit,
+    private val server: Server
+) {
 
     suspend fun exportBackup(ctx: RoutingContext) {
         val fileUuid = UUID.randomUUID().toString()
@@ -63,8 +71,7 @@ class AdminRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         val username = body.getString("username")
         val groups = body.getJsonArray("groups").map { it as String }
         if (daoManager.userDao.getByUsername(username) != null) {
-            ctx.fail(HttpStatus.SC_CONFLICT)
-            return
+            throw ServerError(HttpStatus.SC_CONFLICT, "A user with the name $username already exists")
         }
 
         val result = daoManager.userDao.createUser(username, groups)
@@ -76,8 +83,7 @@ class AdminRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         val userId = ctx.pathParam("userId").toLong()
         val user = daoManager.userDao.getById(userId)
         if (user == null || user.username == "admin") {
-            ctx.fail(HttpStatus.SC_BAD_REQUEST)
-            return
+            throw ServerError(HttpStatus.SC_BAD_REQUEST, "Cannot delete. User does not exist")
         }
         daoManager.userDao.deleteUser(userId)
         ctx.end().await()
@@ -85,7 +91,11 @@ class AdminRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
 
     suspend fun updateUser(ctx: RoutingContext) {
         val userId = ctx.pathParam("userId").toLong()
-        val data = ctx.body().asJsonObject().getJsonObject("data")
+        if (userId <= 0)
+            throw ServerError(HttpStatus.SC_BAD_REQUEST, "userId is invalid: $userId")
+        val data =
+            ctx.body().asJsonObject().getJsonObject("data")
+                ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No body provided")
         val result = daoManager.userDao.updateUser(userId, data)
 
         ctx.end(result.toJson().encode()).await()
@@ -100,5 +110,41 @@ class AdminRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         val userId = ctx.pathParam("userId").toLong()
         daoManager.userDao.resetPassword(userId)
         ctx.end().await()
+    }
+
+    suspend fun getConfig(ctx: RoutingContext) {
+        val configName = ctx.pathParam("name") ?: throw RuntimeException("No config name provided")
+        val config = daoManager.configDao.getByName(configName)
+            ?: throw ServerError(HttpStatus.SC_NOT_FOUND, "Config not found for name $configName")
+        ctx.end(config.config.decodeToString()).await()
+    }
+
+    suspend fun updateConfig(ctx: RoutingContext) {
+        val configName = ctx.pathParam("name")
+            ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No config name provided")
+        val config: JsonObject
+        try {
+            config = ctx.body().asJsonObject()
+        } catch (t: Throwable) {
+            throw ServerError(HttpStatus.SC_BAD_REQUEST, t.message ?: "Could not parse json")
+        }
+        when (configName) {
+            ConfigDb.AUTH_CONFIG -> updateAuthConfig(config)
+            else -> throw ServerError(HttpStatus.SC_BAD_REQUEST, "No config name provided")
+        }
+        ctx.end().await()
+        server.restartServer()
+    }
+
+    private suspend fun updateAuthConfig(config: JsonObject) {
+        var updatedConfig = daoManager.configDao.getByName(ConfigDb.AUTH_CONFIG)
+        if (updatedConfig == null) {
+            val newConfig = ConfigDb.createEmptyAuthConfig()
+            daoManager.configDao.create(newConfig)
+            updatedConfig = newConfig
+        }
+        updatedConfig.config = config.encode().toByteArray()
+        validateAuthConfig(updatedConfig.getConfig())
+        daoManager.configDao.update(updatedConfig)
     }
 }

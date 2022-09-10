@@ -85,6 +85,9 @@ function AppWithUser() {
           showConnectionWarning();
         }
       }
+    } else {
+      setLogoutCounter(autoLogoutDurationInS);
+      closeAll();
     }
   }, 1000);
 

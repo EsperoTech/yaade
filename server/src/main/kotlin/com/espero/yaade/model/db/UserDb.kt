@@ -101,5 +101,17 @@ class UserDb {
 
             return UserDb(username, hashedPassword, "1.0.0", data)
         }
+
+        fun createExternalUser(username: String, provider: String): UserDb {
+            val externalUsername = getExternalUsername(username, provider)
+            val data = JsonObject()
+                .put("settings", defaultSettings)
+                .put("isExternal", true)
+                .put("provider", provider)
+                .encode().toByteArray()
+            return UserDb(externalUsername, "", "1.0.0", data)
+        }
+
+        fun getExternalUsername(username: String, provider: String) = "$username$$provider"
     }
 }

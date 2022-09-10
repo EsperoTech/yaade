@@ -25,6 +25,11 @@
   margin-top: 24px;
 }
 
-.img {
+.yaadeIcon {
   height: 100px;
+}
+
+.oauthIcon {
+  height: 25px;
+  width: 25px;
 }

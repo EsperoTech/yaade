@@ -10,9 +10,9 @@ import {
 import { useContext } from 'react';
 
 import { UserContext } from '../../context';
-import AccountSettings from './accountSettings/AccountSettings';
+import AccountSettings from './accountSettings';
 import GeneralSettings from './adminSettings';
-import AdminSettings from './adminSettings/AdminSettings';
+import AdminSettings from './adminSettings';
 import styles from './Settings.module.css';
 import SettingsTab from './settingsTab';
 import UserSettings from './userSettings';

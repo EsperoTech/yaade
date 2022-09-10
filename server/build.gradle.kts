@@ -21,6 +21,7 @@ dependencies {
     implementation("io.vertx:vertx-lang-kotlin-coroutines")
     implementation("io.vertx:vertx-web-openapi")
     implementation("io.vertx:vertx-web-validation")
+    implementation("io.vertx:vertx-auth-oauth2")
 
     implementation("com.h2database:h2:1.4.200")
     implementation("com.zaxxer:HikariCP:5.0.1")

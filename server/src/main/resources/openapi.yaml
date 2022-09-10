@@ -155,6 +155,14 @@ paths:
       operationId: deleteRequest
       summary: Delete a request
   /api/login:
+    get:
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Success
+      operationId: doLoginExt
+      summary: Login using External provider
     post:
       requestBody:
         description: Credentials
@@ -411,7 +419,52 @@ paths:
         "200":
           description: success
       operationId: deleteEnv
-      summary: delete environement
+      summary: delete environment
+  "/api/config/{name}":
+    get:
+      tags:
+        - Admin
+      parameters:
+        - name: name
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json: { }
+          description: success
+      operationId: getConfig
+      summary: Get a specific config by its name
+    put:
+      tags:
+        - Config
+        - Admin
+      parameters:
+        - name: name
+          schema:
+            type: string
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json: { }
+        required: true
+      responses:
+        "200":
+          description: success
+      operationId: setConfig
+      summary: Set a specific config by its name
+  "/api/loginProviders":
+    get:
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Success
+      operationId: getLoginProviders
+      summary: Get the configured external login providers
 components:
   schemas:
     HealthResponse:
@@ -500,3 +553,4 @@ components:
       properties:
         key:
           type: string
+

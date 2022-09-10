@@ -1,4 +1,4 @@
-package com.espero.yaade.server
+package com.espero.yaade.server.auth
 
 import com.espero.yaade.db.DaoManager
 import com.password4j.Password
@@ -15,6 +15,10 @@ class LocalAuthProvider(private val daoManager: DaoManager) : AuthenticationProv
             val username = credentials.getString("username") ?: throw RuntimeException("Username must be set")
             val password = credentials.getString("password") ?: throw RuntimeException("Password must be set")
             val user = daoManager.userDao.getByUsername(username) ?: throw RuntimeException("No user found")
+            val isExternal = user.jsonData().getBoolean("isExternal") ?: false
+            if (isExternal) {
+                throw RuntimeException("Cannot perform local login on external user")
+            }
             if (!Password.check(password, user.password).withArgon2()) {
                 throw RuntimeException("Password does not match")
             }

@@ -4,7 +4,7 @@ import { html } from '@codemirror/lang-html';
 import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import React from 'react';
 
 import { beautifyBody, errorToast } from '../../utils';

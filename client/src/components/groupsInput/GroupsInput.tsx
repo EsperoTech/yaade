@@ -40,7 +40,7 @@ const GroupsInput: FunctionComponent<GroupsInputProps> = ({
         value={newGroup}
         onChange={(e) => setNewGroupInput(e.target.value)}
       />
-      <Wrap minHeight="20px">
+      <Wrap>
         {groups.map((group) => (
           <Tag
             size="sm"

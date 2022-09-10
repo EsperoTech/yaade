@@ -1,4 +1,13 @@
-import { Button, Heading, Stack, useColorMode, useToast } from '@chakra-ui/react';
+import {
+  Button,
+  Heading,
+  Stack,
+  Tag,
+  TagLabel,
+  useColorMode,
+  useToast,
+  Wrap,
+} from '@chakra-ui/react';
 import { FunctionComponent, useContext, useState } from 'react';
 
 import { UserContext } from '../../../context';
@@ -80,47 +89,69 @@ const AccountSettings: FunctionComponent<AccountSettingsProps> = () => {
         </Button>
       </Stack>
       <Heading as="h4" size="md" mb="4">
-        Password
+        Groups
       </Heading>
-      <form>
-        <input
-          className={cn(styles, 'input', [colorMode])}
-          id="current-password-input"
-          type="password"
-          placeholder="Current Password..."
-          value={state.currentPassword}
-          onChange={(e) => setState({ ...state, currentPassword: e.target.value })}
-        />
-        <input
-          className={cn(styles, 'input', [colorMode])}
-          id="new-password-input"
-          type="password"
-          placeholder="New Password..."
-          value={state.newPassword}
-          onChange={(e) => setState({ ...state, newPassword: e.target.value })}
-        />
-        <input
-          className={cn(styles, 'input', [colorMode])}
-          id="repeat-password-input"
-          type="password"
-          placeholder="Repeat Password..."
-          value={state.repeatPassword}
-          onChange={(e) => setState({ ...state, repeatPassword: e.target.value })}
-        />
-        <Button
-          mt="4"
-          borderRadius={20}
-          colorScheme="green"
-          disabled={
-            !state.currentPassword ||
-            !state.newPassword ||
-            !(state.repeatPassword === state.newPassword)
-          }
-          onClick={handleChangePasswordClick}
-        >
-          Change password
-        </Button>
-      </form>
+      <Wrap mb="4">
+        {user?.data?.groups?.map((group: any) => (
+          <Tag
+            size="sm"
+            key={`collection-group-list-${group}`}
+            borderRadius="full"
+            variant="solid"
+            colorScheme="green"
+            mx="0.25rem"
+            my="0.2rem"
+          >
+            <TagLabel>{group}</TagLabel>
+          </Tag>
+        ))}
+      </Wrap>
+      {!user?.data?.isExternal ? (
+        <>
+          <Heading as="h4" size="md" mb="4">
+            Password
+          </Heading>
+          <form>
+            <input
+              className={cn(styles, 'input', [colorMode])}
+              id="current-password-input"
+              type="password"
+              placeholder="Current Password..."
+              value={state.currentPassword}
+              onChange={(e) => setState({ ...state, currentPassword: e.target.value })}
+            />
+            <input
+              className={cn(styles, 'input', [colorMode])}
+              id="new-password-input"
+              type="password"
+              placeholder="New Password..."
+              value={state.newPassword}
+              onChange={(e) => setState({ ...state, newPassword: e.target.value })}
+            />
+            <input
+              className={cn(styles, 'input', [colorMode])}
+              id="repeat-password-input"
+              type="password"
+              placeholder="Repeat Password..."
+              value={state.repeatPassword}
+              onChange={(e) => setState({ ...state, repeatPassword: e.target.value })}
+            />
+            <Button
+              mt="4"
+              borderRadius={20}
+              colorScheme="green"
+              disabled={
+                !state.currentPassword ||
+                !state.newPassword ||
+                !(state.repeatPassword === state.newPassword)
+              }
+              onClick={handleChangePasswordClick}
+            >
+              Change password
+            </Button>
+          </form>
+        </>
+      ) : null}
     </SettingsTab>
   );
 };

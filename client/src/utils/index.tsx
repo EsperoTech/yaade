@@ -44,13 +44,13 @@ function successToast(msg: string, toast: any) {
   });
 }
 
-function errorToast(msg: string, toast: any) {
+function errorToast(msg: string, toast: any, duration?: number) {
   toast({
     title: 'Error',
     description: msg,
     status: 'error',
     isClosable: true,
-    duration: 2000,
+    duration: duration ?? 2000,
   });
 }
 
