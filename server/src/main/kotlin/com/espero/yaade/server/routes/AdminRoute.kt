@@ -63,6 +63,7 @@ class AdminRoute(
         val response = JsonObject().put(f.fileName(), f.size())
         ctx.session().destroy()
         ctx.response().end(response.encode()).await()
+        server.restartServer()
     }
 
     suspend fun createUser(ctx: RoutingContext) {

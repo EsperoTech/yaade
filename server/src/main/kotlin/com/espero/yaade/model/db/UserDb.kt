@@ -39,7 +39,7 @@ class UserDb {
 
     fun changeSetting(key: String, value: Any) {
         val newData = jsonData()
-        val newSettings = newData.getJsonObject("settings")
+        val newSettings = newData.getJsonObject("settings") ?: JsonObject()
         newSettings.put(key, value)
         newData.put("settings", newSettings)
         data = newData.encode().toByteArray()
