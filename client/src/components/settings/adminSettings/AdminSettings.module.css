@@ -1,0 +1,36 @@
+.fileInput {
+  margin-top: 1rem;
+  border-radius: 20px;
+  width: 100%;
+}
+
+.fileInput::file-selector-button {
+  padding: 6px 12px 6px 12px;
+  box-shadow: none;
+  outline: none;
+  border: none;
+  margin-right: 16px;
+  font-weight: 700;
+}
+
+.fileInput::file-selector-button:hover {
+  cursor: pointer;
+}
+
+.fileInput--light {
+  background-color: var(--chakra-colors-gray-200);
+}
+
+.fileInput--dark {
+  background-color: var(--chakra-colors-gray-800);
+}
+
+.fileInput--light::file-selector-button {
+  background-color: var(--chakra-colors-blue-500);
+  color: var(--chakra-colors-white);
+}
+
+.fileInput--dark::file-selector-button {
+  background-color: var(--chakra-colors-blue-200);
+  color: var(--chakra-colors-black);
+}

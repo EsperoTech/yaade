@@ -1,6 +1,7 @@
 package com.espero.yaade.server.routes
 
 import com.espero.yaade.db.DaoManager
+import com.espero.yaade.server.errors.ServerError
 import com.password4j.Password
 import io.vertx.core.Vertx
 import io.vertx.ext.web.RoutingContext
@@ -26,8 +27,7 @@ class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         val user = daoManager.userDao.getById(userId)
 
         if (user == null || !Password.check(currentPassword, user.password).withArgon2()) {
-            ctx.fail(403)
-            return
+            throw ServerError(HttpStatus.SC_FORBIDDEN, "Wrong current password")
         }
 
         user.password = Password.hash(newPassword).addRandomSalt().withArgon2().result
@@ -41,11 +41,7 @@ class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
     suspend fun changeSetting(ctx: RoutingContext) {
         val userId = ctx.user().principal().getString("id").toLong()
         val user = daoManager.userDao.getById(userId)
-
-        if (user == null) {
-            ctx.fail(HttpStatus.SC_BAD_REQUEST)
-            return
-        }
+            ?: throw ServerError(HttpStatus.SC_FORBIDDEN, "User does not exist")
 
         val body = ctx.body().asJsonObject()
         user.changeSetting(body.getString("key"), body.getValue("value"))

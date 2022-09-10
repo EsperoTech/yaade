@@ -9,6 +9,7 @@ class DaoManager {
     lateinit var requestDao: RequestDao
     lateinit var collectionDao: CollectionDao
     lateinit var userDao: UserDao
+    lateinit var configDao: ConfigDao
     lateinit var dataSource: HikariDataSource
     lateinit var connectionSource: ConnectionSource
 
@@ -23,6 +24,7 @@ class DaoManager {
         requestDao = RequestDao(connectionSource)
         collectionDao = CollectionDao(connectionSource)
         userDao = UserDao(connectionSource)
+        configDao = ConfigDao(connectionSource)
     }
 
     fun close() {

@@ -1,4 +1,4 @@
-package com.espero.yaade.server
+package com.espero.yaade.server.auth
 
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
@@ -10,7 +10,7 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.HttpException
 import io.vertx.ext.web.handler.impl.AuthenticationHandlerImpl
 
-class AuthHandler(authProvider: AuthenticationProvider) :
+class LocalAuthHandler(authProvider: AuthenticationProvider) :
     AuthenticationHandlerImpl<AuthenticationProvider>(authProvider) {
     override fun authenticate(ctx: RoutingContext, handler: Handler<AsyncResult<User>>) {
         try {

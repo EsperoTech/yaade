@@ -21,6 +21,12 @@ class UserDao(connectionSource: ConnectionSource) : BaseDao<UserDb>(connectionSo
         return user
     }
 
+    fun createExternalUser(username: String, providerId: String): UserDb {
+        val user = UserDb.createExternalUser(username, providerId)
+        dao.create(user)
+        return user
+    }
+
     private fun getByIdOrThrow(userId: Long): UserDb {
         return getById(userId) ?: throw RuntimeException("User not found for id $userId")
     }
@@ -42,13 +48,9 @@ class UserDao(connectionSource: ConnectionSource) : BaseDao<UserDb>(connectionSo
         return dao.queryForAll()
     }
 
-    fun userGroups(username: String): JsonArray {
-        val user = getByUsername(username) ?: return JsonArray()
-        return user.jsonData().getJsonArray("groups") ?: return JsonArray()
-    }
-
-    fun isAdmin(username: String): Boolean {
-        return username == ADMIN_USERNAME || userGroups(username).contains("admin")
+    fun isAdmin(userId: Long): Boolean {
+        val user = getByIdOrThrow(userId)
+        return user.username == ADMIN_USERNAME || user.groups().contains("admin")
     }
 
     fun resetPassword(userId: Long): UserDb {

@@ -1,0 +1,22 @@
+.input {
+  padding-left: 1rem;
+  width: 100%;
+  height: 40px;
+  border-radius: 20px;
+  margin-bottom: 0.5rem;
+}
+
+.input--light {
+  background-color: var(--chakra-colors-gray-100);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
+
+.input--dark {
+  background-color: var(--chakra-colors-gray-900);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border: 1px solid var(--chakra-colors-gray-700);
+}

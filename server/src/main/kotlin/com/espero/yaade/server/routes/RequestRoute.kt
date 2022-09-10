@@ -8,6 +8,7 @@ import io.vertx.kotlin.coroutines.await
 class RequestRoute(private val daoManager: DaoManager) {
 
     suspend fun postRequest(ctx: RoutingContext) {
+        // TODO: can i add requests to collection that i cannot see? also edit?
         val body = ctx.body().asJsonObject()
         val newRequest = if (body.containsKey("data"))
             RequestDb(body.getLong("collectionId"), body.getJsonObject("data"))
