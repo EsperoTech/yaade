@@ -15,14 +15,12 @@ import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
 import { UserContext } from '../../context';
-import Request from '../../model/Request';
+import { CollectionsContext } from '../../context/CollectionsContext';
 import {
+  CurrentRequestContext,
   defaultRequest,
-  removeRequest,
-  setCurrentRequest,
-  useGlobalState,
-  writeRequestToCollections,
-} from '../../state/GlobalState';
+} from '../../context/CurrentRequestContext';
+import Request from '../../model/Request';
 import { errorToast, successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
 import BasicModal from '../basicModal';
@@ -48,14 +46,16 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
     name: request.data.name,
     currentModal: '',
   });
-  const globalState = useGlobalState();
+  const { currentRequest, isChanged, setCurrentRequest } =
+    useContext(CurrentRequestContext);
+  const { writeRequestToCollections, removeRequest } = useContext(CollectionsContext);
 
   const { user } = useContext(UserContext);
   const initialRef = useRef(null);
   const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
-  const variants = globalState.currentRequest.id.get() === request.id ? ['selected'] : [];
+  const variants = currentRequest.id === request.id ? ['selected'] : [];
 
   async function handleSaveRequest(currentRequest: Request) {
     try {
@@ -74,23 +74,21 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   }
 
   async function handleRequestClick() {
-    if (
-      user?.data.settings.saveOnClose &&
-      globalState.requestChanged.value &&
-      globalState.currentRequest.id.value !== -1
-    ) {
-      const currentRequest = globalState.currentRequest.get({ noproxy: true });
+    if (user?.data.settings.saveOnClose && isChanged && currentRequest.id !== -1) {
+      // case if we want to auto save req on close
       handleSaveRequest(currentRequest);
-      globalState.currentRequest.set(request);
+      setCurrentRequest(request);
     } else if (
       !user?.data.settings?.saveOnClose &&
-      globalState.requestChanged.value &&
-      globalState.currentRequest.id.value !== -1
+      isChanged &&
+      currentRequest.id !== -1
     ) {
+      // case if we want to ask for save on close
       setState({ ...state, currentModal: 'save' });
       onOpen();
     } else {
-      globalState.currentRequest.set(request);
+      // case if req is not changed or not saved yet
+      setCurrentRequest(request);
     }
   }
 
@@ -132,8 +130,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
     try {
       const response = await fetch(`/api/request/${request.id}`, { method: 'DELETE' });
       if (response.status !== 200) throw new Error();
-      if (request.id === globalState.currentRequest.id.value) {
-        globalState.currentRequest.set(defaultRequest);
+      if (request.id === currentRequest.id) {
+        setCurrentRequest(defaultRequest);
       }
       removeRequest(request);
       successToast('Request was deleted.', toast);
@@ -194,9 +192,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       onClose={onCloseClear}
       heading={`Request not saved`}
       onClick={() => {
-        const currentRequest = globalState.currentRequest.get({ noproxy: true });
         handleSaveRequest(currentRequest);
-        globalState.currentRequest.set(request);
+        setCurrentRequest(request);
         onCloseClear();
       }}
       buttonText="Save"
@@ -204,7 +201,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       isButtonDisabled={false}
       secondaryButtonText="Discard"
       onSecondaryButtonClick={() => {
-        globalState.currentRequest.set(request);
+        setCurrentRequest(request);
         onCloseClear();
       }}
     >

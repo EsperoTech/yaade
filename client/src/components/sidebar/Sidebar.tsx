@@ -16,9 +16,9 @@ import {
 import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
 
 import { UserContext } from '../../context';
+import { CollectionsContext } from '../../context/CollectionsContext';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
-import { saveCollection, useGlobalState } from '../../state/GlobalState';
 import {
   cn,
   errorToast,
@@ -54,9 +54,7 @@ function Sidebar() {
   });
   const { colorMode } = useColorMode();
   const initialRef = useRef(null);
-  const globalState = useGlobalState();
-
-  const collections = globalState.collections.get({ noproxy: true });
+  const { collections, saveCollection } = useContext(CollectionsContext);
 
   const filteredCollections = collections.filter((c) =>
     c.data.name.toLowerCase().includes(state.searchTerm.toLowerCase()),
