@@ -74,7 +74,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   }
 
   async function handleRequestClick() {
-    if (user?.data.settings.saveOnClose && isChanged && currentRequest.id !== -1) {
+    if (user?.data?.settings?.saveOnClose && isChanged && currentRequest.id !== -1) {
       // case if we want to auto save req on close
       handleSaveRequest(currentRequest);
       setCurrentRequest(request);

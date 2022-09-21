@@ -87,7 +87,7 @@ function Dashboard() {
         },
       };
 
-      if (currentRequest.id !== -1 && user?.data.settings.saveOnSend) {
+      if (currentRequest.id !== -1 && user?.data?.settings?.saveOnSend) {
         const response = await fetch('/api/request', {
           method: 'PUT',
           headers: {
