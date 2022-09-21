@@ -3,9 +3,10 @@ import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/
 import { MutableRefObject, useContext, useRef, useState } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
+import { CollectionsContext } from '../../context/CollectionsContext';
+import { CurrentRequestContext } from '../../context/CurrentRequestContext';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
-import { useGlobalState, writeRequestToCollections } from '../../state/GlobalState';
 import {
   appendHttpIfNoProtocol,
   errorToast,
@@ -66,16 +67,23 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
     collectionId: -1,
     name: '',
   });
-  const globalState = useGlobalState();
+  const {
+    currentRequest,
+    setCurrentRequest,
+    isChanged,
+    setIsChanged,
+    isLoading,
+    setIsLoading,
+  } = useContext(CurrentRequestContext);
+  const { collections, writeRequestToCollections } = useContext(CollectionsContext);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef(null);
   const toast = useToast();
 
   useKeyPress(handleSaveRequestClick, 's', true);
 
-  const collections = globalState.collections.get({ noproxy: true });
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
-
+  // set a default collection when adding a new request
   if (collections.length > 0 && newReqForm.collectionId === -1) {
     setNewReqForm({ ...newReqForm, collectionId: collections[0].id });
   }
@@ -96,23 +104,49 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       : [{ key: '', value: '' }];
 
   const setMethod = (method: string) => {
-    globalState.currentRequest.data.merge({ method });
-    globalState.requestChanged.set(true);
+    setCurrentRequest({
+      ...currentRequest,
+      data: {
+        ...currentRequest.data,
+        method,
+      },
+    });
+    setIsChanged(true);
   };
 
   const setUri = (uri: string) => {
-    globalState.currentRequest.data.merge({ uri });
-    globalState.requestChanged.set(true);
+    setCurrentRequest({
+      ...currentRequest,
+      data: {
+        ...currentRequest.data,
+        uri,
+      },
+    });
+    setIsChanged(true);
   };
 
   const setHeaders = (headers: Array<KVRow>) => {
-    globalState.currentRequest.data.merge({ headers });
-    globalState.requestChanged.set(true);
+    setCurrentRequest({
+      ...currentRequest,
+      data: {
+        ...currentRequest.data,
+        headers: [...headers],
+      },
+    });
+    setIsChanged(true);
   };
 
   const setBody = (body: string) => {
-    globalState.currentRequest.data.merge({ body });
-    globalState.requestChanged.set(true);
+    setCurrentRequest((cr) => {
+      return {
+        ...cr,
+        data: {
+          ...cr.data,
+          body,
+        },
+      };
+    });
+    setIsChanged(true);
   };
 
   function setUriFromParams(params: Array<KVRow>) {
@@ -172,7 +206,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       const newRequest = await saveNewRequest(body);
 
       writeRequestToCollections(newRequest);
-      globalState.currentRequest.set(newRequest);
+      setCurrentRequest(newRequest);
 
       onCloseClear();
       successToast('A new request was created.', toast);
@@ -183,16 +217,13 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
 
   async function handleSaveRequestClick() {
     try {
-      if (
-        globalState.currentRequest.id.get() === -1 &&
-        globalState.currentRequest.collectionId.get() === -1
-      ) {
+      if (currentRequest.id === -1 && currentRequest.collectionId === -1) {
         onOpen();
         return;
       } else {
         await saveRequest();
         writeRequestToCollections(currentRequest);
-        globalState.requestChanged.set(false);
+        setIsChanged(false);
         successToast('The request was successfully saved.', toast);
       }
     } catch (e) {
@@ -206,8 +237,8 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       openExtModal();
       return;
     }
-    if (globalState.requestLoading.get()) {
-      globalState.requestLoading.set(false);
+    if (isLoading) {
+      setIsLoading(false);
       return;
     }
 
@@ -236,7 +267,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       options['body'] = requestWithoutResponse.data.body;
     }
 
-    globalState.requestLoading.set(true);
+    setIsLoading(true);
 
     window.postMessage(
       {
@@ -252,12 +283,12 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
     <Box className={styles.box} bg="panelBg" h="100%">
       <div style={{ display: 'flex' }}>
         <UriBar
-          uri={globalState.currentRequest.data.value.uri ?? ''}
+          uri={currentRequest.data?.uri ?? ''}
           setUri={setUri}
-          method={globalState.currentRequest.data.value.method ?? ''}
+          method={currentRequest.data?.method ?? ''}
           setMethod={setMethod}
           handleSendButtonClick={handleSendButtonClick}
-          isLoading={globalState.requestLoading.get()}
+          isLoading={isLoading}
         />
         <IconButton
           aria-label="save-request-button"
@@ -266,7 +297,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
           size="sm"
           ml="2"
           onClick={handleSaveRequestClick}
-          disabled={!globalState.requestChanged.get()}
+          disabled={!isChanged}
         />
       </div>
 
@@ -292,10 +323,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
             <KVEditor name="headers" kvs={headers} setKvs={setHeaders} />
           </TabPanel>
           <TabPanel h="100%">
-            <BodyEditor
-              content={globalState.currentRequest.data.value.body ?? ''}
-              setContent={setBody}
-            />
+            <BodyEditor content={currentRequest.data?.body ?? ''} setContent={setBody} />
           </TabPanel>
         </TabPanels>
       </Tabs>

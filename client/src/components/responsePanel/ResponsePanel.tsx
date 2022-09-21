@@ -16,9 +16,9 @@ import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
 import React, { useContext } from 'react';
 
+import { CurrentRequestContext } from '../../context/CurrentRequestContext';
 import KVRow from '../../model/KVRow';
 import Response from '../../model/Response';
-import { useGlobalState } from '../../state/GlobalState';
 import { cn, successToast } from '../../utils';
 import KVEditor from '../kvEditor';
 import styles from './ResponsePanel.module.css';
@@ -42,8 +42,8 @@ const getContentType = (headers: Array<KVRow>) =>
   headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
 function ResponsePanel() {
-  const globalState = useGlobalState();
-  const response = globalState.currentRequest.data.get().response;
+  const { currentRequest } = useContext(CurrentRequestContext);
+  const response = currentRequest.data?.response;
   const { colorMode } = useColorMode();
   const toast = useToast();
   const { onCopy } = useClipboard(response?.body ?? '');

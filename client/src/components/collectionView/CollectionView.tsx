@@ -24,17 +24,13 @@ import {
   useToast,
   Wrap,
 } from '@chakra-ui/react';
-import { useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
+import { CollectionsContext } from '../../context/CollectionsContext';
+import { CurrentRequestContext } from '../../context/CurrentRequestContext';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
-import {
-  removeCollection,
-  saveCollection,
-  useGlobalState,
-  writeRequestToCollections,
-} from '../../state/GlobalState';
 import { errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import BasicModal from '../basicModal';
@@ -63,7 +59,9 @@ function CollectionView({ collection }: CollectionProps) {
     newRequestName: '',
     currentModal: '',
   });
-  const globalState = useGlobalState();
+  const { setCurrentRequest } = useContext(CurrentRequestContext);
+  const { writeRequestToCollections, saveCollection, removeCollection } =
+    useContext(CollectionsContext);
   const initialRef = useRef(null);
   const { colorMode } = useColorMode();
   const variants = collection.open ? ['open'] : [];
@@ -93,7 +91,7 @@ function CollectionView({ collection }: CollectionProps) {
       const newRequest = (await response.json()) as Request;
 
       writeRequestToCollections(newRequest);
-      globalState.currentRequest.set(newRequest);
+      setCurrentRequest(newRequest);
       onCloseClear();
       successToast('A new request was created.', toast);
     } catch (e) {
