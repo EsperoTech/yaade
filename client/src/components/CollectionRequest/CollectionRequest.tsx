@@ -75,7 +75,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
 
   async function handleRequestClick() {
     if (
-      user?.data.settings.saveOnClose &&
+      user?.data?.settings?.saveOnClose &&
       globalState.requestChanged.value &&
       globalState.currentRequest.id.value !== -1
     ) {

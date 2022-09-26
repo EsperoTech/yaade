@@ -226,8 +226,14 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
                     updateUser(config, ctx, it)
                     ctx.redirect("/")
                 } catch (t: Throwable) {
+                    ctx.session().destroy()
+                    ctx.setUser(null)
                     ctx.fail(500, t)
                 }
+            }.onFailure {
+                ctx.session().destroy()
+                ctx.setUser(null)
+                ctx.fail(500, it)
             }
     }
 
