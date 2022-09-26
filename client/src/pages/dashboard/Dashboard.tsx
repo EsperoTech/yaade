@@ -20,16 +20,13 @@ import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
-import { CollectionsContext } from '../../context/CollectionsContext';
-import { CurrentRequestContext } from '../../context/CurrentRequestContext';
+import { useGlobalState, writeRequestToCollections } from '../../state/GlobalState';
 import { errorToast, parseResponseEvent } from '../../utils';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
+  const globalState = useGlobalState();
   const { user } = useContext(UserContext);
-  const { currentRequest, setCurrentRequest, setIsLoading } =
-    useContext(CurrentRequestContext);
-  const { setCollections, writeRequestToCollections } = useContext(CollectionsContext);
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
   const setIsExtInitialized = (result: boolean) => {
@@ -53,7 +50,7 @@ function Dashboard() {
       try {
         const response = await fetch('/api/collection');
         const collections = await response.json();
-        setCollections(collections);
+        globalState.collections.set(collections);
       } catch (e) {
         errorToast('Could not retrieve collections', toast);
       }
@@ -71,23 +68,25 @@ function Dashboard() {
 
   const handleResponseMessage = async (event: MessageEvent<any>) => {
     if (event.data.type === 'receive-response') {
-      setIsLoading(false);
+      globalState.requestLoading.set(false);
       if (event.data.response.err) {
         errorToast(event.data.response.err, toast);
         return;
       }
 
+      const curr = globalState.currentRequest.get({ noproxy: true });
+
       const response = parseResponseEvent(event);
 
       const newRequest = {
-        ...currentRequest,
+        ...curr,
         data: {
-          ...currentRequest.data,
+          ...curr.data,
           response: response,
         },
       };
 
-      if (currentRequest.id !== -1 && user?.data?.settings?.saveOnSend) {
+      if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
         const response = await fetch('/api/request', {
           method: 'PUT',
           headers: {
@@ -97,9 +96,9 @@ function Dashboard() {
         });
         if (response.status !== 200) throw new Error();
         writeRequestToCollections(newRequest);
-        setCurrentRequest(newRequest);
+        globalState.currentRequest.set(newRequest);
       } else {
-        setCurrentRequest(newRequest);
+        globalState.currentRequest.set(newRequest);
       }
     }
   };

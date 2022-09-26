@@ -1,6 +1,8 @@
 package com.espero.yaade.server
 
+import com.espero.yaade.ADMIN_USERNAME
 import com.espero.yaade.db.DaoManager
+import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.ConfigDb
 import com.espero.yaade.server.auth.AuthHandler
 import com.espero.yaade.server.errors.ServerError
@@ -134,6 +136,21 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())
+
+            val admin = daoManager.userDao.getByUsername(ADMIN_USERNAME)
+
+            if (admin == null) {
+                val adminUser = daoManager.userDao.createUser(ADMIN_USERNAME, listOf("admin"))
+                val data = JsonObject().put("name", "Collection").put("groups", listOf("admin"))
+                val collection = CollectionDb(data, adminUser.id)
+                daoManager.collectionDao.create(collection)
+            } else {
+                if (!admin.groups().contains("admin")) {
+                    admin.setGroups(setOf("admin"))
+                    daoManager.userDao.update(admin)
+                }
+            }
+
             var authConfig = daoManager.configDao.getByName(ConfigDb.AUTH_CONFIG)?.getConfig()
             if (authConfig == null) {
                 val newConfig = ConfigDb.createEmptyAuthConfig()
