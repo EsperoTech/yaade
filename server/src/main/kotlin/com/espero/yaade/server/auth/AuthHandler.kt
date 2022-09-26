@@ -8,9 +8,7 @@ import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.core.json.pointer.JsonPointer
-import io.vertx.ext.auth.JWTOptions
 import io.vertx.ext.auth.oauth2.OAuth2Auth
-import io.vertx.ext.auth.oauth2.OAuth2FlowType
 import io.vertx.ext.auth.oauth2.OAuth2Options
 import io.vertx.ext.auth.oauth2.providers.AmazonCognitoAuth
 import io.vertx.ext.auth.oauth2.providers.AzureADAuth
@@ -24,6 +22,7 @@ import io.vertx.ext.web.handler.MultiTenantHandler
 import io.vertx.ext.web.handler.OAuth2AuthHandler
 import io.vertx.ext.web.handler.impl.MultiTenantHandlerImpl
 import io.vertx.kotlin.coroutines.await
+import org.apache.commons.lang3.Validate
 import org.apache.http.HttpStatus
 
 
@@ -145,19 +144,13 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
         addAuthProvider(authProvider, c, isTest)
     }
 
-    private suspend fun doAzureAD(c: JsonObject, isTest: Boolean) {
+    private fun doAzureAD(c: JsonObject, isTest: Boolean) {
         val params: JsonObject = c.getJsonObject("params")
         val clientId = params.getString("clientId") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientId must not be null")
         val clientSecret = params.getString("clientSecret") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientSecret must not be null")
         val guid = params.getString("guid") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"guid must not be null")
 
-        val options = OAuth2Options()
-            .setClientId(clientId)
-            .setClientSecret(clientSecret)
-            .setTenant(guid)
-            .setSite("https://login.microsoftonline.com/{tenant}")
-
-        val authProvider = AzureADAuth.discover(vertx, options).await()
+        val authProvider = AzureADAuth.create(vertx, clientId, clientSecret, guid, HttpClientOptions())
 
         addAuthProvider(authProvider, c, isTest)
     }
@@ -233,15 +226,8 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
                     updateUser(config, ctx, it)
                     ctx.redirect("/")
                 } catch (t: Throwable) {
-                    ctx.session().destroy()
-                    ctx.setUser(null)
                     ctx.fail(500, t)
                 }
-            }
-            .onFailure {
-                ctx.session().destroy()
-                ctx.setUser(null)
-                ctx.fail(500, it)
             }
     }
 
