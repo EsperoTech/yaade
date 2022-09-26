@@ -9,86 +9,65 @@ import {
 import Collection from '../model/Collection';
 import Request from '../model/Request';
 
-interface ICollectionContext {
-  collections: Array<Collection>;
+interface ICollectionsContext {
+  collections: Collection[];
   setCollections: Dispatch<SetStateAction<Collection[]>>;
-  writeRequestToCollections: (request: Request) => void;
-  removeRequest: (request: Request) => void;
-  removeCollection: (collectionId: number) => void;
-  saveCollection: (collection: Collection) => void;
 }
 
-const CollectionsContext = createContext<ICollectionContext>({
+const CollectionsContext = createContext<ICollectionsContext>({
   collections: [],
   setCollections: () => {},
-  writeRequestToCollections: () => {},
-  removeRequest: () => {},
-  removeCollection: () => {},
-  saveCollection: () => {},
 });
 
 const CollectionsProvider: FunctionComponent = ({ children }) => {
-  const [collections, setCollections] = useState<Array<Collection>>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
 
   function writeRequestToCollections(request: Request) {
-    const newCollections = [...collections].map((collection) => {
-      if (collection.id !== request.collectionId) {
-        return collection;
-      }
+    const collectionIndex = collections.findIndex((c) => c.id === request.collectionId);
+    if (collectionIndex === -1) return;
 
-      const requests = [...collection.requests];
-      const idx = collection.requests.findIndex((req) => req.id === request.id);
-
-      if (idx === -1) {
-        requests.push(request);
-      } else {
-        requests[idx] = request;
-      }
-
-      return {
-        ...collection,
-        requests,
-      };
-    });
-
-    setCollections(newCollections);
+    const requestIndex = collections[collectionIndex].requests.findIndex(
+      (r) => r.id === request.id,
+    );
+    if (requestIndex === -1) {
+      const newCollections = [...collections];
+      newCollections[collectionIndex].requests.push(JSON.parse(JSON.stringify(request)));
+      setCollections(newCollections);
+    } else {
+      collections[collectionIndex].requests[requestIndex] = JSON.parse(
+        JSON.stringify(request),
+      );
+    }
   }
 
   function removeRequest(request: Request) {
-    const newCollections = [...collections].map((collection) => {
-      if (collection.id !== request.collectionId) {
-        return collection;
-      }
-      const requests = [...collection.requests];
-      const idx = collection.requests.findIndex((req) => req.id === request.id);
-      requests.splice(idx, 1);
+    const collectionIndex = collections.findIndex(
+      (c) => c.id.get() === request.collectionId,
+    );
+    if (collectionIndex === -1) return;
 
-      return {
-        ...collection,
-        requests,
-      };
-    });
+    const requestIndex = collections[collectionIndex].requests.findIndex(
+      (r) => r.id.get() === request.id,
+    );
+    if (requestIndex === -1) return;
 
-    setCollections(newCollections);
+    collections[collectionIndex].requests[requestIndex].set(none);
   }
 
   function removeCollection(collectionId: number) {
-    const newCollections = [...collections];
-    const i = newCollections.findIndex((c) => c.id === collectionId);
-    newCollections.splice(i, 1);
-    setCollections(newCollections);
+    const collectionIndex = collections.findIndex((c) => c.id.get() === collectionId);
+    if (collectionIndex === -1) return;
+
+    collections[collectionIndex].set(none);
   }
 
   function saveCollection(collection: Collection) {
-    const newCollections = [...collections];
-    const idx = collections.findIndex((c) => c.id === collection.id);
-
-    if (idx === -1) {
-      newCollections.push(collection);
+    const collectionIndex = collections.findIndex((c) => c.id.get() === collection.id);
+    if (collectionIndex === -1) {
+      collections.merge([collection]);
     } else {
-      newCollections[idx] = collection;
+      collections[collectionIndex].set(collection);
     }
-    setCollections(newCollections);
   }
 
   return (
@@ -96,10 +75,6 @@ const CollectionsProvider: FunctionComponent = ({ children }) => {
       value={{
         collections,
         setCollections,
-        writeRequestToCollections,
-        removeRequest,
-        removeCollection,
-        saveCollection,
       }}
     >
       {children}

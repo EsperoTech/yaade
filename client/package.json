@@ -15,6 +15,7 @@
     "@codemirror/lang-xml": "^0.19.2",
     "@emotion/react": "^11.8.1",
     "@emotion/styled": "^11.8.1",
+    "@hookstate/core": "^4.0.0-rc11",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.13.0",
     "@uiw/react-codemirror": "^4.5.1",
