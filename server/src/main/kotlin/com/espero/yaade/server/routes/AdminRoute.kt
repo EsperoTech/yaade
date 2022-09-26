@@ -61,7 +61,6 @@ class AdminRoute(
         daoManager.init(JDBC_URL, JDBC_USR, JDBC_PWD)
 
         val response = JsonObject().put(f.fileName(), f.size())
-        ctx.session().destroy()
         ctx.response().end(response.encode()).await()
         server.restartServer()
     }
