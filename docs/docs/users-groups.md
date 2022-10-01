@@ -34,10 +34,7 @@ To add a new provider, add a new JSON object to the "providers" list.
         "params": {
             "clientId": "your-client-id",
             "clientSecret": "your-client-secret",
-            "callback": {
-                "url": "http://localhost:9339/callback-cognito",
-                "path": "/callback-cognito"
-            },
+            "callbackUrl": "http://localhost:9339/callback-cognito",
             "fields": {
                 "username": "/username",
                 "groups": "/cognito:groups",
