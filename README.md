@@ -8,6 +8,10 @@ Yaade is an open-source, self-hosted, collaborative API development environment.
 
 <img src="assets/dark-mode.jpg" alt="dark-mode-screenshot"/>
 
+## 📚 Documentation
+
+Visit [docs.yaade.io](https://docs.yaade.io).
+
 ## 🤔 Why did you develop Yaade?
 
 I was looking for a self-hosted Postman alternative so that API collections can easily be shared between teammates. Even though popular solutions like <a href="https://hoppscotch.io/de/">Hoppscotch</a> exist, their self-hosted app does not come with authentication and relies on Firebase for persistency. Yaade is developed from the ground up with self-hosting and security in mind. That means sensitive information in API requests can safely be stored on your own server!
