@@ -22,8 +22,9 @@ import io.vertx.ext.web.handler.MultiTenantHandler
 import io.vertx.ext.web.handler.OAuth2AuthHandler
 import io.vertx.ext.web.handler.impl.MultiTenantHandlerImpl
 import io.vertx.kotlin.coroutines.await
-import org.apache.commons.lang3.Validate
 import org.apache.http.HttpStatus
+import java.net.MalformedURLException
+import java.net.URL
 
 
 class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) : AuthenticationHandler {
@@ -86,9 +87,15 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
     private fun addAuthProvider(auth: OAuth2Auth, config: JsonObject, isTest: Boolean) {
         val params: JsonObject = config.getJsonObject("params") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"params must not be null")
         validateFields(params)
-        val callback = params.getJsonObject("callback") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"callback must not be null")
-        val callbackUrl = callback.getString("url") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"callback.url must not be null")
-        val callbackPath = callback.getString("path") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"callback.path must not be null")
+        val callbackUrl = params.getString("callbackUrl") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"callbackUrl must not be null")
+        val callbackPath: String
+        try {
+            callbackPath = URL(callbackUrl).path
+        } catch (e: MalformedURLException) {
+            throw ServerError(HttpStatus.SC_BAD_REQUEST,"callbackUrl is not a valid URL.")
+        }
+        if (callbackPath == "") throw ServerError(HttpStatus.SC_BAD_REQUEST,"callback path must not be empty")
+
         val id = config.getString("id") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"id must not be null")
         val result = OAuth2AuthHandler.create(vertx, auth, callbackUrl)
 
