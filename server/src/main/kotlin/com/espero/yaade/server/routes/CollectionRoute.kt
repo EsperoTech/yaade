@@ -94,8 +94,10 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
     }
 
     private fun assertUserCanReadCollection(ctx: RoutingContext, collection: CollectionDb?) {
-        val username = ctx.user().principal().getString("username")
-        val user = daoManager.userDao.getByUsername(username) ?: throw RuntimeException("User is null")
+        val principal = ctx.user().principal()
+        val userId = principal.getLong("id")
+
+        val user = daoManager.userDao.getById(userId) ?: throw RuntimeException("No user found for id $userId")
 
         if (collection == null) {
             throw ServerError(HttpStatus.SC_BAD_REQUEST, "Collection cannot be null")
