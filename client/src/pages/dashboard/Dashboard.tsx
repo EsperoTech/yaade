@@ -21,7 +21,7 @@ import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
 import { useGlobalState, writeRequestToCollections } from '../../state/GlobalState';
-import { errorToast, parseResponseEvent } from '../../utils';
+import { errorToast, parseExtensionResponse } from '../../utils';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
@@ -76,7 +76,7 @@ function Dashboard() {
 
       const curr = globalState.currentRequest.get({ noproxy: true });
 
-      const response = parseResponseEvent(event);
+      const response = parseExtensionResponse(event);
 
       const newRequest = {
         ...curr,

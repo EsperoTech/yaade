@@ -3,6 +3,7 @@ package com.espero.yaade.model.db
 import com.j256.ormlite.field.DataType
 import com.j256.ormlite.field.DatabaseField
 import com.j256.ormlite.table.DatabaseTable
+import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 
 @DatabaseTable(tableName = "collections")
@@ -67,13 +68,27 @@ class CollectionDb {
             .put("data", JsonObject(data.decodeToString()))
     }
 
-    fun getAllEnvs(): JsonObject {
-        val envs = jsonData().getJsonObject("envs") ?: return JsonObject()
-        envs.map?.forEach { (it.value as JsonObject).remove("secrets") }
-        return envs
+    fun hideSecrets() {
+        val data = jsonData()
+        val envs = data.getJsonObject("envs") ?: return
+        val envNames = envs.map.map { it.key }
+        envNames.forEach {
+            val env = envs.getJsonObject(it)
+            setSecretKeys(env)
+        }
+        data.put("envs", envs)
+        this.data = data.encode().toByteArray()
     }
 
-    fun createEnv(name: String, data: JsonObject?) {
+    private fun setSecretKeys(env: JsonObject) {
+        val secrets = env.getJsonObject("secrets")?: JsonObject()
+        val keys = JsonArray()
+        secrets.map.keys.forEach { keys.add(it) }
+        env.put("secretKeys", keys)
+        env.remove("secrets")
+    }
+
+    fun createEnv(name: String, req: JsonObject?) {
         val json = jsonData()
         var envs = json.getJsonObject("envs")
         if (envs == null) {
@@ -83,24 +98,10 @@ class CollectionDb {
         val oldEnv = envs.getJsonObject(name)
         if (oldEnv != null) throw RuntimeException("Env already exists")
 
-        val env = JsonObject().put("data", data ?: JsonObject())
+        val env = JsonObject()
+            .put("data", req?.getJsonObject("data") ?: JsonObject())
+            .put("proxy", req?.getString("proxy") ?: "ext")
         envs.put(name, env)
-        this.data = json.encode().toByteArray()
-    }
-
-    fun setEnvData(name: String, data: JsonObject) {
-        val json = jsonData()
-        var envs = json.getJsonObject("envs")
-        if (envs == null) {
-            envs = JsonObject()
-            json.put("envs", envs)
-        }
-        var env = envs.getJsonObject(name)
-        if (env == null) {
-            env = JsonObject()
-            envs.put(name, env)
-        }
-        env.put("data", data)
         this.data = json.encode().toByteArray()
     }
 
@@ -114,6 +115,76 @@ class CollectionDb {
         envs.remove(name)
         this.data = json.encode().toByteArray()
     }
+
+    fun setSecret(envName: String, key: String, value : String) {
+        val json = jsonData()
+        var envs = json.getJsonObject("envs")
+        if (envs == null) {
+            envs = JsonObject()
+            json.put("envs", envs)
+        }
+        var env = envs.getJsonObject(envName)
+        if (env == null) {
+            env = JsonObject()
+            envs.put(envName, env)
+        }
+        var secrets = env.getJsonObject("secrets")
+        if (secrets == null) {
+            secrets = JsonObject()
+            env.put("secrets", secrets)
+        }
+        secrets.put(key, value)
+        this.data = json.encode().toByteArray()
+    }
+
+    fun deleteSecret(envName: String, key: String) {
+        val json = jsonData()
+        var envs = json.getJsonObject("envs")
+        if (envs == null) {
+            envs = JsonObject()
+            json.put("envs", envs)
+        }
+        var env = envs.getJsonObject(envName)
+        if (env == null) {
+            env = JsonObject()
+            envs.put(envName, env)
+        }
+        var secrets = env.getJsonObject("secrets")
+        if (secrets == null) {
+            secrets = JsonObject()
+            env.put("secrets", secrets)
+        }
+        secrets.remove(key)
+        this.data = json.encode().toByteArray()
+    }
+
+    fun getSecrets(envName: String): JsonObject? {
+        val json = JsonObject(data.decodeToString())
+        val envs: JsonObject = json.getJsonObject("envs") ?: return null
+        val env = envs.getJsonObject(envName) ?: return null
+        return env.getJsonObject("secrets")
+    }
+
+    fun updateEnv(name: String, updatedEnv: JsonObject) {
+        val updatedData = updatedEnv.getJsonObject("data")
+        val updatedProxy = updatedEnv.getString("proxy")
+
+        val json = jsonData()
+        var envs = json.getJsonObject("envs")
+        if (envs == null) {
+            envs = JsonObject()
+            json.put("envs", envs)
+        }
+        var env = envs.getJsonObject(name)
+        if (env == null) {
+            env = JsonObject()
+            envs.put(name, env)
+        }
+        env.put("data", updatedData)
+        env.put("proxy", updatedProxy)
+        this.data = json.encode().toByteArray()
+    }
+
 
     companion object {
         fun fromUpdateRequest(request: JsonObject): CollectionDb {

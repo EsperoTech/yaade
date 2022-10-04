@@ -40,7 +40,8 @@ To add a new provider, add a new JSON object to the "providers" list.
                 "groups": "/cognito:groups",
                 "groupsFilter": "*.yaade",
                 "defaultGroups": ["my-group"]
-            }
+            },
+            "scopes": ["openid", "email"]
         }
     }]
 }
@@ -69,6 +70,10 @@ The path of the callback URL must be unique for every provider!
 :::
 
 `"fields"` contains information on how to parse a user's JWT access token
+
+## Optional OAuth2 Params
+
+`"scopes"` is a JSON array of strings of the scopes to request. Different providers have different scopes. Some providers don't require you to set scopes manually.
 
 ### Required OAuth2 Fields
 
@@ -113,15 +118,17 @@ This provider connects to Azure AD.
 
 #### Custom Params
 
-`guid` the ID of your AzureAD application
+`tenant` the tenant ID of your AzureAD application
 
 #### Example
 
 ```json
 "params": {
-    "guid": "ba5b0c35-eb3a-4fca-cca5-i45fce590a",
+    "tenant": "ba5b0c35-eb3a-4fca-cca5-i45fce590a",
     ...
-}
+},
+"scopes": ["openid"],
+...
 ```
 
 ### Keycloak
@@ -149,7 +156,7 @@ Since Yaade uses Vert.x under the hood, it is possible to configure custom provi
 
 #### Open ID Connect
 
-`"provider": "oauth2"`
+`"provider": "oidc-discovery"`
 
 #### OAuth2
 

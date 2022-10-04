@@ -3,6 +3,7 @@ import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/
 import { MutableRefObject, useContext, useRef, useState } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
+import { UserContext } from '../../context';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import { useGlobalState, writeRequestToCollections } from '../../state/GlobalState';
@@ -10,10 +11,11 @@ import {
   appendHttpIfNoProtocol,
   errorToast,
   kvRowsToMap,
+  parseResponse,
   successToast,
 } from '../../utils';
 import interpolate from '../../utils/interpolate';
-import { getSelectedEnvData } from '../../utils/store';
+import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import BodyEditor from '../bodyEditor';
@@ -70,6 +72,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef(null);
   const toast = useToast();
+  const { user } = useContext(UserContext);
 
   useKeyPress(handleSaveRequestClick, 's', true);
 
@@ -202,10 +205,6 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
   }
 
   function handleSendButtonClick() {
-    if (!isExtInitialized.current) {
-      openExtModal();
-      return;
-    }
     if (globalState.requestLoading.get()) {
       globalState.requestLoading.set(false);
       return;
@@ -220,22 +219,38 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       (c) => c.id === currentRequest.collectionId,
     );
 
-    if (requestCollection) {
-      const selectedEnvData = getSelectedEnvData(requestCollection);
-      const interpolateResult = interpolate(requestWithoutResponse, selectedEnvData);
+    var selectedEnvProxy = 'ext';
+    var selectedEnvName: string | undefined;
 
+    if (requestCollection) {
+      const selectedEnv = getSelectedEnv(requestCollection);
+      selectedEnvProxy = selectedEnv?.proxy ?? 'ext';
+      selectedEnvName = getSelectedEnvs()[requestCollection.id];
+      const selectedEnvData = selectedEnv?.data ?? {};
+      const interpolateResult = interpolate(requestWithoutResponse, selectedEnvData);
       requestWithoutResponse = interpolateResult.result;
     }
 
-    const url = appendHttpIfNoProtocol(requestWithoutResponse.data.uri);
-
-    const headers = kvRowsToMap(requestWithoutResponse.data.headers);
-
-    const options: any = { headers, method: requestWithoutResponse.data.method };
-    if (requestWithoutResponse.data.body) {
-      options['body'] = requestWithoutResponse.data.body;
+    if (selectedEnvProxy === 'server') {
+      sendRequestToServer(requestWithoutResponse, selectedEnvName);
+    } else {
+      if (!isExtInitialized.current) {
+        openExtModal();
+        return;
+      }
+      sendRequestToExtension(requestWithoutResponse);
     }
+  }
 
+  function sendRequestToExtension(request: Request) {
+    const url = appendHttpIfNoProtocol(request.data.uri);
+
+    const headers = kvRowsToMap(request.data.headers);
+
+    const options: any = { headers, method: request.data.method };
+    if (request.data.body) {
+      options['body'] = request.data.body;
+    }
     globalState.requestLoading.set(true);
 
     window.postMessage(
@@ -246,6 +261,57 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       },
       '*',
     );
+  }
+
+  async function sendRequestToServer(request: Request, envName?: String) {
+    try {
+      globalState.requestLoading.set(true);
+      const res = await fetch('/api/invoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ request, envName }),
+      });
+      if (res.status !== 200) throw new Error(`Server error. Status: ${res.status}`);
+
+      const resBody = await res.json();
+
+      if (resBody.error) throw new Error(resBody.error);
+
+      globalState.requestLoading.set(false);
+
+      const curr = globalState.currentRequest.get({ noproxy: true });
+
+      const response = parseResponse(resBody);
+
+      const newRequest = {
+        ...curr,
+        data: {
+          ...curr.data,
+          response: response,
+        },
+      };
+
+      if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
+        const response = await fetch('/api/request', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newRequest),
+        });
+        if (response.status !== 200) throw new Error();
+        writeRequestToCollections(newRequest);
+        globalState.currentRequest.set(newRequest);
+      } else {
+        globalState.currentRequest.set(newRequest);
+      }
+    } catch (e) {
+      globalState.requestLoading.set(false);
+      console.log(e);
+      errorToast(`${e}`, toast, 5000);
+    }
   }
 
   return (

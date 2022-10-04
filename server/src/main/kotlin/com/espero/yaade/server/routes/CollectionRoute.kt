@@ -3,7 +3,6 @@ package com.espero.yaade.server.routes
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.RequestDb
-import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.errors.ServerError
 import com.espero.yaade.services.OpenApiService
 import com.j256.ormlite.misc.TransactionManager
@@ -28,6 +27,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
         val result = collections.map {
             val requests = daoManager.requestDao.getAllInCollection(it.id).map(RequestDb::toJson)
+            it.hideSecrets()
             it.toJson().put("requests", requests)
         }
 
@@ -93,7 +93,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         ctx.end(collectionJson.encode()).await()
     }
 
-    fun assertUserCanReadCollection(ctx: RoutingContext, collection: CollectionDb?) {
+    private fun assertUserCanReadCollection(ctx: RoutingContext, collection: CollectionDb?) {
         val username = ctx.user().principal().getString("username")
         val user = daoManager.userDao.getByUsername(username) ?: throw RuntimeException("User is null")
 
@@ -120,29 +120,20 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             daoManager.collectionDao.update(collection)
             ctx.end().await()
         } catch (e: RuntimeException) {
-            ctx.fail(HttpStatus.SC_CONFLICT)
+            throw ServerError(HttpStatus.SC_CONFLICT, "Failed to create environment")
         }
     }
 
-    suspend fun getAllEnvs(ctx: RoutingContext) {
-        val id = ctx.pathParam("id").toLong()
-        val collection = daoManager.collectionDao.getById(id)
-            ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No collection found for id: $id")
-        assertUserCanReadCollection(ctx, collection)
-
-        ctx.end(collection.getAllEnvs().encode()).await()
-    }
-
-    suspend fun setEnvData(ctx: RoutingContext) {
+    suspend fun updateEnv(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
         val collection = daoManager.collectionDao.getById(id)
             ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No collection found for id: $id")
 
         assertUserCanReadCollection(ctx, collection)
 
-        val data = ctx.body().asJsonObject()
+        val env = ctx.body().asJsonObject()
         val name = ctx.pathParam("env")
-        collection.setEnvData(name, data)
+        collection.updateEnv(name, env)
         daoManager.collectionDao.update(collection)
         ctx.end().await()
     }
@@ -159,4 +150,33 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         daoManager.collectionDao.update(collection)
         ctx.end().await()
     }
+
+    suspend fun setSecret(ctx: RoutingContext) {
+        val id = ctx.pathParam("id").toLong()
+        val collection = daoManager.collectionDao.getById(id)
+            ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No collection found for id: $id")
+        assertUserCanReadCollection(ctx, collection)
+
+        val envName = ctx.pathParam("env")
+        val key = ctx.pathParam("key")
+        val value = ctx.body().asJsonObject().getString("value")
+            ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No value for secret provided")
+
+        collection.setSecret(envName, key, value)
+        daoManager.collectionDao.update(collection)
+        ctx.end().await()
+    }
+    suspend fun deleteSecret(ctx: RoutingContext) {
+        val id = ctx.pathParam("id").toLong()
+        val collection = daoManager.collectionDao.getById(id)
+            ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No collection found for id: $id")
+        assertUserCanReadCollection(ctx, collection)
+
+        val envName = ctx.pathParam("env")
+        val key = ctx.pathParam("key")
+        collection.deleteSecret(envName, key)
+        daoManager.collectionDao.update(collection)
+        ctx.end().await()
+    }
+
 }

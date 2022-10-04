@@ -59,12 +59,6 @@ const UserSettings: FunctionComponent = () => {
     });
   }
 
-  function setAuthConfig(authConfig: AuthConfig) {
-    setState((s) => {
-      return { ...s, authConfig };
-    });
-  }
-
   function getLocalUsers() {
     // NOTE: this regex matches any <provider>$<username>, negate it to get all local users
     const re = /^.*\$.*$/;
