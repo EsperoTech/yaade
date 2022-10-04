@@ -4,12 +4,12 @@ function getSelectedEnvs(): Record<number, string> {
   return JSON.parse(localStorage.getItem('selectedEnvs') ?? '{}');
 }
 
-function getSelectedEnvData(collection: Collection): Record<string, string> {
+function getSelectedEnv(collection: Collection): any {
   const selectedEnvName = getSelectedEnvs()[collection.id];
 
   if (!selectedEnvName) return {};
 
-  return collection.data?.envs?.[selectedEnvName]?.data ?? {};
+  return collection.data?.envs?.[selectedEnvName] ?? {};
 }
 
 function saveSelectedEnv(collectionId: number, name: string) {
@@ -18,4 +18,4 @@ function saveSelectedEnv(collectionId: number, name: string) {
   localStorage.setItem('selectedEnvs', JSON.stringify(newSelectedEnvs));
 }
 
-export { getSelectedEnvData, getSelectedEnvs, saveSelectedEnv };
+export { getSelectedEnv, getSelectedEnvs, saveSelectedEnv };

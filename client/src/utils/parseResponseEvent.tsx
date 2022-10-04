@@ -13,22 +13,29 @@ function getSize(headers: Array<KVRow>): number {
 const getContentType = (headers: Array<KVRow>) =>
   headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
-export default function parseResponseEvent(event: any): Response {
-  const headers: Array<KVRow> = event.data.response.headers;
+function parseExtensionResponse(event: any): Response {
+  const res = event.data.response;
+  return parseResponse(res);
+}
+
+function parseResponse(res: any): Response {
+  const headers: Array<KVRow> = res.headers;
   const contentType = getContentType(headers);
-  let body = event.data.response.body;
+  let body = res.body;
   try {
     body = beautifyBody(body, contentType);
   } catch (e) {
     console.log(e);
   }
-  const size = getSize(headers);
+  const size = res.size ?? getSize(headers);
 
   return {
     headers,
     body,
-    status: event.data.response.status,
-    time: event.data.response.time,
+    status: res.status,
+    time: res.time,
     size,
   };
 }
+
+export { parseExtensionResponse, parseResponse };

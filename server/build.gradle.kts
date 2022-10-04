@@ -22,6 +22,7 @@ dependencies {
     implementation("io.vertx:vertx-web-openapi")
     implementation("io.vertx:vertx-web-validation")
     implementation("io.vertx:vertx-auth-oauth2")
+    implementation("io.vertx:vertx-web-client")
 
     implementation("com.h2database:h2:1.4.200")
     implementation("com.zaxxer:HikariCP:5.0.1")
@@ -35,6 +36,8 @@ dependencies {
     implementation("com.password4j:password4j:1.5.4")
     implementation("net.lingala.zip4j:zip4j:2.9.1")
     implementation("io.swagger.parser.v3:swagger-parser:2.0.31")
+
+    implementation("org.apache.commons:commons-text:1.9")
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")

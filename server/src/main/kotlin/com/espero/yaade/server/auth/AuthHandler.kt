@@ -85,19 +85,27 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
     }
 
     private fun addAuthProvider(auth: OAuth2Auth, config: JsonObject, isTest: Boolean) {
-        val params: JsonObject = config.getJsonObject("params") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"params must not be null")
+        val params: JsonObject =
+            config.getJsonObject("params") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "params must not be null")
         validateFields(params)
-        val callbackUrl = params.getString("callbackUrl") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"callbackUrl must not be null")
+        val callbackUrl = params.getString("callbackUrl") ?: throw ServerError(
+            HttpStatus.SC_BAD_REQUEST,
+            "callbackUrl must not be null"
+        )
         val callbackPath: String
         try {
             callbackPath = URL(callbackUrl).path
         } catch (e: MalformedURLException) {
-            throw ServerError(HttpStatus.SC_BAD_REQUEST,"callbackUrl is not a valid URL.")
+            throw ServerError(HttpStatus.SC_BAD_REQUEST, "callbackUrl is not a valid URL.")
         }
-        if (callbackPath == "") throw ServerError(HttpStatus.SC_BAD_REQUEST,"callback path must not be empty")
+        if (callbackPath == "") throw ServerError(HttpStatus.SC_BAD_REQUEST, "callback path must not be empty")
 
-        val id = config.getString("id") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"id must not be null")
-        val result = OAuth2AuthHandler.create(vertx, auth, callbackUrl)
+        val id = config.getString("id") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "id must not be null")
+        var result = OAuth2AuthHandler.create(vertx, auth, callbackUrl)
+
+        params.getJsonArray("scopes")?.forEach {
+            result = result.withScope(it as String)
+        }
 
         // NOTE: exit here before changing anything if we are only testing
         if (isTest) return
@@ -151,13 +159,19 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
         addAuthProvider(authProvider, c, isTest)
     }
 
-    private fun doAzureAD(c: JsonObject, isTest: Boolean) {
+    private suspend fun doAzureAD(c: JsonObject, isTest: Boolean) {
         val params: JsonObject = c.getJsonObject("params")
         val clientId = params.getString("clientId") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientId must not be null")
         val clientSecret = params.getString("clientSecret") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientSecret must not be null")
-        val guid = params.getString("guid") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"guid must not be null")
+        val tenant = params.getString("tenant") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"guid must not be null")
 
-        val authProvider = AzureADAuth.create(vertx, clientId, clientSecret, guid, HttpClientOptions())
+        val options = OAuth2Options()
+            .setClientId(clientId)
+            .setClientSecret(clientSecret)
+            .setTenant(tenant)
+            .setSite("https://login.microsoftonline.com/{tenant}/v2.0")
+
+        val authProvider = AzureADAuth.discover(vertx, options).await()
 
         addAuthProvider(authProvider, c, isTest)
     }

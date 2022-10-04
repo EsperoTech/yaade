@@ -71,7 +71,6 @@ const ExternalProviderTab: FunctionComponent = () => {
 
   async function handleSaveAuthConfigClicked() {
     try {
-      console.log(cmValue.current);
       const res = await fetch('/api/config/auth_config', {
         method: 'PUT',
         headers: {

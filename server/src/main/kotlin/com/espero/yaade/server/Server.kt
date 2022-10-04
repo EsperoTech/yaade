@@ -5,13 +5,8 @@ import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.ConfigDb
 import com.espero.yaade.server.auth.AuthHandler
-import com.espero.yaade.server.errors.ServerError
 import com.espero.yaade.server.errors.handleFailure
-import com.espero.yaade.server.routes.AdminRoute
-import com.espero.yaade.server.routes.CollectionRoute
-import com.espero.yaade.server.routes.RequestRoute
-import com.espero.yaade.server.routes.UserRoute
-import com.espero.yaade.server.routes.health
+import com.espero.yaade.server.routes.*
 import com.espero.yaade.server.utils.adminCoroutineHandler
 import com.espero.yaade.server.utils.coroutineHandler
 import com.espero.yaade.server.utils.userCoroutineHandler
@@ -19,7 +14,6 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServer
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.handler.BodyHandler
-import io.vertx.ext.web.handler.ErrorHandler
 import io.vertx.ext.web.handler.LoggerFormat
 import io.vertx.ext.web.handler.LoggerHandler
 import io.vertx.ext.web.handler.SessionHandler
@@ -57,6 +51,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val requestRoute = RequestRoute(daoManager)
             val userRoute = UserRoute(daoManager, vertx)
             val adminRoute = AdminRoute(daoManager, vertx, authHandler::testAuthConfig, this)
+            val invokeRoute = InvokeRoute(vertx, daoManager)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").await()
 
@@ -99,14 +94,17 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             routerBuilder.operation("importOpenApi")
                 .userCoroutineHandler(this, collectionRoute::importOpenApiCollection)
 
-            routerBuilder.operation("getAllEnvs")
-                .userCoroutineHandler(this, collectionRoute::getAllEnvs)
             routerBuilder.operation("createEnv")
                 .userCoroutineHandler(this, collectionRoute::createEnv)
-            routerBuilder.operation("setEnvData")
-                .userCoroutineHandler(this, collectionRoute::setEnvData)
+            routerBuilder.operation("updateEnv")
+                .userCoroutineHandler(this, collectionRoute::updateEnv)
             routerBuilder.operation("deleteEnv")
                 .userCoroutineHandler(this, collectionRoute::deleteEnv)
+
+            routerBuilder.operation("setSecret")
+                .userCoroutineHandler(this, collectionRoute::setSecret)
+            routerBuilder.operation("deleteSecret")
+                .userCoroutineHandler(this, collectionRoute::deleteSecret)
 
             routerBuilder.operation("postRequest")
                 .userCoroutineHandler(this, requestRoute::postRequest)
@@ -114,6 +112,10 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .userCoroutineHandler(this, requestRoute::putRequest)
             routerBuilder.operation("deleteRequest")
                 .userCoroutineHandler(this, requestRoute::deleteRequest)
+
+            routerBuilder.operation("invoke")
+                .userCoroutineHandler(this, invokeRoute::invoke)
+
 
             routerBuilder.operation("exportBackup")
                 .adminCoroutineHandler(this, adminRoute::exportBackup)
@@ -141,6 +143,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
 
             if (admin == null) {
                 val adminUser = daoManager.userDao.createUser(ADMIN_USERNAME, listOf("admin"))
+                log.info("Created admin user")
                 val data = JsonObject().put("name", "Collection").put("groups", listOf("admin"))
                 val collection = CollectionDb(data, adminUser.id)
                 daoManager.collectionDao.create(collection)
@@ -148,6 +151,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 if (!admin.groups().contains("admin")) {
                     admin.setGroups(setOf("admin"))
                     daoManager.userDao.update(admin)
+                    log.info("Added admin user to admin group")
                 }
             }
 

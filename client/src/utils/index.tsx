@@ -2,7 +2,7 @@ import beautify from 'beautify';
 
 import KVRow from '../model/KVRow';
 import Request from '../model/Request';
-import parseResponseEvent from './parseResponseEvent';
+import { parseExtensionResponse, parseResponse } from './parseResponseEvent';
 
 function cn(styles: any, name: string, variants: Array<string>): string {
   const variantCns = variants.map((v) => styles[`${name}--${v}`]).join(' ');
@@ -107,6 +107,7 @@ export {
   groupsStrToArray,
   kvRowsToMap,
   mapToKvRows,
-  parseResponseEvent,
+  parseExtensionResponse,
+  parseResponse,
   successToast,
 };
