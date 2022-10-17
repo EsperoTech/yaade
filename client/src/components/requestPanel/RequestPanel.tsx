@@ -6,7 +6,11 @@ import { VscSave } from 'react-icons/vsc';
 import { UserContext } from '../../context';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
-import { useGlobalState, writeRequestToCollections } from '../../state/GlobalState';
+import {
+  setEnvVar,
+  useGlobalState,
+  writeRequestToCollections,
+} from '../../state/GlobalState';
 import {
   appendHttpIfNoProtocol,
   errorToast,
@@ -15,10 +19,12 @@ import {
   successToast,
 } from '../../utils';
 import interpolate from '../../utils/interpolate';
+import { executeResponseScript } from '../../utils/responseScript';
 import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import BodyEditor from '../bodyEditor';
+import Editor from '../editor';
 import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
@@ -115,6 +121,11 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
 
   const setBody = (body: string) => {
     globalState.currentRequest.data.merge({ body });
+    globalState.requestChanged.set(true);
+  };
+
+  const setResponseScript = (responseScript: string) => {
+    globalState.currentRequest.data.merge({ responseScript });
     globalState.requestChanged.set(true);
   };
 
@@ -263,7 +274,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
     );
   }
 
-  async function sendRequestToServer(request: Request, envName?: String) {
+  async function sendRequestToServer(request: Request, envName?: string) {
     try {
       globalState.requestLoading.set(true);
       const res = await fetch('/api/invoke', {
@@ -276,15 +287,20 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       if (res.status !== 200) throw new Error(`Server error. Status: ${res.status}`);
 
       const resBody = await res.json();
-
       if (resBody.error) throw new Error(resBody.error);
 
       globalState.requestLoading.set(false);
-
-      const curr = globalState.currentRequest.get({ noproxy: true });
-
       const response = parseResponse(resBody);
 
+      const responseScript = request.data.responseScript;
+      if (responseScript) {
+        // NOTE: cannot pass state on top level because it does not use most current state
+        const set = (key: string, value: string) =>
+          setEnvVar(request.collectionId, envName)(globalState, key, value);
+        executeResponseScript(response, responseScript, set);
+      }
+
+      const curr = globalState.currentRequest.get({ noproxy: true });
       const newRequest = {
         ...curr,
         data: {
@@ -294,7 +310,8 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       };
 
       if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
-        const response = await fetch('/api/request', {
+        console.log('1');
+        let response = await fetch('/api/request', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -304,12 +321,26 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
         if (response.status !== 200) throw new Error();
         writeRequestToCollections(newRequest);
         globalState.currentRequest.set(newRequest);
+
+        const i = globalState.collections.findIndex(
+          (c: any) => c.id.get() === curr.collectionId,
+        );
+        if (i === -1) return;
+        const collection = globalState.collections[i].get({ noproxy: true });
+
+        response = await fetch('/api/collection', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(collection),
+        });
+        if (response.status !== 200) throw new Error();
       } else {
         globalState.currentRequest.set(newRequest);
       }
     } catch (e) {
       globalState.requestLoading.set(false);
-      console.log(e);
       errorToast(`${e}`, toast, 5000);
     }
   }
@@ -349,6 +380,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
           <Tab>Parameters</Tab>
           <Tab>Headers</Tab>
           <Tab>Body</Tab>
+          <Tab>Response Script</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
           <TabPanel>
@@ -361,6 +393,12 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
             <BodyEditor
               content={globalState.currentRequest.data.value.body ?? ''}
               setContent={setBody}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <Editor
+              content={globalState.currentRequest.data.value.responseScript ?? ''}
+              setContent={setResponseScript}
             />
           </TabPanel>
         </TabPanels>

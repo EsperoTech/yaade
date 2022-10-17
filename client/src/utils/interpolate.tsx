@@ -1,6 +1,7 @@
 import { MersenneTwister19937, Random } from 'random-js';
 
 import Request from '../model/Request';
+import sandboxedFunction from './sandboxedFunction';
 
 type InterpolateError = {
   key: string;
@@ -13,30 +14,6 @@ type InterpolateResult = {
 };
 
 const r = new Random(MersenneTwister19937.autoSeed());
-
-const sandboxed_function = function (args: Record<string, string>, script: string) {
-  const params = Object.getOwnPropertyNames(args);
-  const vals = Object.values(args);
-
-  // 'function': can become a GeneratorFunction that can access global scope
-  const potentiallyMalicious = ['function'];
-
-  potentiallyMalicious.forEach((s) => {
-    if (script.includes(s)) {
-      throw Error(`Script contains potentially malicious code (${s})`);
-    }
-  });
-
-  const blacklist = [
-    ...Object.getOwnPropertyNames(window).filter(
-      (e) => e !== 'eval' && e !== 'arguments',
-    ),
-  ];
-
-  params.push(...blacklist);
-  const f = new Function(...params, '"use strict";' + script);
-  return f.bind({})(...vals);
-};
 
 const interpolate0 = function (
   template: string,
@@ -55,7 +32,7 @@ const interpolate0 = function (
 
   let result;
   try {
-    result = sandboxed_function(params, 'return `' + template + '`');
+    result = sandboxedFunction(params, 'return `' + template + '`');
   } catch (err) {
     errors.push({
       key: template,
