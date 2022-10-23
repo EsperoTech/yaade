@@ -76,42 +76,20 @@ class RequestDb {
 
         fun fromOpenApiOperation(
             path: String,
-            operation: Operation,
+            name: String,
             basePath: String,
             collectionId: Long,
-            method: String
+            method: String,
+            queryParams: String,
+            headers: JsonArray
         ): RequestDb {
-            val params = parseParams(operation)
-            val headers = parseHeaders(operation)
             val data = JsonObject()
-                .put("name", operation.operationId ?: path)
-                .put("uri", basePath + path + params)
+                .put("name", name)
+                .put("uri", basePath + path + queryParams)
                 .put("method", method)
                 .put("headers", headers)
                 .put("body", "")
             return RequestDb(collectionId, data)
-        }
-
-        private fun parseHeaders(operation: Operation): JsonArray {
-            val result = JsonArray()
-            operation.parameters?.forEach { param ->
-                if (param.`in` == "header") {
-                    val header = JsonObject().put("key", param.name).put("value", "")
-                    result.add(header)
-                }
-            }
-            return result
-        }
-
-        private fun parseParams(operation: Operation): String {
-            var result = ""
-            operation.parameters?.forEach { param ->
-                if (param.`in` == "query") {
-                    result = if (result == "") "?" else "$result&"
-                    result += "${param.name}="
-                }
-            }
-            return result
         }
     }
 }

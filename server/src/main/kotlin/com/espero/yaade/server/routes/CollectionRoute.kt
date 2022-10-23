@@ -76,13 +76,13 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val openApi = OpenAPIV3Parser().read(f.uploadedFileName())
 
         val name = openApi.info.title ?: "OpenAPI"
-
         val data = JsonObject().put("name", name).put("groups", groups.split(","))
 
         val collection = CollectionDb(data, userId)
+        collection.createEnv("default", null)
         daoManager.collectionDao.create(collection)
 
-        val requests = OpenApiService.createRequestsFromOpenApi(openApi, basePath, collection.id)
+        val requests = OpenApiService.createRequestsFromOpenApi(openApi, basePath, collection)
         requests.forEach { daoManager.requestDao.create(it) }
 
         val requestsJson = requests.map(RequestDb::toJson)
