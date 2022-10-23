@@ -116,6 +116,27 @@ class CollectionDb {
         this.data = json.encode().toByteArray()
     }
 
+    fun setEnvVar(envName: String, key: String, value: String) {
+        val json = jsonData()
+        var envs = json.getJsonObject("envs")
+        if (envs == null) {
+            envs = JsonObject()
+            json.put("envs", envs)
+        }
+        var env = envs.getJsonObject(envName)
+        if (env == null) {
+            env = JsonObject()
+            envs.put(envName, env)
+        }
+        var data = env.getJsonObject("data")
+        if (data == null) {
+           data = JsonObject()
+           env.put("data", JsonObject())
+        }
+        data.put(key, value)
+        this.data = json.encode().toByteArray()
+    }
+
     fun setSecret(envName: String, key: String, value : String) {
         val json = jsonData()
         var envs = json.getJsonObject("envs")
