@@ -16,10 +16,10 @@ object OpenApiService {
         operation.parameters?.forEach { param ->
             collection.setEnvVar("default", param.name, "")
             when (param.`in`) {
-                "header" -> headers.add(JsonObject().put("key", param.name).put("value", ""))
+                "header" -> headers.add(JsonObject().put("key", param.name).put("value", "$" + "{${param.name}}"))
                 "query" -> {
                     queryParams = if (queryParams == "") "?" else "$queryParams&"
-                    queryParams += "${param.name}="
+                    queryParams += "${param.name}="+"$" + "{${param.name}}"
                 }
                 "path" -> {
                     replacedPath = replacedPath.replace("{${param.name}}", "$" + "{${param.name}}")
