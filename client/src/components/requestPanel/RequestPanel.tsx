@@ -7,6 +7,7 @@ import { UserContext } from '../../context';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
 import {
+  getEnvVar,
   setEnvVar,
   useGlobalState,
   writeRequestToCollections,
@@ -297,7 +298,9 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
         // NOTE: cannot pass state on top level because it does not use most current state
         const set = (key: string, value: string) =>
           setEnvVar(request.collectionId, envName)(globalState, key, value);
-        executeResponseScript(response, responseScript, set);
+        const get = (key: string): string =>
+          getEnvVar(request.collectionId, envName)(globalState, key);
+        executeResponseScript(response, responseScript, set, get, toast);
       }
 
       const curr = globalState.currentRequest.get({ noproxy: true });

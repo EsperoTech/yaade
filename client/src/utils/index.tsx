@@ -44,9 +44,9 @@ function successToast(msg: string, toast: any) {
   });
 }
 
-function errorToast(msg: string, toast: any, duration?: number) {
+function errorToast(msg: string, toast: any, duration?: number, title?: string) {
   toast({
-    title: 'Error',
+    title: title ?? 'Error',
     description: msg,
     status: 'error',
     isClosable: true,

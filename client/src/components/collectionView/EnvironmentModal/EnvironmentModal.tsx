@@ -63,8 +63,6 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  console.log('rerender', collection);
-
   useEffect(() => {
     if (['create', 'copy'].includes(state.modalState)) {
       inputRef.current?.focus();

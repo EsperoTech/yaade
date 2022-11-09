@@ -19,8 +19,6 @@ const isRowEmpty = (row: KVRow) => row.key === '' && row.value === '';
 function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   const { colorMode } = useColorMode();
 
-  console.log('rerender kv', kvs);
-
   const displayKvs = kvs ? [...kvs] : [];
 
   if (

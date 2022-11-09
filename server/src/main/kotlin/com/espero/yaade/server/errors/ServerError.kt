@@ -43,8 +43,8 @@ fun handleFailure(ctx: RoutingContext) {
 
 fun logServerError(ctx: RoutingContext, code: Int, message: String, logWarn: Boolean) {
     val headers = ctx.request().headers()
-    val referrer: String = if (headers.contains("referrer")) headers.get("referrer") else headers.get("referer")
-    val userAgent: String = headers.get("user-agent")
+    val referrer: String = if (headers.contains("referrer")) headers.get("referrer") else headers.get("referer") ?: ""
+    val userAgent: String = headers.get("user-agent") ?: ""
     val logMsg = String.format(
         "[%s] \"%s %s %s\" %s %s \"%s\" \"%s\"",
         Utils.formatRFC1123DateTime(Clock.systemUTC().millis()),
