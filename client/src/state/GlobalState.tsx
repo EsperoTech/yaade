@@ -43,26 +43,20 @@ const state = createState<GlobalState>({
 });
 
 function writeRequestToCollections(request: Request) {
-  console.log('writing req');
   const x = state.get({ noproxy: true });
-  console.log('save', x);
   const collectionIndex = state.collections.findIndex(
     (c) => c.id.get() === request.collectionId,
   );
-  console.log('writing req 1', collectionIndex);
   if (collectionIndex === -1) return;
 
   const requestIndex = state.collections[collectionIndex].requests.findIndex(
     (r) => r.id.get() === request.id,
   );
-  console.log('writing req 2');
   if (requestIndex === -1) {
-    console.log('writing req 3');
     state.collections[collectionIndex].requests.merge([
       JSON.parse(JSON.stringify(request)),
     ]);
   } else {
-    console.log('writing req 4');
     state.collections[collectionIndex].requests[requestIndex].set(
       JSON.parse(JSON.stringify(request)),
     );

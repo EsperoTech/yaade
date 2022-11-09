@@ -313,7 +313,6 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       };
 
       if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
-        console.log('1');
         let response = await fetch('/api/request', {
           method: 'PUT',
           headers: {
