@@ -24,4 +24,27 @@ class CollectionDao(connectionSource: ConnectionSource) :
         return collection.getSecrets(envname)
     }
 
+    fun updateWithoutSecrets(c: CollectionDb) {
+        val oldCollection = getById(c.id)
+        if (oldCollection == null) {
+            super.update(c)
+            return
+        }
+        val oldEnvs = oldCollection.jsonData().getJsonObject("envs") ?: JsonObject()
+        val data = c.jsonData()
+        val envs = data.getJsonObject("envs") ?: JsonObject()
+        val envNames = envs.map.map { it.key }
+        envNames.forEach {
+            val env = envs.getJsonObject(it)
+            val oldEnv = oldEnvs.getJsonObject(it) ?: JsonObject()
+            env.put("secrets", oldEnv.getJsonObject("secrets"))
+            env.remove("secretKeys")
+            envs.put(it, env)
+        }
+
+        data.put("envs", envs)
+        c.data = data.encode().toByteArray()
+        super.update(c)
+    }
+
 }
