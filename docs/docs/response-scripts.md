@@ -23,6 +23,10 @@ console.log("hello world")
 const x = math.PI
 ```
 
+::: warning
+Because Yaade uses JavaScript template literals to interpolate environment variables, template literals inside your response scripts might be overwritten by your environment if keys match. 
+:::
+
 ## Commands
 
 Listed below are special commands available in response scripts.
