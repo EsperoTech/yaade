@@ -20,5 +20,9 @@ export default {
         ],
       },
     ],
+    footer: {
+      message: '<a href="https://espero.tech/impressum.html">Imprint</a>',
+      copyright: 'Copyright © 2022-present EsperoTech GmbH & Co. KG'
+    },
   },
 };

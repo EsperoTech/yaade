@@ -20,8 +20,15 @@ import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
-import { useGlobalState, writeRequestToCollections } from '../../state/GlobalState';
+import {
+  getEnvVar,
+  setEnvVar,
+  useGlobalState,
+  writeRequestToCollections,
+} from '../../state/GlobalState';
 import { errorToast, parseExtensionResponse } from '../../utils';
+import { executeResponseScript } from '../../utils/responseScript';
+import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
@@ -74,9 +81,25 @@ function Dashboard() {
         return;
       }
 
+      // TODO: if the user changes the request during execution, this will execute
+      // the wrong response script
       const curr = globalState.currentRequest.get({ noproxy: true });
 
       const response = parseExtensionResponse(event);
+
+      const responseScript = curr.data.responseScript;
+      if (responseScript) {
+        const envs = getSelectedEnvs();
+        const envName = envs[curr.collectionId];
+        if (envName) {
+          // NOTE: cannot pass state on top level because it does not use most current state
+          const set = (key: string, value: string) =>
+            setEnvVar(curr.collectionId, envName)(globalState, key, value);
+          const get = (key: string): string =>
+            getEnvVar(curr.collectionId, envName)(globalState, key);
+          executeResponseScript(response, responseScript, set, get, toast);
+        }
+      }
 
       const newRequest = {
         ...curr,
@@ -133,10 +156,27 @@ function Dashboard() {
         <ModalContent>
           <ModalHeader>Failed to connect to extension</ModalHeader>
           <ModalBody>
-            The extension could not be connected. Please install the extension and copy
-            the URL of this window into the host field of the extension. Then click retry.
+            The extension could not be connected. Please install{' '}
+            <b>
+              <a
+                style={{ textDecoration: 'underline' }}
+                target="_blank"
+                href="https://chrome.google.com/webstore/detail/yaade-extension/mddoackclclnbkmofficmmepfnadolfa"
+                rel="noreferrer"
+              >
+                the extension
+              </a>
+            </b>{' '}
+            and copy the URL of this window into the host field of the extension. Then
+            click retry.
+            <br />
+            Alternatively change the proxy of your current environment to
+            &quot;Server&quot;.
           </ModalBody>
           <ModalFooter>
+            <Button variant="ghost" mr="2" onClick={onClose}>
+              Dismiss
+            </Button>
             <Button
               colorScheme="green"
               onClick={() => window.postMessage({ type: 'ping' }, '*')}
