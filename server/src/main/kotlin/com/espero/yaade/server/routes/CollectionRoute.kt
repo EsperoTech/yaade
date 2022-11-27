@@ -52,8 +52,9 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
     }
 
     suspend fun putCollection(ctx: RoutingContext) {
-        val newCollection = CollectionDb.fromUpdateRequest(ctx.body().asJsonObject())
-        daoManager.collectionDao.update(newCollection)
+        val body = ctx.body().asJsonObject()
+        val newCollection = CollectionDb.fromUpdateRequest(body)
+        daoManager.collectionDao.updateWithoutSecrets(newCollection)
         ctx.end().await()
     }
 

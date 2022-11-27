@@ -43,6 +43,7 @@ const state = createState<GlobalState>({
 });
 
 function writeRequestToCollections(request: Request) {
+  const x = state.get({ noproxy: true });
   const collectionIndex = state.collections.findIndex(
     (c) => c.id.get() === request.collectionId,
   );
@@ -98,12 +99,65 @@ function setCurrentRequest(request: Request) {
   state.currentRequest.set(request);
 }
 
+function getEnvVar(collectionId: number, envName?: string) {
+  return (s: any, key: string): string => {
+    if (!envName) return '';
+
+    const i = s.collections.findIndex((c: any) => c.id.get() === collectionId);
+    if (i === -1) return '';
+    const collection = s.collections[i].get({ noproxy: true });
+
+    const envs = collection.data?.envs;
+    if (!envs) return '';
+
+    const newEnv = envs[envName];
+    if (!newEnv) return '';
+
+    return newEnv.data[key] ?? '';
+  };
+}
+
+function setEnvVar(collectionId: number, envName?: string) {
+  return (s: any, key: string, value: string) => {
+    if (!envName) return;
+
+    const i = s.collections.findIndex((c: any) => c.id.get() === collectionId);
+    if (i === -1) return;
+    const collection = s.collections[i].get({ noproxy: true });
+
+    const envs = collection.data?.envs;
+    if (!envs) return;
+
+    const newEnv = envs[envName];
+    if (!newEnv) return;
+
+    newEnv.data[key] = value;
+
+    const newCol = {
+      ...collection,
+      data: {
+        ...collection.data,
+        envs: {
+          ...envs,
+          [envName]: {
+            ...newEnv,
+          },
+        },
+      },
+    };
+
+    s.collections[i].set(collection);
+  };
+}
+
 export {
   defaultRequest,
+  getEnvVar,
   removeCollection,
   removeRequest,
   saveCollection,
   setCurrentRequest,
+  setEnvVar,
   writeRequestToCollections,
 };
 

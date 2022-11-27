@@ -128,6 +128,27 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     setDefaultEnv();
   }
 
+  // NOTE: use this to rerender in case of response script env change
+  useEffect(() => {
+    if (!state.selectedEnvName) return;
+    const env = collection.data?.envs?.[state.selectedEnvName];
+    const data = Object.entries(env?.data ?? {}).map(([key, value]) => ({
+      key,
+      value: value as string,
+    }));
+
+    if (data.length === 0) {
+      data.push({ key: '', value: '' });
+    }
+
+    setState((s) => {
+      return {
+        ...s,
+        selectedEnvData: data,
+      };
+    });
+  }, [collection, state.selectedEnvName, setState]);
+
   async function handleCreateEnvClicked() {
     try {
       let options: any = {

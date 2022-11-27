@@ -15,9 +15,14 @@ export default {
         items: [
           { text: "Users & Groups", link: "/users-groups" },
           { text: "Environments", link: "/environments" },
+          { text: "Response Scripts", link: "/response-scripts" },
           { text: "Backups", link: "/backups" },
         ],
       },
     ],
+    footer: {
+      message: '<a href="https://espero.tech/impressum.html">Imprint</a>',
+      copyright: 'Copyright © 2022-present EsperoTech GmbH & Co. KG'
+    },
   },
 };

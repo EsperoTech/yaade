@@ -167,99 +167,103 @@ function CollectionView({ collection }: CollectionProps) {
     onClose();
   }
 
-  const currentModal = ((s: string) => {
-    switch (s) {
-      case 'newRequest':
-        return (
-          <BasicModal
-            isOpen={isOpen}
-            onClose={onCloseClear}
-            initialRef={initialRef}
-            heading="Create a new request"
-            onClick={handleCreateRequestClick}
-            isButtonDisabled={state.newRequestName === ''}
-            buttonText="Create"
-            buttonColor="green"
-          >
-            <Input
-              placeholder="Name"
-              w="100%"
-              borderRadius={20}
-              colorScheme="green"
-              value={state.newRequestName}
-              onChange={(e) => setState({ ...state, newRequestName: e.target.value })}
-              ref={initialRef}
-            />
-          </BasicModal>
-        );
-      case 'edit':
-        return (
-          <BasicModal
-            isOpen={isOpen}
-            onClose={onCloseClear}
-            initialRef={initialRef}
-            heading={`Edit ${collection.data.name}`}
-            onClick={handleEditCollectionClick}
-            isButtonDisabled={state.name === ''}
-            buttonText="Edit"
-            buttonColor="green"
-          >
-            <Heading as="h6" size="xs" mb="4">
-              Name
-            </Heading>
-            <Input
-              placeholder="Name"
-              w="100%"
-              borderRadius={20}
-              colorScheme="green"
-              value={state.name}
-              onChange={(e) => setState({ ...state, name: e.target.value })}
-              ref={initialRef}
-            />
-            <Heading as="h6" size="xs" my="4">
-              Groups
-            </Heading>
-            <GroupsInput
-              groups={state.groups}
-              setGroups={(groups: string[]) =>
-                setState({
-                  ...state,
-                  groups,
-                })
-              }
-              isRounded
-            />
-          </BasicModal>
-        );
-      case 'delete':
-        return (
-          <BasicModal
-            isOpen={isOpen}
-            initialRef={undefined}
-            onClose={onCloseClear}
-            heading={`Delete "${collection.data.name}"`}
-            onClick={handleDeleteCollectionClick}
-            buttonText="Delete"
-            buttonColor="red"
-            isButtonDisabled={false}
-          >
-            Are you sure you want to delete this collection?
-            <br />
-            The collection cannot be recovered!
-          </BasicModal>
-        );
-      case 'env':
-        return (
-          <EnvironmentModal
-            collection={collection}
-            saveCollection={saveCollection}
-            isOpen={isOpen}
-            onOpen={onOpen}
-            onClose={onClose}
-          />
-        );
-    }
-  })(state.currentModal);
+  // NOTE: Setting to null is a workaround for the modal not updating
+  // correctly on response scripts
+  const currentModal = !isOpen
+    ? null
+    : ((s: string) => {
+        switch (s) {
+          case 'newRequest':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                onClose={onCloseClear}
+                initialRef={initialRef}
+                heading="Create a new request"
+                onClick={handleCreateRequestClick}
+                isButtonDisabled={state.newRequestName === ''}
+                buttonText="Create"
+                buttonColor="green"
+              >
+                <Input
+                  placeholder="Name"
+                  w="100%"
+                  borderRadius={20}
+                  colorScheme="green"
+                  value={state.newRequestName}
+                  onChange={(e) => setState({ ...state, newRequestName: e.target.value })}
+                  ref={initialRef}
+                />
+              </BasicModal>
+            );
+          case 'edit':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                onClose={onCloseClear}
+                initialRef={initialRef}
+                heading={`Edit ${collection.data.name}`}
+                onClick={handleEditCollectionClick}
+                isButtonDisabled={state.name === ''}
+                buttonText="Edit"
+                buttonColor="green"
+              >
+                <Heading as="h6" size="xs" mb="4">
+                  Name
+                </Heading>
+                <Input
+                  placeholder="Name"
+                  w="100%"
+                  borderRadius={20}
+                  colorScheme="green"
+                  value={state.name}
+                  onChange={(e) => setState({ ...state, name: e.target.value })}
+                  ref={initialRef}
+                />
+                <Heading as="h6" size="xs" my="4">
+                  Groups
+                </Heading>
+                <GroupsInput
+                  groups={state.groups}
+                  setGroups={(groups: string[]) =>
+                    setState({
+                      ...state,
+                      groups,
+                    })
+                  }
+                  isRounded
+                />
+              </BasicModal>
+            );
+          case 'delete':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                initialRef={undefined}
+                onClose={onCloseClear}
+                heading={`Delete "${collection.data.name}"`}
+                onClick={handleDeleteCollectionClick}
+                buttonText="Delete"
+                buttonColor="red"
+                isButtonDisabled={false}
+              >
+                Are you sure you want to delete this collection?
+                <br />
+                The collection cannot be recovered!
+              </BasicModal>
+            );
+          case 'env':
+            return (
+              <EnvironmentModal
+                collection={collection}
+                saveCollection={saveCollection}
+                isOpen={isOpen}
+                onOpen={onOpen}
+                onClose={onClose}
+              />
+            );
+        }
+      })(state.currentModal);
 
   return (
     <div className={styles.root}>
