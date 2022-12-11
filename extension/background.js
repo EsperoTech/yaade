@@ -25,7 +25,15 @@ async function sendRequest(request, sendResponse) {
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   chrome.storage.sync.get("host", ({ host }) => {
-    if (host === sender.tab.url) {
+    let hostOrigin = ""
+    let senderOrigin = ""
+    try {
+      hostOrigin = new URL(host).origin;
+      senderOrigin = new URL(sender.tab.url).origin;
+    } catch (e) {
+      console.log("bad url", host, sender.tab.url);
+    }
+    if (hostOrigin && senderOrigin && hostOrigin === senderOrigin) {
       if (request.type === "send-request") {
         sendRequest(request, sendResponse);
       } else if (request.type === "ping") {
