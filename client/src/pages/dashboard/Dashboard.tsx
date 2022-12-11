@@ -13,6 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useEventListener } from 'usehooks-ts';
 
 import Header from '../../components/header';
@@ -26,13 +27,14 @@ import {
   useGlobalState,
   writeRequestToCollections,
 } from '../../state/GlobalState';
-import { errorToast, parseExtensionResponse } from '../../utils';
+import { errorToast, parseExtensionResponse, parseLocation } from '../../utils';
 import { executeResponseScript } from '../../utils/responseScript';
 import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
   const globalState = useGlobalState();
+  const location = useLocation();
   const { user } = useContext(UserContext);
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
@@ -57,6 +59,19 @@ function Dashboard() {
       try {
         const response = await fetch('/api/collection');
         const collections = await response.json();
+        const loc = parseLocation(location);
+        collections.forEach((c: any) => {
+          if (loc.collectionId === c.id) {
+            c.open = true;
+            if (c.requests) {
+              c.requests.forEach((r: any) => {
+                if (loc.requestId === r.id) {
+                  globalState.currentRequest.set(r);
+                }
+              });
+            }
+          }
+        });
         globalState.collections.set(collections);
       } catch (e) {
         errorToast('Could not retrieve collections', toast);
