@@ -81,14 +81,15 @@ class RequestDb {
             collectionId: Long,
             method: String,
             queryParams: String,
-            headers: JsonArray
+            headers: JsonArray,
+            body: String?,
         ): RequestDb {
             val data = JsonObject()
                 .put("name", name)
                 .put("uri", basePath + path + queryParams)
                 .put("method", method)
                 .put("headers", headers)
-                .put("body", "")
+                .put("body", body)
             return RequestDb(collectionId, data)
         }
     }
