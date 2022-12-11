@@ -547,7 +547,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       )}
 
       {state.selectedEnvName ? (
-        <>
+        <div style={{ maxHeight: '60vh', overflow: 'auto' }}>
           <Heading as="h6" size="xs" my="4">
             Proxy
           </Heading>
@@ -658,7 +658,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
               })}
             </>
           ) : null}
-        </>
+        </div>
       ) : null}
     </BasicModal>
   );
