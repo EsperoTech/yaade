@@ -79,6 +79,12 @@ function ResponsePanel() {
               <span className={styles.statusText}>{response.time}</span>
               Size
               <span className={styles.statusText}>{response.size}</span>
+              {response.date && (
+                <>
+                  Date
+                  <span className={styles.statusText}>{response.date}</span>
+                </>
+              )}
               <IconButton
                 aria-label="save-request-button"
                 icon={<CopyIcon />}
