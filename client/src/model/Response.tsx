@@ -6,7 +6,6 @@ interface Response {
   body: string;
   time: number;
   size: number;
-  date?: string;
 }
 
 export default Response;
