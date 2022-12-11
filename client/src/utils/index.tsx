@@ -1,7 +1,7 @@
 import beautify from 'beautify';
-import { Location } from 'react-router-dom';
 
 import KVRow from '../model/KVRow';
+import Request from '../model/Request';
 import { parseExtensionResponse, parseResponse } from './parseResponseEvent';
 
 function cn(styles: any, name: string, variants: Array<string>): string {
@@ -97,18 +97,6 @@ function mapToKvRows(map: Record<string, string>): KVRow[] {
   });
 }
 
-function parseLocation(location: Location): { requestId: number; collectionId: number } {
-  const split = location.pathname.split('/');
-  const res = { requestId: -1, collectionId: -1 };
-  try {
-    res.collectionId = parseInt(split[1]);
-    res.requestId = parseInt(split[2]);
-    return res;
-  } catch (e) {
-    return res;
-  }
-}
-
 export {
   appendHttpIfNoProtocol,
   beautifyBody,
@@ -120,7 +108,6 @@ export {
   kvRowsToMap,
   mapToKvRows,
   parseExtensionResponse,
-  parseLocation,
   parseResponse,
   successToast,
 };
