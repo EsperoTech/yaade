@@ -29,12 +29,15 @@ function parseResponse(res: any): Response {
   }
   const size = res.size ?? getSize(headers);
 
+  const date = new Date().toUTCString();
+
   return {
     headers,
     body,
     status: res.status,
     time: res.time,
     size,
+    date,
   };
 }
 
