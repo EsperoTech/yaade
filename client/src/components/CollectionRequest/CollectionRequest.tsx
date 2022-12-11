@@ -1,4 +1,4 @@
-import { DeleteIcon, EditIcon } from '@chakra-ui/icons';
+import { DeleteIcon, EditIcon, LinkIcon } from '@chakra-ui/icons';
 import {
   IconButton,
   Input,
@@ -6,6 +6,7 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  useClipboard,
   useColorMode,
   useDisclosure,
   useToast,
@@ -13,6 +14,7 @@ import {
 import { FunctionComponent, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
+import { useNavigate } from 'react-router-dom';
 
 import { UserContext } from '../../context';
 import Request from '../../model/Request';
@@ -55,6 +57,10 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+  const { onCopy } = useClipboard(
+    `${window.location.origin}/#/${request.collectionId}/${request.id}`,
+  );
+  const navigate = useNavigate();
   const variants = globalState.currentRequest.id.get() === request.id ? ['selected'] : [];
 
   async function handleSaveRequest(currentRequest: Request) {
@@ -74,6 +80,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   }
 
   async function handleRequestClick() {
+    navigate(`/${request.collectionId}/${request.id}`);
     if (
       user?.data?.settings?.saveOnClose &&
       globalState.requestChanged.value &&
@@ -273,6 +280,16 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
               }}
             >
               Rename
+            </MenuItem>
+            <MenuItem
+              icon={<LinkIcon />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopy();
+                successToast('Link copied to clipboard.', toast);
+              }}
+            >
+              Copy Link
             </MenuItem>
             <MenuItem
               icon={<DeleteIcon />}
