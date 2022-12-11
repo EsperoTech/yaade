@@ -63,13 +63,7 @@ function Sidebar() {
   );
 
   function onCloseClear() {
-    setState({
-      ...state,
-      name: '',
-      groups: user?.data?.groups ?? [],
-      openApiFile: undefined,
-      basePath: '',
-    });
+    setState({ ...state, name: '', groups: user?.data?.groups ?? [] });
     onClose();
   }
 
