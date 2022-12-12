@@ -1,31 +1,27 @@
 import {
   AddIcon,
-  CheckIcon,
   ChevronRightIcon,
-  CloseIcon,
   DeleteIcon,
   DragHandleIcon,
   EditIcon,
+  LinkIcon,
 } from '@chakra-ui/icons';
 import {
   Heading,
-  HStack,
   IconButton,
   Input,
   Menu,
   MenuButton,
   MenuItem,
   MenuList,
-  Tag,
-  TagCloseButton,
-  TagLabel,
+  useClipboard,
   useColorMode,
   useDisclosure,
   useToast,
-  Wrap,
 } from '@chakra-ui/react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
@@ -69,6 +65,8 @@ function CollectionView({ collection }: CollectionProps) {
   const variants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+  const { onCopy } = useClipboard(`${window.location.origin}/#/${collection.id}`);
+  const navigate = useNavigate();
 
   function handleOnKeyDown(e: any, action: any) {
     if (e.key === 'Enter') {
@@ -137,6 +135,7 @@ function CollectionView({ collection }: CollectionProps) {
   }
 
   function handleCollectionClick() {
+    navigate(`/${collection.id}`);
     saveCollection({
       ...collection,
       open: !collection.open,
@@ -315,6 +314,16 @@ function CollectionView({ collection }: CollectionProps) {
                 }}
               >
                 Environment
+              </MenuItem>
+              <MenuItem
+                icon={<LinkIcon />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopy();
+                  successToast('Link copied to clipboard.', toast);
+                }}
+              >
+                Copy Link
               </MenuItem>
               <MenuItem
                 icon={<DeleteIcon />}
