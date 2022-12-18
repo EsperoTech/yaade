@@ -93,6 +93,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .userCoroutineHandler(this, collectionRoute::deleteCollection)
             routerBuilder.operation("importOpenApi")
                 .userCoroutineHandler(this, collectionRoute::importOpenApiCollection)
+            routerBuilder.operation("importPostman")
+                .userCoroutineHandler(this, collectionRoute::importPostmanCollection)
 
             routerBuilder.operation("createEnv")
                 .userCoroutineHandler(this, collectionRoute::createEnv)
@@ -115,7 +117,6 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
 
             routerBuilder.operation("invoke")
                 .userCoroutineHandler(this, invokeRoute::invoke)
-
 
             routerBuilder.operation("exportBackup")
                 .adminCoroutineHandler(this, adminRoute::exportBackup)

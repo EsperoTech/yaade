@@ -28,6 +28,7 @@ import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,7 +130,7 @@ public class ExampleGenerator {
             for (Map.Entry<String, Object> entry : examples.entrySet()) {
                 final Map<String, String> kv = new HashMap<>();
                 kv.put(CONTENT_TYPE, entry.getKey());
-                kv.put(EXAMPLE, Json.pretty(entry.getValue()));
+                kv.put(EXAMPLE, JsonObject.mapFrom(entry.getValue()).encodePrettily());
                 output.add(kv);
             }
         }

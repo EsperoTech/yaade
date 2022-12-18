@@ -104,6 +104,25 @@ paths:
           description: Success
       operationId: importOpenApi
       summary: Import a collection from an OpenAPI file
+  /api/collection/importPostman:
+    post:
+      tags:
+        - Import
+      parameters:
+        - name: groups
+          description: The groups for the collection
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+          description: Success
+      operationId: importPostman
+      summary: Import a collection from a Postman collection file
   /api/request:
     put:
       requestBody:

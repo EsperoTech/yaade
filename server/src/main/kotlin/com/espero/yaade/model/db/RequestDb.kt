@@ -54,6 +54,10 @@ class RequestDb {
         this.data = data.encode().toByteArray()
     }
 
+    constructor(collectionId: Long, url: String, name: String, method: String, headers: JsonArray, body: String?) {
+
+    }
+
     fun toJson(): JsonObject {
         return JsonObject()
             .put("id", id)
@@ -87,6 +91,23 @@ class RequestDb {
             val data = JsonObject()
                 .put("name", name)
                 .put("uri", basePath + path + queryParams)
+                .put("method", method)
+                .put("headers", headers)
+                .put("body", body)
+            return RequestDb(collectionId, data)
+        }
+
+        fun fromPostmanRequest(
+            url: String,
+            name: String,
+            collectionId: Long,
+            method: String,
+            headers: JsonArray,
+            body: String?
+        ): RequestDb {
+            val data = JsonObject()
+                .put("name", name)
+                .put("uri", url)
                 .put("method", method)
                 .put("headers", headers)
                 .put("body", body)

@@ -5,6 +5,7 @@ import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.RequestDb
 import com.espero.yaade.server.errors.ServerError
 import com.espero.yaade.services.OpenApiService
+import com.espero.yaade.services.PostmanParser
 import com.j256.ormlite.misc.TransactionManager
 import io.swagger.v3.parser.OpenAPIV3Parser
 import io.vertx.core.Vertx
@@ -84,6 +85,28 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         daoManager.collectionDao.create(collection)
 
         val requests = OpenApiService.createRequestsFromOpenApi(openApi, basePath, collection)
+        requests.forEach { daoManager.requestDao.create(it) }
+
+        val requestsJson = requests.map(RequestDb::toJson)
+        val collectionJson = collection.toJson().put("requests", requestsJson)
+
+        vertx.fileSystem().delete(f.uploadedFileName()).await()
+
+        ctx.end(collectionJson.encode()).await()
+    }
+
+    suspend fun importPostmanCollection(ctx: RoutingContext) {
+        val groups = ctx.queryParam("groups").elementAtOrNull(0) ?: ""
+        val userId = ctx.user().principal().getLong("id")
+        val f = ctx.fileUploads().iterator().next()
+
+        val rawContent = vertx.fileSystem().readFile(f.uploadedFileName()).await()
+        val postmanCollection = rawContent.toJsonObject()
+        val parser = PostmanParser(postmanCollection)
+
+        val collection = parser.parseCollection(userId, groups.split(","))
+        daoManager.collectionDao.create(collection)
+        val requests = parser.parseRequests(collection.id)
         requests.forEach { daoManager.requestDao.create(it) }
 
         val requestsJson = requests.map(RequestDb::toJson)
