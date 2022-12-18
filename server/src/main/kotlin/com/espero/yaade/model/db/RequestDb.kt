@@ -54,10 +54,6 @@ class RequestDb {
         this.data = data.encode().toByteArray()
     }
 
-    constructor(collectionId: Long, url: String, name: String, method: String, headers: JsonArray, body: String?) {
-
-    }
-
     fun toJson(): JsonObject {
         return JsonObject()
             .put("id", id)
