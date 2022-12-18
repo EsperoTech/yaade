@@ -17,11 +17,13 @@ class PostmanParser(val collection: JsonObject) {
         val data = JsonObject().put("name", name).put("groups", groups)
         val newCollection = CollectionDb(data, userId)
 
-        val variables = collection.getJsonArray("variable")
+        val variables = collection.getJsonArray("variable") ?: JsonArray()
         val createEnvReq = JsonObject()
         variables.forEach {
             val variable = it as JsonObject
-            createEnvReq.put(variable.getString("key"), variable.getString("value"))
+            val key = variable.getString("key") ?: ""
+            val value = variable.getString("value") ?: ""
+            createEnvReq.put(key, value)
         }
         newCollection.createEnv("default", JsonObject().put("data", createEnvReq))
 
