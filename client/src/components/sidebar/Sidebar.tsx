@@ -3,6 +3,7 @@ import {
   Box,
   IconButton,
   Input,
+  Select,
   Tab,
   TabList,
   TabPanel,
@@ -36,8 +37,9 @@ type StateProps = {
   name: string;
   groups: string[];
   searchTerm: string;
-  openApiFile: any;
+  uploadFile: any;
   basePath: string;
+  selectedImport: string;
 };
 
 function Sidebar() {
@@ -49,8 +51,9 @@ function Sidebar() {
     name: '',
     groups: user?.data?.groups ?? [],
     searchTerm: '',
-    openApiFile: undefined,
+    uploadFile: undefined,
     basePath: '',
+    selectedImport: 'openapi',
   });
   const { colorMode } = useColorMode();
   const initialRef = useRef(null);
@@ -67,8 +70,9 @@ function Sidebar() {
       ...state,
       name: '',
       groups: user?.data?.groups ?? [],
-      openApiFile: undefined,
+      uploadFile: undefined,
       basePath: '',
+      selectedImport: 'openapi',
     });
     onClose();
   }
@@ -76,19 +80,29 @@ function Sidebar() {
   async function handleCreateCollectionClick() {
     try {
       let response;
-      if (state.openApiFile) {
+      if (state.uploadFile) {
         const data = new FormData();
-        data.append('File', state.openApiFile, 'openapi.yaml');
+        data.append('File', state.uploadFile, 'file');
 
-        response = await fetch(
-          `/api/collection/importOpenApi?basePath=${
-            state.basePath
-          }&groups=${groupsArrayToStr(state.groups)}`,
-          {
-            method: 'POST',
-            body: data,
-          },
-        );
+        if (state.selectedImport === 'openapi') {
+          response = await fetch(
+            `/api/collection/importOpenApi?basePath=${
+              state.basePath
+            }&groups=${groupsArrayToStr(state.groups)}`,
+            {
+              method: 'POST',
+              body: data,
+            },
+          );
+        } else {
+          response = await fetch(
+            `/api/collection/importPostman?groups=${groupsArrayToStr(state.groups)}`,
+            {
+              method: 'POST',
+              body: data,
+            },
+          );
+        }
       } else {
         response = await fetch('/api/collection', {
           method: 'POST',
@@ -157,7 +171,7 @@ function Sidebar() {
         >
           <TabList>
             <Tab>Basic</Tab>
-            <Tab>OpenAPI</Tab>
+            <Tab>Import</Tab>
           </TabList>
           <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
             <TabPanel>
@@ -183,7 +197,14 @@ function Sidebar() {
               />
             </TabPanel>
             <TabPanel>
-              <Text>Upload an OpenAPI 3.0 file</Text>
+              <Select
+                size="xs"
+                onChange={(e) => setState({ ...state, selectedImport: e.target.value })}
+                value={state.selectedImport}
+              >
+                <option value="openapi">OpenAPI</option>
+                <option value="postman">Postman</option>
+              </Select>
               <input
                 className={cn(styles, 'fileInput', [colorMode])}
                 type="file"
@@ -192,20 +213,22 @@ function Sidebar() {
                   const openApiFile = e.target.files ? e.target.files[0] : undefined;
                   setState({
                     ...state,
-                    openApiFile,
+                    uploadFile: openApiFile,
                     name: openApiFile?.name ?? 'filename',
                   });
                 }}
               />
-              <Input
-                placeholder="Base Path"
-                my="4"
-                w="100%"
-                borderRadius={20}
-                colorScheme="green"
-                value={state.basePath}
-                onChange={(e) => setState({ ...state, basePath: e.target.value })}
-              />
+              {state.selectedImport === 'openapi' ? (
+                <Input
+                  placeholder="Base Path"
+                  mb="4"
+                  w="100%"
+                  borderRadius={20}
+                  colorScheme="green"
+                  value={state.basePath}
+                  onChange={(e) => setState({ ...state, basePath: e.target.value })}
+                />
+              ) : null}
               <GroupsInput
                 groups={state.groups}
                 setGroups={(groups: string[]) =>

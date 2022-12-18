@@ -92,5 +92,22 @@ class RequestDb {
                 .put("body", body)
             return RequestDb(collectionId, data)
         }
+
+        fun fromPostmanRequest(
+            url: String,
+            name: String,
+            collectionId: Long,
+            method: String,
+            headers: JsonArray,
+            body: String?
+        ): RequestDb {
+            val data = JsonObject()
+                .put("name", name)
+                .put("uri", url)
+                .put("method", method)
+                .put("headers", headers)
+                .put("body", body)
+            return RequestDb(collectionId, data)
+        }
     }
 }
