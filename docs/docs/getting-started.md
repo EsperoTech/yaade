@@ -22,6 +22,10 @@ $ docker run -d --restart=always -p 9339:9339 \
     --name yaade esperotech/yaade:latest
 ```
 
+::: info
+If you run Yaade behind a reverse proxy that does not serve Yaade on the default base path `/` you have to set the environment variable `-e YAADE_BASE_PATH=/relative/path` when starting the docker container.
+:::
+
 ## Step 3: Open Yaade
 
 If you started the container locally, you can now visit `http://localhost:9339`. If you do not have access to a browser on your machine you can do a quick health check to ensure Yaade is up and running.

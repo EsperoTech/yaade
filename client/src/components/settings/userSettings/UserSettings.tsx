@@ -11,7 +11,7 @@ import {
 import { FunctionComponent, useEffect, useState } from 'react';
 
 import User from '../../../model/User';
-import { errorToast } from '../../../utils';
+import { BASE_PATH, errorToast } from '../../../utils';
 import SettingsTab from '../settingsTab';
 import ExternalProviderTab from './providerTabs/ExternalProviderTab';
 import LocalProviderTab from './providerTabs/LocalProviderTab';
@@ -41,7 +41,7 @@ const UserSettings: FunctionComponent = () => {
   useEffect(() => {
     const getUsers = async () => {
       try {
-        const res = await fetch('/api/users');
+        const res = await fetch(BASE_PATH + 'api/users');
         const users = await res.json();
         setState((s) => {
           return { ...s, users };

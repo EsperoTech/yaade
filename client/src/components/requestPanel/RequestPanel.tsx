@@ -14,6 +14,7 @@ import {
 } from '../../state/GlobalState';
 import {
   appendHttpIfNoProtocol,
+  BASE_PATH,
   errorToast,
   kvRowsToMap,
   parseResponse,
@@ -156,7 +157,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
   }
 
   async function _sendSaveRequest(method: string, body: any): Promise<Response> {
-    const response = await fetch('/api/request', {
+    const response = await fetch(BASE_PATH + 'api/request', {
       method: method,
       headers: {
         'Content-Type': 'application/json',
@@ -278,7 +279,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
   async function sendRequestToServer(request: Request, envName?: string) {
     try {
       globalState.requestLoading.set(true);
-      const res = await fetch('/api/invoke', {
+      const res = await fetch(BASE_PATH + 'api/invoke', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -313,7 +314,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       };
 
       if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
-        let response = await fetch('/api/request', {
+        let response = await fetch(BASE_PATH + 'api/request', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -330,7 +331,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
         if (i === -1) return;
         const collection = globalState.collections[i].get({ noproxy: true });
 
-        response = await fetch('/api/collection', {
+        response = await fetch(BASE_PATH + 'api/collection', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

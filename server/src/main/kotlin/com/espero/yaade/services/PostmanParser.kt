@@ -32,7 +32,7 @@ class PostmanParser(val collection: JsonObject) {
 
     fun parseRequests(collectionId: Long): List<RequestDb> {
         val newRequests = mutableListOf<RequestDb>()
-        val requests = collection.getJsonArray("item")
+        val requests = collection.getJsonArray("item") ?: JsonArray()
         for (req in requests) {
             val request = req as JsonObject
             val rawUrl = request.getJsonObject("request")?.getValue("url")
@@ -41,7 +41,7 @@ class PostmanParser(val collection: JsonObject) {
                 is String -> url = rawUrl
                 is JsonObject -> url = rawUrl.getString("raw") ?: ""
             }
-            val postmanHeaders = request.getJsonObject("request").getJsonArray("header")
+            val postmanHeaders = request.getJsonObject("request").getJsonArray("header") ?: JsonArray()
             val headers = JsonArray()
             postmanHeaders.forEach {
                 val header = it as JsonObject

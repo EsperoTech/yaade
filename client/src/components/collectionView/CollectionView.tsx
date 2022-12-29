@@ -31,7 +31,7 @@ import {
   useGlobalState,
   writeRequestToCollections,
 } from '../../state/GlobalState';
-import { errorToast, successToast } from '../../utils';
+import { BASE_PATH, errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import BasicModal from '../basicModal';
 import CollectionRequest from '../CollectionRequest/CollectionRequest';
@@ -76,7 +76,7 @@ function CollectionView({ collection }: CollectionProps) {
 
   async function handleCreateRequestClick() {
     try {
-      const response = await fetch('/api/request', {
+      const response = await fetch(BASE_PATH + 'api/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ function CollectionView({ collection }: CollectionProps) {
 
   async function handleEditCollectionClick() {
     try {
-      const response = await fetch('/api/collection', {
+      const response = await fetch(BASE_PATH + 'api/collection', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +144,7 @@ function CollectionView({ collection }: CollectionProps) {
 
   async function handleDeleteCollectionClick() {
     try {
-      const response = await fetch(`/api/collection/${collection.id}`, {
+      const response = await fetch(BASE_PATH + `api/collection/${collection.id}`, {
         method: 'DELETE',
       });
       if (response.status !== 200) throw new Error();

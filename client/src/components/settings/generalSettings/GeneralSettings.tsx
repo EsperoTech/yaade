@@ -12,7 +12,7 @@ import {
 import { FunctionComponent, useContext } from 'react';
 
 import { UserContext } from '../../../context';
-import { errorToast, successToast } from '../../../utils';
+import { BASE_PATH, errorToast, successToast } from '../../../utils';
 import SettingsTab from '../settingsTab';
 
 type GeneralSettingsProps = {};
@@ -24,7 +24,7 @@ const GeneralSettings: FunctionComponent<GeneralSettingsProps> = () => {
 
   async function handleSettingChanged(key: string, value: number | boolean | string) {
     try {
-      const response = await fetch('/api/user/changeSetting', {
+      const response = await fetch(BASE_PATH + 'api/user/changeSetting', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

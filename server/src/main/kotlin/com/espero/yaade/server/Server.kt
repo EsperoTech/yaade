@@ -1,6 +1,7 @@
 package com.espero.yaade.server
 
 import com.espero.yaade.ADMIN_USERNAME
+import com.espero.yaade.BASE_PATH
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.ConfigDb
@@ -13,6 +14,7 @@ import com.espero.yaade.server.utils.userCoroutineHandler
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServer
 import io.vertx.core.json.JsonObject
+import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
 import io.vertx.ext.web.handler.LoggerFormat
 import io.vertx.ext.web.handler.LoggerHandler
@@ -60,8 +62,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val loggerHandler = LoggerHandler.create(LoggerFormat.DEFAULT)
             // NOTE: customized loggerHandler to not log health or ping requests
             routerBuilder.rootHandler {
-                if (it.request().path() == "/api/health" ||
-                    (it.request().path() == "/api/user" && it.request().method() == HttpMethod.GET)
+                if (it.request().path().contains("/api/health") ||
+                    (it.request().path().contains("/api/user") && it.request().method() == HttpMethod.GET)
                 ) {
                     it.next()
                 } else {
@@ -162,16 +164,20 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 authConfig = newConfig.getConfig()
                 daoManager.configDao.create(newConfig)
             }
+
+            router.route().failureHandler(::handleFailure)
+
+            val mainRouter = Router.router(vertx)
+            mainRouter.route("$BASE_PATH/*").subRouter(router)
+
             try {
-                authHandler.init(router, authConfig)
+                authHandler.init(mainRouter, authConfig)
             } catch (e: Exception) {
                 log.error("Bad auth config: $e")
             }
 
-            router.route().failureHandler(::handleFailure)
-
             server = vertx.createHttpServer()
-                .requestHandler(router)
+                .requestHandler(mainRouter)
                 .listen(port)
                 .await()
             log.info("Started server on port ${server!!.actualPort()}")
