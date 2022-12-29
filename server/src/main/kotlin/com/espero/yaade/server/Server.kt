@@ -164,16 +164,17 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 authConfig = newConfig.getConfig()
                 daoManager.configDao.create(newConfig)
             }
-            try {
-                authHandler.init(router, authConfig)
-            } catch (e: Exception) {
-                log.error("Bad auth config: $e")
-            }
+
+            router.route().failureHandler(::handleFailure)
 
             val mainRouter = Router.router(vertx)
             mainRouter.route("$BASE_PATH/*").subRouter(router)
 
-            router.route().failureHandler(::handleFailure)
+            try {
+                authHandler.init(mainRouter, authConfig)
+            } catch (e: Exception) {
+                log.error("Bad auth config: $e")
+            }
 
             server = vertx.createHttpServer()
                 .requestHandler(mainRouter)

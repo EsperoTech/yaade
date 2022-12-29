@@ -1,5 +1,6 @@
 package com.espero.yaade.server.auth
 
+import com.espero.yaade.BASE_PATH
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.errors.ServerError
@@ -245,7 +246,7 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
             .onSuccess {
                 try {
                     updateUser(config, ctx, it)
-                    ctx.redirect("/")
+                    ctx.redirect("$BASE_PATH/")
                 } catch (t: Throwable) {
                     ctx.session().destroy()
                     ctx.setUser(null)
