@@ -137,7 +137,10 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
 
   async function handleDeleteRequestClick() {
     try {
-      const response = await fetch(import.meta.env.BASE_URL + `api/request/${request.id}`, { method: 'DELETE' });
+      const response = await fetch(
+        import.meta.env.BASE_URL + `api/request/${request.id}`,
+        { method: 'DELETE' },
+      );
       if (response.status !== 200) throw new Error();
       if (request.id === globalState.currentRequest.id.value) {
         globalState.currentRequest.set(defaultRequest);

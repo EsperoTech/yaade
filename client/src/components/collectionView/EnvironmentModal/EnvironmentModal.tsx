@@ -163,7 +163,8 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       }
 
       const res = await fetch(
-        import.meta.env.BASE_URL + `api/collection/${collection.id}/envs/${state.newEnvName}`,
+        import.meta.env.BASE_URL +
+          `api/collection/${collection.id}/envs/${state.newEnvName}`,
         options,
       );
       if (res.status !== 200) throw Error();
@@ -204,7 +205,8 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     try {
       if (!state.selectedEnvName || envNames.length <= 1) throw Error();
       const res = await fetch(
-        import.meta.env.BASE_URL + `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
+        import.meta.env.BASE_URL +
+          `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
         {
           method: 'DELETE',
         },
@@ -249,7 +251,8 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       const body = { data, proxy };
 
       const res = await fetch(
-        import.meta.env.BASE_URL + `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
+        import.meta.env.BASE_URL +
+          `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
         {
           method: 'PUT',
           headers: {
@@ -302,7 +305,8 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
   async function handleCreateSecretClicked() {
     try {
       const res = await fetch(
-        import.meta.env.BASE_URL + `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${state.newSecretKey}`,
+        import.meta.env.BASE_URL +
+          `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${state.newSecretKey}`,
         {
           method: 'PUT',
           headers: {
@@ -326,7 +330,8 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       if (!state.selectedEnvSecrets) return;
       const secret = { ...state.selectedEnvSecrets[i] };
       const res = await fetch(
-        import.meta.env.BASE_URL + `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
+        import.meta.env.BASE_URL +
+          `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
         {
           method: 'PUT',
           headers: {
@@ -353,7 +358,8 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       if (!state.selectedEnvSecrets) return;
       const secret = { ...state.selectedEnvSecrets[i] };
       const res = await fetch(
-        import.meta.env.BASE_URL + `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
+        import.meta.env.BASE_URL +
+          `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
         {
           method: 'DELETE',
         },

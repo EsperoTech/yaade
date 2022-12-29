@@ -86,9 +86,10 @@ function Sidebar() {
 
         if (state.selectedImport === 'openapi') {
           response = await fetch(
-            import.meta.env.BASE_URL + `api/collection/importOpenApi?basePath=${
-              state.basePath
-            }&groups=${groupsArrayToStr(state.groups)}`,
+            import.meta.env.BASE_URL +
+              `api/collection/importOpenApi?basePath=${
+                state.basePath
+              }&groups=${groupsArrayToStr(state.groups)}`,
             {
               method: 'POST',
               body: data,
@@ -96,7 +97,8 @@ function Sidebar() {
           );
         } else {
           response = await fetch(
-            import.meta.env.BASE_URL + `api/collection/importPostman?groups=${groupsArrayToStr(state.groups)}`,
+            import.meta.env.BASE_URL +
+              `api/collection/importPostman?groups=${groupsArrayToStr(state.groups)}`,
             {
               method: 'POST',
               body: data,

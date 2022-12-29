@@ -144,9 +144,12 @@ function CollectionView({ collection }: CollectionProps) {
 
   async function handleDeleteCollectionClick() {
     try {
-      const response = await fetch(import.meta.env.BASE_URL + `api/collection/${collection.id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        import.meta.env.BASE_URL + `api/collection/${collection.id}`,
+        {
+          method: 'DELETE',
+        },
+      );
       if (response.status !== 200) throw new Error();
       removeCollection(collection.id);
       onCloseClear();
