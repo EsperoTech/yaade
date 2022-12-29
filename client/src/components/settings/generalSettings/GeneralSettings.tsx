@@ -24,7 +24,7 @@ const GeneralSettings: FunctionComponent<GeneralSettingsProps> = () => {
 
   async function handleSettingChanged(key: string, value: number | boolean | string) {
     try {
-      const response = await fetch('/api/user/changeSetting', {
+      const response = await fetch(import.meta.env.BASE_URL + 'api/user/changeSetting', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

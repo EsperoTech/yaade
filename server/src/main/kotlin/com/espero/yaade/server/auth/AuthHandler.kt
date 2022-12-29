@@ -207,7 +207,7 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
     override fun handle(ctx: RoutingContext) {
         val user = ctx.user()
         val path = ctx.request().path()
-        if (path.equals("/api/loginProviders")) {
+        if (path.contains("/api/loginProviders")) {
             ctx.end(loginProviders.encode())
             return
         }

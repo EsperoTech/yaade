@@ -33,7 +33,7 @@ const AdminSettings: FunctionComponent<AdminSettingsProps> = () => {
       const data = new FormData();
       data.append('File', state.backupfile, 'yaade-db.mv.db');
 
-      const response = await fetch('/api/user/importBackup', {
+      const response = await fetch(import.meta.env.BASE_URL + 'api/user/importBackup', {
         method: 'POST',
         body: data,
       });
@@ -48,7 +48,7 @@ const AdminSettings: FunctionComponent<AdminSettingsProps> = () => {
 
   async function handleExportBackupClick() {
     try {
-      const response = await fetch('/api/user/exportBackup');
+      const response = await fetch(import.meta.env.BASE_URL + 'api/user/exportBackup');
       if (response.status !== 200) throw new Error();
       const blob = await response.blob();
 

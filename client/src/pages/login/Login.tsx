@@ -49,7 +49,7 @@ function Login() {
       try {
         setState((state) => ({ ...state, loading: true }));
 
-        const response = await fetch('/api/user');
+        const response = await fetch(import.meta.env.BASE_URL + 'api/user');
         if (response.status !== 200) throw new Error();
 
         const user = (await response.json()) as User;
@@ -63,7 +63,7 @@ function Login() {
     }
     async function getLoginProviders() {
       try {
-        const response = await fetch('/api/loginProviders');
+        const response = await fetch(import.meta.env.BASE_URL + 'api/loginProviders');
         if (response.status !== 200) throw new Error();
 
         const loginProviders = (await response.json()) as Provider[];
@@ -81,7 +81,7 @@ function Login() {
     try {
       setState({ ...state, loading: true });
 
-      const response = await fetch('/api/login', {
+      const response = await fetch(import.meta.env.BASE_URL + 'api/login', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -160,7 +160,7 @@ function Login() {
             {state.loginProviders.map((provider) => (
               <form
                 key={provider.id}
-                action={`/api/login?providerid=${provider.id}`}
+                action={import.meta.env.BASE_URL + `api/login?providerid=${provider.id}`}
                 method="GET"
                 style={{ width: '100%', marginTop: '16px' }}
               >

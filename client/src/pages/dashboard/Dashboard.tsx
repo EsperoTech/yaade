@@ -57,7 +57,7 @@ function Dashboard() {
     }, 2000);
     const getCollections = async () => {
       try {
-        const response = await fetch('/api/collection');
+        const response = await fetch(import.meta.env.BASE_URL + 'api/collection');
         const collections = await response.json();
         const loc = parseLocation(location);
         collections.forEach((c: any) => {
@@ -125,7 +125,7 @@ function Dashboard() {
       };
 
       if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
-        const response = await fetch('/api/request', {
+        const response = await fetch(import.meta.env.BASE_URL + 'api/request', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

@@ -50,7 +50,7 @@ const ExternalProviderTab: FunctionComponent = () => {
   useEffect(() => {
     const getProviders = async () => {
       try {
-        const res = await fetch('/api/config/auth_config');
+        const res = await fetch(import.meta.env.BASE_URL + 'api/config/auth_config');
         const authConfig = await res.json();
         setOriginalConfig(authConfig);
         cmValue.current = beautifiedConfig(authConfig);
@@ -71,7 +71,7 @@ const ExternalProviderTab: FunctionComponent = () => {
 
   async function handleSaveAuthConfigClicked() {
     try {
-      const res = await fetch('/api/config/auth_config', {
+      const res = await fetch(import.meta.env.BASE_URL + 'api/config/auth_config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -38,7 +38,7 @@ const AccountSettings: FunctionComponent<AccountSettingsProps> = () => {
 
   async function handleChangePasswordClick() {
     try {
-      const response = await fetch('/api/user', {
+      const response = await fetch(import.meta.env.BASE_URL + 'api/user', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ const AccountSettings: FunctionComponent<AccountSettingsProps> = () => {
 
   async function handleLogoutClick() {
     try {
-      const response = await fetch('/api/logout', {
+      const response = await fetch(import.meta.env.BASE_URL + 'api/logout', {
         method: 'POST',
       });
       if (response.status !== 200) throw new Error();

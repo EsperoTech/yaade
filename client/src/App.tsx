@@ -60,7 +60,7 @@ function AppWithUser() {
   useInterval(async () => {
     if (user) {
       try {
-        const res = await fetch('/api/user');
+        const res = await fetch(import.meta.env.BASE_URL + 'api/user');
         if (res.status === 200) {
           if (toastIdRef.current) {
             closeAll();

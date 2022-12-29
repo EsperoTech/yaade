@@ -86,7 +86,7 @@ function Sidebar() {
 
         if (state.selectedImport === 'openapi') {
           response = await fetch(
-            `/api/collection/importOpenApi?basePath=${
+            import.meta.env.BASE_URL + `api/collection/importOpenApi?basePath=${
               state.basePath
             }&groups=${groupsArrayToStr(state.groups)}`,
             {
@@ -96,7 +96,7 @@ function Sidebar() {
           );
         } else {
           response = await fetch(
-            `/api/collection/importPostman?groups=${groupsArrayToStr(state.groups)}`,
+            import.meta.env.BASE_URL + `api/collection/importPostman?groups=${groupsArrayToStr(state.groups)}`,
             {
               method: 'POST',
               body: data,
@@ -104,7 +104,7 @@ function Sidebar() {
           );
         }
       } else {
-        response = await fetch('/api/collection', {
+        response = await fetch(import.meta.env.BASE_URL + 'api/collection', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

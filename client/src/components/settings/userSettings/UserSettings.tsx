@@ -41,7 +41,7 @@ const UserSettings: FunctionComponent = () => {
   useEffect(() => {
     const getUsers = async () => {
       try {
-        const res = await fetch('/api/users');
+        const res = await fetch(import.meta.env.BASE_URL + 'api/users');
         const users = await res.json();
         setState((s) => {
           return { ...s, users };
