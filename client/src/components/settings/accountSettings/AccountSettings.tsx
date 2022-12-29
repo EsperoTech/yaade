@@ -11,7 +11,7 @@ import {
 import { FunctionComponent, useContext, useState } from 'react';
 
 import { UserContext } from '../../../context';
-import { cn, errorToast, successToast } from '../../../utils';
+import { BASE_PATH, cn, errorToast, successToast } from '../../../utils';
 import SettingsTab from '../settingsTab';
 import styles from './AccountSettings.module.css';
 
@@ -38,7 +38,7 @@ const AccountSettings: FunctionComponent<AccountSettingsProps> = () => {
 
   async function handleChangePasswordClick() {
     try {
-      const response = await fetch(import.meta.env.BASE_URL + 'api/user', {
+      const response = await fetch(BASE_PATH + 'api/user', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ const AccountSettings: FunctionComponent<AccountSettingsProps> = () => {
 
   async function handleLogoutClick() {
     try {
-      const response = await fetch(import.meta.env.BASE_URL + 'api/logout', {
+      const response = await fetch(BASE_PATH + 'api/logout', {
         method: 'POST',
       });
       if (response.status !== 200) throw new Error();

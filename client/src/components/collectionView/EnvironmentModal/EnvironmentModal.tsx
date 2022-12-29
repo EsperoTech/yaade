@@ -12,7 +12,13 @@ import { FunctionComponent, useEffect, useRef, useState } from 'react';
 
 import Collection from '../../../model/Collection';
 import KVRow from '../../../model/KVRow';
-import { errorToast, kvRowsToMap, mapToKvRows, successToast } from '../../../utils';
+import {
+  BASE_PATH,
+  errorToast,
+  kvRowsToMap,
+  mapToKvRows,
+  successToast,
+} from '../../../utils';
 import { getSelectedEnvs, saveSelectedEnv } from '../../../utils/store';
 import BasicModal from '../../basicModal';
 import KVEditor from '../../kvEditor';
@@ -163,8 +169,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       }
 
       const res = await fetch(
-        import.meta.env.BASE_URL +
-          `api/collection/${collection.id}/envs/${state.newEnvName}`,
+        BASE_PATH + `api/collection/${collection.id}/envs/${state.newEnvName}`,
         options,
       );
       if (res.status !== 200) throw Error();
@@ -205,8 +210,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     try {
       if (!state.selectedEnvName || envNames.length <= 1) throw Error();
       const res = await fetch(
-        import.meta.env.BASE_URL +
-          `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
+        BASE_PATH + `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
         {
           method: 'DELETE',
         },
@@ -251,8 +255,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       const body = { data, proxy };
 
       const res = await fetch(
-        import.meta.env.BASE_URL +
-          `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
+        BASE_PATH + `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
         {
           method: 'PUT',
           headers: {
@@ -305,7 +308,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
   async function handleCreateSecretClicked() {
     try {
       const res = await fetch(
-        import.meta.env.BASE_URL +
+        BASE_PATH +
           `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${state.newSecretKey}`,
         {
           method: 'PUT',
@@ -330,7 +333,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       if (!state.selectedEnvSecrets) return;
       const secret = { ...state.selectedEnvSecrets[i] };
       const res = await fetch(
-        import.meta.env.BASE_URL +
+        BASE_PATH +
           `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
         {
           method: 'PUT',
@@ -358,7 +361,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       if (!state.selectedEnvSecrets) return;
       const secret = { ...state.selectedEnvSecrets[i] };
       const res = await fetch(
-        import.meta.env.BASE_URL +
+        BASE_PATH +
           `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
         {
           method: 'DELETE',

@@ -22,7 +22,7 @@ import { Dispatch, FunctionComponent, SetStateAction, useContext, useState } fro
 
 import { UserContext } from '../../../../context';
 import User from '../../../../model/User';
-import { errorToast, successToast } from '../../../../utils';
+import { BASE_PATH, errorToast, successToast } from '../../../../utils';
 import BasicModal from '../../../basicModal';
 import GroupsInput from '../../../groupsInput';
 
@@ -72,7 +72,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
   async function addNewLocalUser(username: string, groups: string[]) {
     try {
       const newUser = { username, groups };
-      const res = await fetch(import.meta.env.BASE_URL + 'api/users', {
+      const res = await fetch(BASE_PATH + 'api/users', {
         method: 'POST',
         headers: {
           'Content-type': 'application/json',
@@ -83,7 +83,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
       if (res.status === 200) {
         successToast('User created', toast);
 
-        const usersRes = await fetch(import.meta.env.BASE_URL + 'api/users');
+        const usersRes = await fetch(BASE_PATH + 'api/users');
         const newUsers = (await usersRes.json()) as Array<User>;
 
         setNewUserForm({ ...newUserForm, username: '', groups: [] });
@@ -105,7 +105,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
       const editUser = users[editRowForm.i];
       editUser.data.groups = editRowForm.groups;
 
-      const res = await fetch(import.meta.env.BASE_URL + `api/users/${editUser.id}`, {
+      const res = await fetch(BASE_PATH + `api/users/${editUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
@@ -133,7 +133,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
       const userId = editRowForm.deleteUser?.id;
       if (!userId) throw new Error('User id has to be set');
 
-      const res = await fetch(import.meta.env.BASE_URL + `api/users/${userId}`, {
+      const res = await fetch(BASE_PATH + `api/users/${userId}`, {
         method: 'DELETE',
       });
       if (res.status === 200) {

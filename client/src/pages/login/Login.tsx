@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react';
 
 import { UserContext } from '../../context';
 import User from '../../model/User';
-import { errorToast, successToast } from '../../utils';
+import { BASE_PATH, errorToast, successToast } from '../../utils';
 import styles from './Login.module.css';
 
 type State = {
@@ -49,7 +49,7 @@ function Login() {
       try {
         setState((state) => ({ ...state, loading: true }));
 
-        const response = await fetch(import.meta.env.BASE_URL + 'api/user');
+        const response = await fetch(BASE_PATH + 'api/user');
         if (response.status !== 200) throw new Error();
 
         const user = (await response.json()) as User;
@@ -63,7 +63,7 @@ function Login() {
     }
     async function getLoginProviders() {
       try {
-        const response = await fetch(import.meta.env.BASE_URL + 'api/loginProviders');
+        const response = await fetch(BASE_PATH + 'api/loginProviders');
         if (response.status !== 200) throw new Error();
 
         const loginProviders = (await response.json()) as Provider[];
@@ -81,7 +81,7 @@ function Login() {
     try {
       setState({ ...state, loading: true });
 
-      const response = await fetch(import.meta.env.BASE_URL + 'api/login', {
+      const response = await fetch(BASE_PATH + 'api/login', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -160,7 +160,7 @@ function Login() {
             {state.loginProviders.map((provider) => (
               <form
                 key={provider.id}
-                action={import.meta.env.BASE_URL + `api/login?providerid=${provider.id}`}
+                action={BASE_PATH + `api/login?providerid=${provider.id}`}
                 method="GET"
                 style={{ width: '100%', marginTop: '16px' }}
               >

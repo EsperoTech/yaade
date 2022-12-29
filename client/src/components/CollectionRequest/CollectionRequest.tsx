@@ -25,7 +25,7 @@ import {
   useGlobalState,
   writeRequestToCollections,
 } from '../../state/GlobalState';
-import { errorToast, successToast } from '../../utils';
+import { BASE_PATH, errorToast, successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
 import BasicModal from '../basicModal';
 import styles from './CollectionRequest.module.css';
@@ -65,7 +65,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
 
   async function handleSaveRequest(currentRequest: Request) {
     try {
-      const response = await fetch(import.meta.env.BASE_URL + 'api/request', {
+      const response = await fetch(BASE_PATH + 'api/request', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
 
   async function handleRenameRequestClick() {
     try {
-      const response = await fetch(import.meta.env.BASE_URL + 'api/request', {
+      const response = await fetch(BASE_PATH + 'api/request', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -137,10 +137,9 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
 
   async function handleDeleteRequestClick() {
     try {
-      const response = await fetch(
-        import.meta.env.BASE_URL + `api/request/${request.id}`,
-        { method: 'DELETE' },
-      );
+      const response = await fetch(BASE_PATH + `api/request/${request.id}`, {
+        method: 'DELETE',
+      });
       if (response.status !== 200) throw new Error();
       if (request.id === globalState.currentRequest.id.value) {
         globalState.currentRequest.set(defaultRequest);

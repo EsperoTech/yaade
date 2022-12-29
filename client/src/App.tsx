@@ -5,6 +5,7 @@ import ContextProvider, { UserContext } from './context';
 import Dashboard from './pages/dashboard';
 import Login from './pages/login';
 import theme from './theme';
+import { BASE_PATH } from './utils';
 
 const autoLogoutDurationInS = 30;
 
@@ -60,7 +61,7 @@ function AppWithUser() {
   useInterval(async () => {
     if (user) {
       try {
-        const res = await fetch(import.meta.env.BASE_URL + 'api/user');
+        const res = await fetch(BASE_PATH + 'api/user');
         if (res.status === 200) {
           if (toastIdRef.current) {
             closeAll();

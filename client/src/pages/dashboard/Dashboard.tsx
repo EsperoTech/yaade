@@ -27,7 +27,12 @@ import {
   useGlobalState,
   writeRequestToCollections,
 } from '../../state/GlobalState';
-import { errorToast, parseExtensionResponse, parseLocation } from '../../utils';
+import {
+  BASE_PATH,
+  errorToast,
+  parseExtensionResponse,
+  parseLocation,
+} from '../../utils';
 import { executeResponseScript } from '../../utils/responseScript';
 import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import styles from './Dashboard.module.css';
@@ -57,7 +62,7 @@ function Dashboard() {
     }, 2000);
     const getCollections = async () => {
       try {
-        const response = await fetch(import.meta.env.BASE_URL + 'api/collection');
+        const response = await fetch(BASE_PATH + 'api/collection');
         const collections = await response.json();
         const loc = parseLocation(location);
         collections.forEach((c: any) => {
@@ -125,7 +130,7 @@ function Dashboard() {
       };
 
       if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
-        const response = await fetch(import.meta.env.BASE_URL + 'api/request', {
+        const response = await fetch(BASE_PATH + 'api/request', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

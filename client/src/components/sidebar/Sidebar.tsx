@@ -21,6 +21,7 @@ import Collection from '../../model/Collection';
 import Request from '../../model/Request';
 import { saveCollection, useGlobalState } from '../../state/GlobalState';
 import {
+  BASE_PATH,
   cn,
   errorToast,
   groupsArrayToStr,
@@ -86,7 +87,7 @@ function Sidebar() {
 
         if (state.selectedImport === 'openapi') {
           response = await fetch(
-            import.meta.env.BASE_URL +
+            BASE_PATH +
               `api/collection/importOpenApi?basePath=${
                 state.basePath
               }&groups=${groupsArrayToStr(state.groups)}`,
@@ -97,7 +98,7 @@ function Sidebar() {
           );
         } else {
           response = await fetch(
-            import.meta.env.BASE_URL +
+            BASE_PATH +
               `api/collection/importPostman?groups=${groupsArrayToStr(state.groups)}`,
             {
               method: 'POST',
@@ -106,7 +107,7 @@ function Sidebar() {
           );
         }
       } else {
-        response = await fetch(import.meta.env.BASE_URL + 'api/collection', {
+        response = await fetch(BASE_PATH + 'api/collection', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
