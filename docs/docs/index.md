@@ -2,7 +2,7 @@
 layout: home
 
 title: Yaade
-titleTemplate: Vite & Vue Powered Static Site Generator
+titleTemplate: The official documentation for Yaade
 
 hero:
   name: Yaade
