@@ -1,13 +1,13 @@
 import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, Select, useColorMode, useToast } from '@chakra-ui/react';
 import { html } from '@codemirror/lang-html';
-import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
 import React from 'react';
 
 import { beautifyBody, errorToast } from '../../utils';
+import { json } from '../../utils/codemirror/lang-json';
 import styles from './BodyEditor.module.css';
 
 type BodyEditorProps = {

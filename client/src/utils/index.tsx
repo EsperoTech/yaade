@@ -58,7 +58,25 @@ function errorToast(msg: string, toast: any, duration?: number, title?: string) 
 
 function beautifyBody(body: string, contentType: string): string {
   if (contentType?.includes('application/json')) {
-    return beautify(body, { format: 'json' });
+    // TODO: this currently requires some regex magic to ignore the interpolations in beautify-js
+    // it probably contains some bugs, but it works for now
+    // if there is a more elegant way to do this, please do so
+    let bodyWithInterpolations = body;
+    bodyWithInterpolations = bodyWithInterpolations.replace(
+      /\$\{([^}]+)\}/g,
+      '/* beautify ignore:start */$&/* beautify ignore:end */',
+    );
+    let res = beautify(bodyWithInterpolations, { format: 'js' });
+    if (res.includes('/* beautify ignore:start */')) {
+      res = res.replace(/\/\* beautify ignore:end \*\//g, '');
+      // for `"hello": ${world} a newline gets inserted after the `:`, this removes it
+      res = res.replace(/(\s+)\/\* beautify ignore:start \*\//g, ' ');
+      res = res.replace(/\/\* beautify ignore:start \*\//g, '');
+      // for `"hello": ${world},` the comma gets beautified into the next line
+      // this moves the comma back to the previous line
+      res = res.replace(/\n\s*,/g, ',');
+    }
+    return res;
   } else if (contentType?.includes('application/xml')) {
     return beautify(body, { format: 'xml' });
   } else if (contentType?.includes('text/html')) {

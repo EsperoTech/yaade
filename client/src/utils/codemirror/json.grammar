@@ -1,0 +1,42 @@
+@top JsonText { value }
+
+value { True | False | Null | Number | String | Object | Array | Env }
+
+String { string }
+Object { "{" list<Property>? "}" }
+Array  { "[" list<value>? "]" }
+
+Property { PropertyName ":" value }
+PropertyName { string }
+
+
+@tokens {
+  True  { "true" }
+  False { "false" }
+  Null  { "null" }
+
+  Number { '-'? int frac? exp?  }
+  int  { '0' | $[1-9] @digit* }
+  frac { '.' @digit+ }
+  exp  { $[eE] $[+\-]? @digit+ }
+
+  string { '"' (Env | char*) '"' }
+  char { $[\u{20}\u{21}\u{23}-\u{5b}\u{5d}-\u{10ffff}] | "\\" esc }
+  esc  { $["\\\/bfnrt] | "u" hex hex hex hex }
+  hex  { $[0-9a-fA-F] }
+
+  InterpolationStart[closedBy=InterpolationEnd] { "${" }
+  InterpolationEnd[openedBy=InterpolationStart] { "}" }
+  Env { InterpolationStart char* InterpolationEnd }
+
+  whitespace { $[ \n\r\t] }
+
+  "{" "}" "[" "]"
+}
+
+@skip { whitespace }
+list<item> { item ("," item)* }
+
+@external propSource jsonHighlighting from "./highlight"
+
+@detectDelim
