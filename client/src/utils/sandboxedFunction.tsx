@@ -1,6 +1,9 @@
-const sandboxedFunction = function (args: Record<string, string>, script: string) {
+const createSandboxedFunction = function (
+  args: Record<string, string>,
+  script: string,
+  isAsync = false,
+) {
   const params = Object.getOwnPropertyNames(args);
-  const vals = Object.values(args);
 
   // 'function': can become a GeneratorFunction that can access global scope
   const potentiallyMalicious = ['function'];
@@ -18,8 +21,25 @@ const sandboxedFunction = function (args: Record<string, string>, script: string
   ];
 
   params.push(...blacklist);
-  const f = new Function(...params, '"use strict";' + script);
+  if (isAsync) {
+    script = `return (async function() {${script}})()`;
+  }
+  return new Function(...params, '"use strict";' + script);
+};
+
+const sandboxedFunction = function (args: Record<string, string>, script: string) {
+  const vals = Object.values(args);
+  const f = createSandboxedFunction(args, script);
   return f.bind({})(...vals);
 };
 
-export default sandboxedFunction;
+const asyncSandboxedFunction = async function (
+  args: Record<string, string>,
+  script: string,
+) {
+  const vals = Object.values(args);
+  const f = createSandboxedFunction(args, script, true);
+  return await f.bind({})(...vals);
+};
+
+export { asyncSandboxedFunction, sandboxedFunction };

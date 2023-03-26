@@ -33,7 +33,7 @@ import {
   parseExtensionResponse,
   parseLocation,
 } from '../../utils';
-import { executeResponseScript } from '../../utils/responseScript';
+import { executeResponseScript } from '../../utils/script';
 import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import styles from './Dashboard.module.css';
 
@@ -43,9 +43,13 @@ function Dashboard() {
   const { user } = useContext(UserContext);
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
+  const extVersion = useRef<string | undefined>(undefined);
   const setIsExtInitialized = (result: boolean) => {
     _setIsExtInitialized(result);
     isExtInitialized.current = result;
+  };
+  const setExtVersion = (result: string) => {
+    extVersion.current = result;
   };
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -89,12 +93,18 @@ function Dashboard() {
     if (event.data.type === 'pong') {
       console.log('Extension connected');
       setIsExtInitialized(true);
+      setExtVersion(event.data.version);
       onClose();
     }
   };
 
   const handleResponseMessage = async (event: MessageEvent<any>) => {
-    if (event.data.type === 'receive-response') {
+    if (
+      event.data.type === 'receive-response' &&
+      // ignore messages with messageIds, since they are from request scripts
+      event.data.response &&
+      !event.data.response.messageId
+    ) {
       globalState.requestLoading.set(false);
       if (event.data.response.err) {
         errorToast(event.data.response.err, toast);
@@ -162,7 +172,11 @@ function Dashboard() {
           <div className={styles.main}>
             <Allotment vertical defaultSizes={[200, 100]} snap>
               <div className={styles.requestPanel}>
-                <RequestPanel isExtInitialized={isExtInitialized} openExtModal={onOpen} />
+                <RequestPanel
+                  isExtInitialized={isExtInitialized}
+                  extVersion={extVersion}
+                  openExtModal={onOpen}
+                />
               </div>
               <div className={styles.responsePanel}>
                 <ResponsePanel />
@@ -176,7 +190,7 @@ function Dashboard() {
         <ModalContent>
           <ModalHeader>Failed to connect to extension</ModalHeader>
           <ModalBody>
-            The extension could not be connected. Please install{' '}
+            The extension could not be connected or needs to be updated. Please install{' '}
             <b>
               <a
                 style={{ textDecoration: 'underline' }}

@@ -111,6 +111,17 @@ function parseLocation(location: Location): { requestId: number; collectionId: n
   }
 }
 
+function getMinorVersion(version?: string): number {
+  if (!version) return 0;
+  const s = version.split('.');
+  if (s.length < 2) return 0;
+  try {
+    return parseInt(s[1]);
+  } catch (e) {
+    return 0;
+  }
+}
+
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
@@ -118,6 +129,7 @@ export {
   cn,
   errorToast,
   getMethodColor,
+  getMinorVersion,
   groupsArrayToStr,
   groupsStrToArray,
   kvRowsToMap,
