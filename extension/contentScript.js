@@ -17,6 +17,7 @@ window.addEventListener("message", function (event) {
         window.postMessage(
           {
             type: "pong",
+            version: chrome.runtime.getManifest().version,
           },
           "*"
         );

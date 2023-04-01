@@ -15,7 +15,7 @@ export default {
         items: [
           { text: "Users & Groups", link: "/users-groups" },
           { text: "Environments", link: "/environments" },
-          { text: "Response Scripts", link: "/response-scripts" },
+          { text: "Scripts", link: "/scripts" },
           { text: "Backups", link: "/backups" },
         ],
       },

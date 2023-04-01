@@ -111,13 +111,33 @@ function parseLocation(location: Location): { requestId: number; collectionId: n
   }
 }
 
+function getMinorVersion(version?: string): number {
+  if (!version) return -1;
+  const s = version.split('.');
+  if (s.length < 2) return -1;
+  return parseInt(s[1]) || -1;
+}
+
+function getRequestIdFromMessageId(messageId: string): number {
+  const split = messageId.split('_');
+  if (split.length < 2) return -1;
+  return parseInt(split[0]) || -1;
+}
+
+function createMessageId(requestId: number): string {
+  return `${requestId}_${Date.now()}`;
+}
+
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
   beautifyBody,
   cn,
+  createMessageId,
   errorToast,
   getMethodColor,
+  getMinorVersion,
+  getRequestIdFromMessageId,
   groupsArrayToStr,
   groupsStrToArray,
   kvRowsToMap,

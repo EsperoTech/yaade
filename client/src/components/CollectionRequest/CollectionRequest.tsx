@@ -60,6 +60,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   const { onCopy } = useClipboard(
     `${window.location.origin}/#/${request.collectionId}/${request.id}`,
   );
+  const { onCopy: onCopyRequestId } = useClipboard(`${request.id}`);
   const navigate = useNavigate();
   const variants = globalState.currentRequest.id.get() === request.id ? ['selected'] : [];
 
@@ -292,6 +293,16 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
               }}
             >
               Copy Link
+            </MenuItem>
+            <MenuItem
+              icon={<LinkIcon />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopyRequestId();
+                successToast('Request ID copied to clipboard.', toast);
+              }}
+            >
+              Copy ID
             </MenuItem>
             <MenuItem
               icon={<DeleteIcon />}
