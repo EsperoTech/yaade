@@ -1,4 +1,4 @@
-import { DeleteIcon, EditIcon, LinkIcon } from '@chakra-ui/icons';
+import { CopyIcon, DeleteIcon, EditIcon, LinkIcon } from '@chakra-ui/icons';
 import {
   IconButton,
   Input,
@@ -295,7 +295,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
               Copy Link
             </MenuItem>
             <MenuItem
-              icon={<LinkIcon />}
+              icon={<CopyIcon />}
               onClick={(e) => {
                 e.stopPropagation();
                 onCopyRequestId();
