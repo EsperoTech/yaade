@@ -18,6 +18,8 @@ function executeResponseScript(
   set: any,
   get: any,
   toast: any,
+  requestId: number,
+  envName?: string,
 ) {
   const args: Record<string, any> = {};
   args.env = { set, get };
@@ -28,7 +30,8 @@ function executeResponseScript(
   };
   args.jp = jpath;
   args.DateTime = DateTime;
-  args.log = (...data: any[]) => console.log(`[Response Script]`, ...data);
+  args.log = (...data: any[]) =>
+    console.log(`[Response Script: ${requestId} - ${envName ?? 'NO_ENV'}]`, ...data);
   try {
     sandboxedFunction(args, script);
   } catch (err) {

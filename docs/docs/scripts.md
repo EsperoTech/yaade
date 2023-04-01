@@ -130,6 +130,10 @@ if (status === 200) {
 }
 ```
 
+:::warning
+The exec command will execute all request using the proxy of the original request's selected environment. This is because switching proxies between requests could result in secret leaking. This means that if the source request uses the Extension proxy, all calls to exec, even the ones in subsequent request scripts, cannot make use of secrets. Vice versa if the proxy is set to Server, then no request can be made against localhost.
+:::
+
 ### Access the Request
 
 The `req` object exposes the request that will be sent. The request itself is immutable though and can only be changed by changing the environment.

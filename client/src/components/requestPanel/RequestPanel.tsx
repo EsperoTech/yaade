@@ -15,9 +15,12 @@ import {
 import {
   appendHttpIfNoProtocol,
   BASE_PATH,
+  createMessageId,
   errorToast,
   getMinorVersion,
+  getRequestIdFromMessageId,
   kvRowsToMap,
+  parseExtensionResponse,
   parseResponse,
   successToast,
 } from '../../utils';
@@ -264,15 +267,39 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
       throw Error('Exec loop detected in request script');
     }
     return new Promise((resolve, reject) => {
-      const messageId = `${request.id}_${Date.now()}`;
+      const messageId = createMessageId(request.id);
 
       function handleMessage(event: any) {
         if (
           event.data &&
           event.data.type === 'receive-response' &&
-          event.data.response.messageId === messageId
+          event.data.response.metaData.messageId === messageId
         ) {
           window.removeEventListener('message', handleMessage);
+
+          const response = parseExtensionResponse(event);
+          const req = globalState.collections
+            .get()
+            .flatMap((c) => c.requests)
+            .find((r) => r.id === request.id);
+          if (req?.data?.responseScript) {
+            const envName = event.data.response.metaData.envName;
+            // NOTE: cannot pass state on top level because it does not use most current state
+            const set = (key: string, value: string) =>
+              setEnvVar(request.collectionId, envName)(globalState, key, value);
+            const get = (key: string): string =>
+              getEnvVar(request.collectionId, envName)(globalState, key);
+            executeResponseScript(
+              response,
+              req?.data?.responseScript,
+              set,
+              get,
+              toast,
+              req.id,
+              envName,
+            );
+          }
+
           resolve(event.data.response);
         }
       }
@@ -286,7 +313,7 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
       }, 5000);
 
       // Send the message with the key and messageId
-      sendRequestToExtension(request, envName, messageId, n);
+      sendRequestToExtension(request, envName, messageId, n, true);
     });
   }
 
@@ -294,10 +321,11 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
     request: Request,
     envName?: string,
     messageId?: string,
-    n?: number,
+    n: number = 0,
+    isRequestScript: boolean = false,
   ) {
     const requestScript = request.data.requestScript;
-    if (requestScript && envName) {
+    if (requestScript) {
       if (getMinorVersion(extVersion.current) < 3) {
         errorToast(
           'Request scripts are not supported in this version of the extension. Please update to the latest version or remove the request script.',
@@ -313,7 +341,7 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
         getEnvVar(request.collectionId, envName)(globalState, key);
       const exec = async (requestId: number, envName?: string) => {
         const request = globalState.collections
-          .get()
+          .get({ noproxy: true })
           .flatMap((c) => c.requests)
           .find((r) => r.id === requestId);
         if (!request) {
@@ -348,13 +376,16 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
     }
     globalState.requestLoading.set(true);
 
-    console.log(url);
     window.postMessage(
       {
         url,
         type: 'send-request',
         options: options,
-        messageId,
+        metaData: {
+          messageId: messageId ?? createMessageId(request.id),
+          envName,
+          isRequestScript,
+        },
       },
       '*',
     );
@@ -397,7 +428,15 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
           setEnvVar(request.collectionId, envName)(globalState, key, value);
         const get = (key: string): string =>
           getEnvVar(request.collectionId, envName)(globalState, key);
-        executeResponseScript(response, responseScript, set, get, toast);
+        executeResponseScript(
+          response,
+          responseScript,
+          set,
+          get,
+          toast,
+          request.id,
+          envName,
+        );
       }
 
       const curr = globalState.currentRequest.get({ noproxy: true });

@@ -11,9 +11,7 @@ async function sendRequest(request, sendResponse) {
       value: el[1],
     }));
     sendResponse({
-      // NOTE: if I need to add another field here from request send
-      // generalize this to send all fields from request
-      messageId: request.messageId,
+      metaData: request?.metaData,
       status: response.status,
       body,
       headers,
@@ -21,7 +19,7 @@ async function sendRequest(request, sendResponse) {
     });
   } catch (err) {
     sendResponse({
-      messageId: request.messageId,
+      metaData: request?.metaData,
       err: err.message
     });
   }

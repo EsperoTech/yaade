@@ -21,6 +21,8 @@ import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
+import Request from '../../model/Request';
+import Response from '../../model/Response';
 import {
   getEnvVar,
   setEnvVar,
@@ -30,6 +32,7 @@ import {
 import {
   BASE_PATH,
   errorToast,
+  getRequestIdFromMessageId,
   parseExtensionResponse,
   parseLocation,
 } from '../../utils';
@@ -101,9 +104,8 @@ function Dashboard() {
   const handleResponseMessage = async (event: MessageEvent<any>) => {
     if (
       event.data.type === 'receive-response' &&
-      // ignore messages with messageIds, since they are from request scripts
       event.data.response &&
-      !event.data.response.messageId
+      !event.data.response.metaData?.isRequestScript
     ) {
       globalState.requestLoading.set(false);
       if (event.data.response.err) {
@@ -111,35 +113,30 @@ function Dashboard() {
         return;
       }
 
-      // TODO: if the user changes the request during execution, this will execute
-      // the wrong response script
-      const curr = globalState.currentRequest.get({ noproxy: true });
+      const req = getRequestFromMessageId(event.data.metaData?.messageId);
+      if (!req) {
+        errorToast(
+          'Could not get requestId from messageId: ' + event.data.metaData?.messageId,
+          toast,
+        );
+        return;
+      }
 
       const response = parseExtensionResponse(event);
 
-      const responseScript = curr.data.responseScript;
-      if (responseScript) {
-        const envs = getSelectedEnvs();
-        const envName = envs[curr.collectionId];
-        if (envName) {
-          // NOTE: cannot pass state on top level because it does not use most current state
-          const set = (key: string, value: string) =>
-            setEnvVar(curr.collectionId, envName)(globalState, key, value);
-          const get = (key: string): string =>
-            getEnvVar(curr.collectionId, envName)(globalState, key);
-          executeResponseScript(response, responseScript, set, get, toast);
-        }
+      if (req.data.responseScript) {
+        doResponseScript(req, response, event.data.metaData?.envName);
       }
 
       const newRequest = {
-        ...curr,
+        ...req,
         data: {
-          ...curr.data,
+          ...req.data,
           response: response,
         },
       };
 
-      if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
+      if (req.id !== -1 && user?.data?.settings?.saveOnSend) {
         const response = await fetch(BASE_PATH + 'api/request', {
           method: 'PUT',
           headers: {
@@ -149,9 +146,53 @@ function Dashboard() {
         });
         if (response.status !== 200) throw new Error();
         writeRequestToCollections(newRequest);
+      }
+      if (req.id === globalState.currentRequest.value.id) {
         globalState.currentRequest.set(newRequest);
-      } else {
-        globalState.currentRequest.set(newRequest);
+      }
+    }
+  };
+
+  const getRequestFromMessageId = (messageId?: string): Request | undefined => {
+    if (messageId) {
+      const requestId = getRequestIdFromMessageId(messageId);
+      return globalState.collections
+        .get()
+        .flatMap((c) => c.requests)
+        .find((r) => r.id === requestId);
+    } else {
+      // TODO: remove once v1.3 of extension is not used anymore and all requests have a messageId
+      return globalState.currentRequest.get({ noproxy: true });
+    }
+  };
+
+  const doResponseScript = async (
+    request: Request,
+    response: Response,
+    envName?: string,
+  ) => {
+    const responseScript = request.data.responseScript;
+    if (responseScript) {
+      if (!envName) {
+        const envs = getSelectedEnvs();
+        envName = envs[request.collectionId];
+      }
+
+      if (envName) {
+        // NOTE: cannot pass state on top level because it does not use most current state
+        const set = (key: string, value: string) =>
+          setEnvVar(request.collectionId, envName)(globalState, key, value);
+        const get = (key: string): string =>
+          getEnvVar(request.collectionId, envName)(globalState, key);
+        executeResponseScript(
+          response,
+          responseScript,
+          set,
+          get,
+          toast,
+          request.id,
+          envName,
+        );
       }
     }
   };
