@@ -11,6 +11,7 @@ async function sendRequest(request, sendResponse) {
       value: el[1],
     }));
     sendResponse({
+      metaData: request?.metaData,
       status: response.status,
       body,
       headers,
@@ -18,6 +19,7 @@ async function sendRequest(request, sendResponse) {
     });
   } catch (err) {
     sendResponse({
+      metaData: request?.metaData,
       err: err.message
     });
   }

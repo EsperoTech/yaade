@@ -302,7 +302,12 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   function isCreateDisabled() {
-    return state.newEnvName === '' || envNames.includes(state.newEnvName);
+    return (
+      state.newEnvName === '' ||
+      envNames.includes(state.newEnvName) ||
+      state.newEnvName.includes('__') ||
+      state.newEnvName.includes(' ')
+    );
   }
 
   async function handleCreateSecretClicked() {

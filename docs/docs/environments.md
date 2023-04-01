@@ -1,6 +1,6 @@
 # Environments
 
-Environments allow you to reuse special variables across your entire collection. You might store a long URL in an environment and reuse it in every request. Environments are also handy if you have different deployments, like production and staging. With environments you do not have to change the request everytime you want to use a different deployment target. Yaade provides a sophisticated environment interpolation system. To create a new environment click **••• > Environment** next to the desired collection.
+Environments allow you to reuse special variables across your entire collection. You might store a long URL in an environment and reuse it in every request. Environments are also handy if you have different deployments, like production and staging. With environments you do not have to change the request every time you want to use a different deployment target. Yaade provides a sophisticated environment interpolation system. To create a new environment click **••• > Environment** next to the desired collection.
 
 ## Environment Variables
 
@@ -86,6 +86,13 @@ We support `random-js` by referencing `$r`. You can read the full random-js docs
 - `$r.hex(length)` or `r.hex(length, false)`: Produce a random string comprised of numbers or the characters `abcdef` of length `length`.
 - `$r.hex(length, true)`: Produce a random string comprised of numbers or the characters `ABCDEF` of length `length`.
 - `$r.date(start, end)`: Produce a random `Date` within the inclusive range of [`start`, `end`]. `start` and `end` must both be `Date`s.
+
+#### Luxon
+
+The Luxon `DateTime` object can be referenced via `$t`. Check out the [Luxon example page](https://moment.github.io/luxon/demo/global.html) for detailed examples. Below are some useful commands taken from their documentation.
+
+- `$t.utc().toISO()`
+- `$t.now().plus({minutes: 15, seconds: 8})`
 
 #### Env
 

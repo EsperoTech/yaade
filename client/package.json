@@ -29,6 +29,7 @@
     "framer-motion": "^6.2.8",
     "json-beautify": "^1.1.1",
     "jsonpath": "^1.1.1",
+    "luxon": "^3.3.0",
     "prettier": "^2.5.1",
     "random-js": "^2.1.0",
     "react": "^17.0.2",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@types/beautify": "^0.0.0",
+    "@types/luxon": "^3.2.0",
     "@types/react": "^17.0.33",
     "@types/react-dom": "^17.0.10",
     "@types/react-resizable": "^1.7.4",

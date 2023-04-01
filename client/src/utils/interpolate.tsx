@@ -1,7 +1,8 @@
+import { DateTime } from 'luxon';
 import { MersenneTwister19937, Random } from 'random-js';
 
 import Request from '../model/Request';
-import sandboxedFunction from './sandboxedFunction';
+import { sandboxedFunction } from './sandboxedFunction';
 
 type InterpolateError = {
   key: string;
@@ -102,6 +103,7 @@ const interpolate = function (
     };
   const oenv: Record<string, any> = { ...env };
   oenv.$r = r;
+  oenv.$t = DateTime;
   oenv.$env = oenv;
   let errors: any[] = [];
   let result = interpolate1(request, oenv, debug, errors) as Request;

@@ -15,13 +15,17 @@ import {
 import {
   appendHttpIfNoProtocol,
   BASE_PATH,
+  createMessageId,
   errorToast,
+  getMinorVersion,
+  getRequestIdFromMessageId,
   kvRowsToMap,
+  parseExtensionResponse,
   parseResponse,
   successToast,
 } from '../../utils';
 import interpolate from '../../utils/interpolate';
-import { executeResponseScript } from '../../utils/responseScript';
+import { executeRequestScript, executeResponseScript } from '../../utils/script';
 import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
@@ -68,10 +72,11 @@ function getParamsFromUri(uri: string): Array<KVRow> {
 
 type RequestPanelProps = {
   isExtInitialized: MutableRefObject<boolean>;
+  extVersion: MutableRefObject<string | undefined>;
   openExtModal: () => void;
 };
 
-function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
+function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPanelProps) {
   const [newReqForm, setNewReqForm] = useState<NewReqFormState>({
     collectionId: -1,
     name: '',
@@ -128,6 +133,11 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
 
   const setResponseScript = (responseScript: string) => {
     globalState.currentRequest.data.merge({ responseScript });
+    globalState.requestChanged.set(true);
+  };
+
+  const setRequestScript = (requestScript: string) => {
+    globalState.currentRequest.data.merge({ requestScript });
     globalState.requestChanged.set(true);
   };
 
@@ -239,9 +249,6 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
       const selectedEnv = getSelectedEnv(requestCollection);
       selectedEnvProxy = selectedEnv?.proxy ?? 'ext';
       selectedEnvName = getSelectedEnvs()[requestCollection.id];
-      const selectedEnvData = selectedEnv?.data ?? {};
-      const interpolateResult = interpolate(requestWithoutResponse, selectedEnvData);
-      requestWithoutResponse = interpolateResult.result;
     }
 
     if (selectedEnvProxy === 'server') {
@@ -251,11 +258,114 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
         openExtModal();
         return;
       }
-      sendRequestToExtension(requestWithoutResponse);
+      sendRequestToExtension(requestWithoutResponse, selectedEnvName);
     }
   }
 
-  function sendRequestToExtension(request: Request) {
+  async function sendRequestWaitResponse(request: Request, envName?: string, n?: number) {
+    if (n && n >= 5) {
+      throw Error('Exec loop detected in request script');
+    }
+    return new Promise((resolve, reject) => {
+      const messageId = createMessageId(request.id);
+
+      function handleMessage(event: any) {
+        if (
+          event.data &&
+          event.data.type === 'receive-response' &&
+          event.data.response.metaData.messageId === messageId
+        ) {
+          window.removeEventListener('message', handleMessage);
+
+          const response = parseExtensionResponse(event);
+          const req = globalState.collections
+            .get()
+            .flatMap((c) => c.requests)
+            .find((r) => r.id === request.id);
+          if (req?.data?.responseScript) {
+            const envName = event.data.response.metaData.envName;
+            // NOTE: cannot pass state on top level because it does not use most current state
+            const set = (key: string, value: string) =>
+              setEnvVar(request.collectionId, envName)(globalState, key, value);
+            const get = (key: string): string =>
+              getEnvVar(request.collectionId, envName)(globalState, key);
+            executeResponseScript(
+              response,
+              req?.data?.responseScript,
+              set,
+              get,
+              toast,
+              req.id,
+              envName,
+            );
+          }
+
+          resolve(event.data.response);
+        }
+      }
+
+      window.addEventListener('message', handleMessage);
+
+      setTimeout(() => {
+        // Remove the event listener if the Promise is not resolved after 5 seconds
+        window.removeEventListener('message', handleMessage);
+        reject(new Error('Timeout wating for response from: ' + request.id));
+      }, 5000);
+
+      // Send the message with the key and messageId
+      sendRequestToExtension(request, envName, messageId, n, true);
+    });
+  }
+
+  async function sendRequestToExtension(
+    request: Request,
+    envName?: string,
+    messageId?: string,
+    n: number = 0,
+    isRequestScript: boolean = false,
+  ) {
+    const requestScript = request.data.requestScript;
+    if (requestScript) {
+      if (getMinorVersion(extVersion.current) < 3) {
+        errorToast(
+          'Request scripts are not supported in this version of the extension. Please update to the latest version or remove the request script.',
+          toast,
+          10000,
+        );
+        return;
+      }
+      // NOTE: cannot pass state on top level because it does not use most current state
+      const set = (key: string, value: string) =>
+        setEnvVar(request.collectionId, envName)(globalState, key, value);
+      const get = (key: string): string =>
+        getEnvVar(request.collectionId, envName)(globalState, key);
+      const exec = async (requestId: number, envName?: string) => {
+        const request = globalState.collections
+          .get({ noproxy: true })
+          .flatMap((c) => c.requests)
+          .find((r) => r.id === requestId);
+        if (!request) {
+          throw Error(`Request with id ${requestId} not found`);
+        }
+        if (!n) n = 0;
+        return sendRequestWaitResponse(request, envName, n + 1);
+      };
+      await executeRequestScript(request, requestScript, set, get, exec, toast, envName);
+    }
+
+    if (envName) {
+      const collection = globalState.collections
+        .get({ noproxy: true })
+        .find((c) => c.id === request.collectionId);
+      if (!collection) {
+        throw Error('Collection not found for id: ' + request.collectionId);
+      }
+      const selectedEnv = collection.data?.envs?.[envName];
+      const selectedEnvData = selectedEnv?.data ?? {};
+      const interpolateResult = interpolate(request, selectedEnvData);
+      request = interpolateResult.result;
+    }
+
     const url = appendHttpIfNoProtocol(request.data.uri);
 
     const headers = kvRowsToMap(request.data.headers);
@@ -271,12 +381,29 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
         url,
         type: 'send-request',
         options: options,
+        metaData: {
+          messageId: messageId ?? createMessageId(request.id),
+          envName,
+          isRequestScript,
+        },
       },
       '*',
     );
   }
 
   async function sendRequestToServer(request: Request, envName?: string) {
+    if (envName) {
+      const collection = globalState.collections
+        .get({ noproxy: true })
+        .find((c) => c.id === request.collectionId);
+      if (!collection) {
+        throw Error('Collection not found for id: ' + request.collectionId);
+      }
+      const selectedEnv = collection.data?.envs?.[envName];
+      const selectedEnvData = selectedEnv?.data ?? {};
+      const interpolateResult = interpolate(request, selectedEnvData);
+      request = interpolateResult.result;
+    }
     try {
       globalState.requestLoading.set(true);
       const res = await fetch(BASE_PATH + 'api/invoke', {
@@ -301,7 +428,15 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
           setEnvVar(request.collectionId, envName)(globalState, key, value);
         const get = (key: string): string =>
           getEnvVar(request.collectionId, envName)(globalState, key);
-        executeResponseScript(response, responseScript, set, get, toast);
+        executeResponseScript(
+          response,
+          responseScript,
+          set,
+          get,
+          toast,
+          request.id,
+          envName,
+        );
       }
 
       const curr = globalState.currentRequest.get({ noproxy: true });
@@ -383,6 +518,7 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
           <Tab>Parameters</Tab>
           <Tab>Headers</Tab>
           <Tab>Body</Tab>
+          <Tab>Request Script</Tab>
           <Tab>Response Script</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
@@ -396,6 +532,12 @@ function RequestPanel({ isExtInitialized, openExtModal }: RequestPanelProps) {
             <BodyEditor
               content={globalState.currentRequest.data.value.body ?? ''}
               setContent={setBody}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <Editor
+              content={globalState.currentRequest.data.value.requestScript ?? ''}
+              setContent={setRequestScript}
             />
           </TabPanel>
           <TabPanel h="100%">
