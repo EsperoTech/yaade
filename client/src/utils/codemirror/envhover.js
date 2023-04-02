@@ -19,7 +19,6 @@ const wordHover = (env) => {
           end,
           above: true,
           strictSide: true,
-          arrow: true,
           create(view) {
             let dom = document.createElement('div');
             dom.className = 'cm-tooltip-cursor';

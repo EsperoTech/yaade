@@ -1,14 +1,38 @@
 @top JsonText { value }
 
-value { True | False | Null | Number | String | Object | Array | Env }
+value { True | False | Null | Number | Object | Array | TemplateString | Env }
 
-String { string }
-Object { "{" list<Property>? "}" }
+Object { openBrace list<Property>? closeBrace }
 Array  { "[" list<value>? "]" }
 
 Property { PropertyName ":" value }
-PropertyName { string }
+PropertyName { PropertyTemplateString }
 
+@skip {} {
+  TemplateString {
+    templateStart (templateEscape | templateContent | templateExpr)* templateEnd
+  }
+  PropertyTemplateString {
+    templateStart (templateEscape | templateContent | templateExpr)* templateEnd
+  }
+}
+
+templateExpr[@name=Interpolation] { InterpolationStart interpolationContent* InterpolationEnd }
+
+templateStart { '"' }
+
+InterpolationEnd[openedBy=InterpolationStart] { "}" }
+
+@local tokens {
+  InterpolationStart[closedBy=InterpolationEnd] { "${" }
+  templateEnd { '"' }
+  templateEscape[@name=Escape] { "\\" esc }
+  @else templateContent
+}
+
+EnvEnd[openedBy=EnvStart] { "}" }
+EnvStart[closedBy=EnvEnd] { "${" }
+Env { EnvStart interpolationContent* EnvEnd }
 
 @tokens {
   True  { "true" }
@@ -20,16 +44,14 @@ PropertyName { string }
   frac { '.' @digit+ }
   exp  { $[eE] $[+\-]? @digit+ }
 
-  string { '"' (Env | char*) '"' }
-  char { $[\u{20}\u{21}\u{23}-\u{5b}\u{5d}-\u{10ffff}] | "\\" esc }
   esc  { $["\\\/bfnrt] | "u" hex hex hex hex }
   hex  { $[0-9a-fA-F] }
-
-  InterpolationStart[closedBy=InterpolationEnd] { "${" }
-  InterpolationEnd[openedBy=InterpolationStart] { "}" }
-  Env { InterpolationStart char* InterpolationEnd }
+  interpolationContent { $[\u{21}-\u{7a}] }
 
   whitespace { $[ \n\r\t] }
+
+  openBrace { "{" }
+  closeBrace { "}" }
 
   "{" "}" "[" "]"
 }
