@@ -66,7 +66,7 @@ function beautifyBody(body: string, contentType: string): string {
       /\$\{([^}]+)\}/g,
       '/* beautify ignore:start */$&/* beautify ignore:end */',
     );
-    let res = beautify(bodyWithInterpolations, { format: 'js' });
+    let res = beautify(bodyWithInterpolations, { format: 'json' });
     if (res.includes('/* beautify ignore:start */')) {
       res = res.replace(/\/\* beautify ignore:end \*\//g, '');
       // for `"hello": ${world} a newline gets inserted after the `:`, this removes it

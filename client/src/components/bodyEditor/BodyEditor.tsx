@@ -6,8 +6,11 @@ import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
 import React from 'react';
 
+import { useGlobalState } from '../../state/GlobalState';
 import { beautifyBody, errorToast } from '../../utils';
+import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { json } from '../../utils/codemirror/lang-json';
+import { getSelectedEnv } from '../../utils/store';
 import styles from './BodyEditor.module.css';
 
 type BodyEditorProps = {
@@ -25,8 +28,12 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
   });
   const { colorMode } = useColorMode();
   const toast = useToast();
-
-  const extensions = [];
+  const globalState = useGlobalState();
+  const collections = globalState.collections.get({ noproxy: true });
+  const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  const requestCollection = collections.find((c) => c.id === currentRequest.collectionId);
+  const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
+  const extensions = [cursorTooltipBaseTheme, wordHover(selectedEnv?.data)];
   if (state.contentType === 'application/json') {
     extensions.push(json());
   } else if (state.contentType === 'application/xml') {
