@@ -2,6 +2,8 @@ import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, Select, useColorMode, useToast } from '@chakra-ui/react';
 import { html } from '@codemirror/lang-html';
 import { xml } from '@codemirror/lang-xml';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
 import React from 'react';
@@ -33,7 +35,18 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
   const currentRequest = globalState.currentRequest.get({ noproxy: true });
   const requestCollection = collections.find((c) => c.id === currentRequest.collectionId);
   const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
-  const extensions = [cursorTooltipBaseTheme, wordHover(selectedEnv?.data)];
+  const customHightlight = HighlightStyle.define([
+    {
+      tag: tags.moduleKeyword,
+      cursor: 'help',
+    },
+  ]);
+
+  const extensions = [
+    cursorTooltipBaseTheme,
+    wordHover(selectedEnv?.data),
+    syntaxHighlighting(customHightlight),
+  ];
   if (state.contentType === 'application/json') {
     extensions.push(json());
   } else if (state.contentType === 'application/xml') {
