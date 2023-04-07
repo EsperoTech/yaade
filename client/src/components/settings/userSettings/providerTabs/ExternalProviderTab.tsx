@@ -12,7 +12,6 @@ import {
   useToast,
   VStack,
 } from '@chakra-ui/react';
-import { json } from '@codemirror/lang-json';
 import CodeMirror from '@uiw/react-codemirror';
 import beautify from 'beautify';
 import {
@@ -26,6 +25,7 @@ import {
 
 import { UserContext } from '../../../../context';
 import { BASE_PATH, errorToast, successToast } from '../../../../utils';
+import { json } from '../../../../utils/codemirror/lang-json';
 
 interface Provider {
   id: string;

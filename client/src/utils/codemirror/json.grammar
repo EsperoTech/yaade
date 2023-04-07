@@ -1,0 +1,64 @@
+@top JsonText { value }
+
+value { True | False | Null | Number | Object | Array | TemplateString | Env }
+
+Object { openBrace list<Property>? closeBrace }
+Array  { "[" list<value>? "]" }
+
+Property { PropertyName ":" value }
+PropertyName { PropertyTemplateString }
+
+@skip {} {
+  TemplateString {
+    templateStart (templateEscape | templateContent | templateExpr)* templateEnd
+  }
+  PropertyTemplateString {
+    templateStart (templateEscape | templateContent | templateExpr)* templateEnd
+  }
+}
+
+templateExpr[@name=Interpolation] { InterpolationStart interpolationContent* InterpolationEnd }
+
+templateStart { '"' }
+
+InterpolationEnd[openedBy=InterpolationStart] { "}" }
+
+@local tokens {
+  InterpolationStart[closedBy=InterpolationEnd] { "${" }
+  templateEnd { '"' }
+  templateEscape[@name=Escape] { "\\" esc }
+  @else templateContent
+}
+
+EnvEnd[openedBy=EnvStart] { "}" }
+EnvStart[closedBy=EnvEnd] { "${" }
+Env { EnvStart interpolationContent* EnvEnd }
+
+@tokens {
+  True  { "true" }
+  False { "false" }
+  Null  { "null" }
+
+  Number { '-'? int frac? exp?  }
+  int  { '0' | $[1-9] @digit* }
+  frac { '.' @digit+ }
+  exp  { $[eE] $[+\-]? @digit+ }
+
+  esc  { $["\\\/bfnrt] | "u" hex hex hex hex }
+  hex  { $[0-9a-fA-F] }
+  interpolationContent { $[\u{21}-\u{7a}] }
+
+  whitespace { $[ \n\r\t] }
+
+  openBrace { "{" }
+  closeBrace { "}" }
+
+  "{" "}" "[" "]"
+}
+
+@skip { whitespace }
+list<item> { item ("," item)* }
+
+@external propSource jsonHighlighting from "./highlight"
+
+@detectDelim

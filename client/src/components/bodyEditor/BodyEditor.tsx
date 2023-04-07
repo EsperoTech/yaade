@@ -1,13 +1,18 @@
 import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, Select, useColorMode, useToast } from '@chakra-ui/react';
 import { html } from '@codemirror/lang-html';
-import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
 import React from 'react';
 
+import { useGlobalState } from '../../state/GlobalState';
 import { beautifyBody, errorToast } from '../../utils';
+import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
+import { json } from '../../utils/codemirror/lang-json';
+import { getSelectedEnv } from '../../utils/store';
 import styles from './BodyEditor.module.css';
 
 type BodyEditorProps = {
@@ -25,8 +30,23 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
   });
   const { colorMode } = useColorMode();
   const toast = useToast();
+  const globalState = useGlobalState();
+  const collections = globalState.collections.get({ noproxy: true });
+  const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  const requestCollection = collections.find((c) => c.id === currentRequest.collectionId);
+  const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
+  const customHightlight = HighlightStyle.define([
+    {
+      tag: tags.moduleKeyword,
+      cursor: 'help',
+    },
+  ]);
 
-  const extensions = [];
+  const extensions = [
+    cursorTooltipBaseTheme,
+    wordHover(selectedEnv?.data),
+    syntaxHighlighting(customHightlight),
+  ];
   if (state.contentType === 'application/json') {
     extensions.push(json());
   } else if (state.contentType === 'application/xml') {

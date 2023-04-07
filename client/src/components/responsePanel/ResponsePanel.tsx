@@ -11,7 +11,6 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import CodeMirror from '@uiw/react-codemirror';
 import React, { useContext } from 'react';
@@ -20,6 +19,7 @@ import KVRow from '../../model/KVRow';
 import Response from '../../model/Response';
 import { useGlobalState } from '../../state/GlobalState';
 import { cn, successToast } from '../../utils';
+import { json } from '../../utils/codemirror/lang-json';
 import KVEditor from '../kvEditor';
 import styles from './ResponsePanel.module.css';
 

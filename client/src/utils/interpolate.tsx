@@ -1,7 +1,6 @@
 import { DateTime } from 'luxon';
 import { MersenneTwister19937, Random } from 'random-js';
 
-import Request from '../model/Request';
 import { sandboxedFunction } from './sandboxedFunction';
 
 type InterpolateError = {
@@ -10,7 +9,7 @@ type InterpolateError = {
 };
 
 type InterpolateResult = {
-  result: Request;
+  result: any;
   errors: any[];
 };
 
@@ -92,7 +91,7 @@ const interpolate1 = function (
 };
 
 const interpolate = function (
-  request: Request,
+  request: any,
   env: Record<string, any>,
   debug = false,
 ): InterpolateResult {
