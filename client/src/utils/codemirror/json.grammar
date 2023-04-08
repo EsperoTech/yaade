@@ -17,7 +17,8 @@ PropertyName { PropertyTemplateString }
   }
 }
 
-templateExpr[@name=Interpolation] { InterpolationStart interpolationContent* InterpolationEnd }
+jsObject { jsOpen (interpolationContent | jsObject)* jsClose }
+templateExpr[@name=Interpolation] { InterpolationStart (interpolationContent | jsObject)* InterpolationEnd }
 
 templateStart { '"' }
 
@@ -32,7 +33,7 @@ InterpolationEnd[openedBy=InterpolationStart] { "}" }
 
 EnvEnd[openedBy=EnvStart] { "}" }
 EnvStart[closedBy=EnvEnd] { "${" }
-Env { EnvStart interpolationContent* EnvEnd }
+Env { EnvStart (interpolationContent)* EnvEnd }
 
 @tokens {
   True  { "true" }
@@ -52,8 +53,10 @@ Env { EnvStart interpolationContent* EnvEnd }
 
   openBrace { "{" }
   closeBrace { "}" }
+  jsClose { "}" }
+  jsOpen { "{" }
 
-  "{" "}" "[" "]"
+  "{" "[" "]"
 }
 
 @skip { whitespace }
