@@ -14,7 +14,5 @@ export const jsonHighlighting = styleTags({
   Env: tags.moduleKeyword,
   Interpolation: tags.moduleKeyword,
   'InterpolationStart InterpolationEnd  EnvStart EnvEnd': tags.moduleKeyword,
-  // NOTE: This is a hack to get the highlighting to work
-  '}': tags.moduleKeyword,
   Escape: tags.number,
 });
