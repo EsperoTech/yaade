@@ -30,6 +30,13 @@ const interpolate0 = function (
     return template;
   }
 
+  if (debug) {
+    console.log('++++ interpolate0 ++++');
+    console.log('count', count);
+    console.log('template', template);
+    console.log('parmas', params);
+  }
+
   let result;
   try {
     result = sandboxedFunction(params, 'return `' + template + '`');
@@ -39,10 +46,8 @@ const interpolate0 = function (
       value: '' + err,
     });
     if (debug) {
-      console.log('++++ interpolate0 ++++');
       console.log('error', errors);
-      console.log('template', template);
-      console.log('parmas', params);
+      console.log('---- interpolate0 ----');
     }
     return template;
   }
@@ -50,10 +55,8 @@ const interpolate0 = function (
     return interpolate0(result, params, debug, errors, ++count);
   else {
     if (debug) {
-      console.log('++++ interpolate0 ++++');
-      console.log('count', count);
-      console.log('template', template);
-      console.log('parmas', params);
+      console.log('result', result);
+      console.log('---- interpolate0 ----');
     }
     return result;
   }
@@ -66,6 +69,10 @@ const interpolate1 = function (
   errors: any[],
 ): any {
   let result: any = null;
+  if (debug) {
+    console.log('++++ interpolate1 ++++');
+    console.log('obj', obj);
+  }
   if (!obj) return obj;
   if (obj.constructor === Array) {
     result = [];
@@ -83,9 +90,8 @@ const interpolate1 = function (
     result = obj;
   }
   if (debug) {
-    console.log('++++ interpolate1 ++++');
-    console.log('obj', obj);
     console.log('result', result);
+    console.log('---- interpolate1 ----');
   }
   return result;
 };
@@ -100,6 +106,11 @@ const interpolate = function (
       result: request,
       errors: [{ key: 'env', value: 'request or env not defined' }],
     };
+  if (debug) {
+    console.log('++++ interpolate ++++');
+    console.log('request', request);
+    console.log('env', env);
+  }
   const oenv: Record<string, any> = { ...env };
   oenv.$r = r;
   oenv.$t = DateTime;
@@ -107,11 +118,9 @@ const interpolate = function (
   let errors: any[] = [];
   let result = interpolate1(request, oenv, debug, errors) as Request;
   if (debug) {
-    console.log('++++ interpolate ++++');
-    console.log('request', request);
-    console.log('env', env);
     console.log('result', result);
     console.log('errors', errors);
+    console.log('---- interpolate ----');
   }
   return { result, errors };
 };

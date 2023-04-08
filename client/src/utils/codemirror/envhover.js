@@ -7,11 +7,9 @@ const wordHover = (env) => {
     let { from, to, text } = view.state.doc.lineAt(pos);
     const tree = view.state.tree;
     const node = tree.resolve(pos);
-    if (node && (node.name == 'Interpolation' || node.name == 'Env')) {
-      let start = pos,
-        end = pos;
-      while (start > from && text[start - from - 1] !== '{') start--;
-      while (end < to && text[end - from] !== '}') end++;
+    if (node && (node.name === 'Interpolation' || node.name === 'Env')) {
+      let start = node.from;
+      let end = node.to;
       if ((start == pos && side < 0) || (end == pos && side > 0)) return null;
       if (!env) {
         return {
@@ -27,13 +25,13 @@ const wordHover = (env) => {
           },
         };
       }
-      const envValue = '${' + text.slice(start - from, end - from) + '}';
+      const envValue = text.slice(start - from, end - from);
       let result = '';
       if (envValue) {
         try {
           const interpolation = interpolate(envValue, env);
           if (interpolation.errors && interpolation.errors.length > 0) {
-            result = 'ERROR';
+            result = 'UNKNOWN';
           } else {
             result = interpolation.result;
           }

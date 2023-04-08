@@ -33,7 +33,7 @@ InterpolationEnd[openedBy=InterpolationStart] { "}" }
 
 EnvEnd[openedBy=EnvStart] { "}" }
 EnvStart[closedBy=EnvEnd] { "${" }
-Env { EnvStart (interpolationContent)* EnvEnd }
+Env { EnvStart (interpolationContent  | jsObject)* EnvEnd }
 
 @tokens {
   True  { "true" }
