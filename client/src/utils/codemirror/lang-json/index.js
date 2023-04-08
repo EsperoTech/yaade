@@ -2,7 +2,7 @@
 /* eslint-disable prettier/prettier */
 import { continuedIndent, foldInside, foldNodeProp, indentNodeProp, LanguageSupport,LRLanguage } from '@codemirror/language';
 
-import { parser } from '../lang';
+import { parser } from './lang';
 
 /**
 Calls
