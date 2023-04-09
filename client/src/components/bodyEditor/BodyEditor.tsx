@@ -2,7 +2,11 @@ import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, Select, useColorMode, useToast } from '@chakra-ui/react';
 import { html } from '@codemirror/lang-html';
 import { xml } from '@codemirror/lang-xml';
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import {
+  defaultHighlightStyle,
+  HighlightStyle,
+  syntaxHighlighting,
+} from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
@@ -29,13 +33,14 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
     contentType: 'application/json',
   });
   const { colorMode } = useColorMode();
+  console.log(colorMode);
   const toast = useToast();
   const globalState = useGlobalState();
   const collections = globalState.collections.get({ noproxy: true });
   const currentRequest = globalState.currentRequest.get({ noproxy: true });
   const requestCollection = collections.find((c) => c.id === currentRequest.collectionId);
   const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
-  const customHightlight = HighlightStyle.define([
+  const customHighlight = HighlightStyle.define([
     {
       tag: tags.moduleKeyword,
       cursor: 'help',
@@ -45,8 +50,11 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
   const extensions = [
     cursorTooltipBaseTheme,
     wordHover(selectedEnv?.data),
-    syntaxHighlighting(customHightlight),
+    syntaxHighlighting(customHighlight),
   ];
+  if (colorMode === 'light') {
+    extensions.push(syntaxHighlighting(defaultHighlightStyle));
+  }
   if (state.contentType === 'application/json') {
     extensions.push(json());
   } else if (state.contentType === 'application/xml') {
