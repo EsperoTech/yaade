@@ -62,7 +62,10 @@ const cursorTooltipBaseTheme = EditorView.baseTheme({
     border: 'none',
     padding: '2px 7px',
     borderRadius: '4px',
-    marginBottom: '5px',
+  },
+  '.cm-tooltip': {
+    borderRadius: '4px',
+    border: 0,
   },
 });
 
