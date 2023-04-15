@@ -101,57 +101,57 @@ function Dashboard() {
     }
   };
 
-  const handleResponseMessage = async (event: MessageEvent<any>) => {
-    if (
-      event.data.type === 'receive-response' &&
-      event.data.response &&
-      !event.data.response.metaData?.isRequestScript
-    ) {
-      globalState.requestLoading.set(false);
-      if (event.data.response.err) {
-        errorToast(event.data.response.err, toast);
-        return;
-      }
+  // const handleResponseMessage = async (event: MessageEvent<any>) => {
+  //   if (
+  //     event.data.type === 'receive-response' &&
+  //     event.data.response &&
+  //     !event.data.response.metaData?.isRequestScript
+  //   ) {
+  //     globalState.requestLoading.set(false);
+  //     if (event.data.response.err) {
+  //       errorToast(event.data.response.err, toast);
+  //       return;
+  //     }
 
-      const req = getRequestFromMessageId(event.data.metaData?.messageId);
-      if (!req) {
-        errorToast(
-          'Could not get requestId from messageId: ' + event.data.metaData?.messageId,
-          toast,
-        );
-        return;
-      }
+  //     const req = getRequestFromMessageId(event.data.metaData?.messageId);
+  //     if (!req) {
+  //       errorToast(
+  //         'Could not get requestId from messageId: ' + event.data.metaData?.messageId,
+  //         toast,
+  //       );
+  //       return;
+  //     }
 
-      const response = parseExtensionResponse(event);
+  //     const response = parseExtensionResponse(event);
 
-      if (req.data.responseScript) {
-        doResponseScript(req, response, event.data.metaData?.envName);
-      }
+  //     if (req.data.responseScript) {
+  //       doResponseScript(req, response, event.data.metaData?.envName);
+  //     }
 
-      const newRequest = {
-        ...req,
-        data: {
-          ...req.data,
-          response: response,
-        },
-      };
+  //     const newRequest = {
+  //       ...req,
+  //       data: {
+  //         ...req.data,
+  //         response: response,
+  //       },
+  //     };
 
-      if (req.id !== -1 && user?.data?.settings?.saveOnSend) {
-        const response = await fetch(BASE_PATH + 'api/request', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newRequest),
-        });
-        if (response.status !== 200) throw new Error();
-        writeRequestToCollections(newRequest);
-      }
-      if (req.id === globalState.currentRequest.value.id) {
-        globalState.currentRequest.set(newRequest);
-      }
-    }
-  };
+  //     if (req.id !== -1 && user?.data?.settings?.saveOnSend) {
+  //       const response = await fetch(BASE_PATH + 'api/request', {
+  //         method: 'PUT',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify(newRequest),
+  //       });
+  //       if (response.status !== 200) throw new Error();
+  //       writeRequestToCollections(newRequest);
+  //     }
+  //     if (req.id === globalState.currentRequest.value.id) {
+  //       globalState.currentRequest.set(newRequest);
+  //     }
+  //   }
+  // };
 
   const getRequestFromMessageId = (messageId?: string): Request | undefined => {
     if (messageId) {

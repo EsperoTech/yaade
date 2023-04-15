@@ -6,8 +6,11 @@ import { VscSave } from 'react-icons/vsc';
 import { UserContext } from '../../context';
 import KVRow from '../../model/KVRow';
 import Request from '../../model/Request';
+import Response from '../../model/Response';
 import {
+  getEnv,
   getEnvVar,
+  getRequest,
   setEnvVar,
   useGlobalState,
   writeRequestToCollections,
@@ -166,7 +169,7 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
     }
   }
 
-  async function _sendSaveRequest(method: string, body: any): Promise<Response> {
+  async function _sendSaveRequest(method: string, body: any): Promise<any> {
     const response = await fetch(BASE_PATH + 'api/request', {
       method: method,
       headers: {
@@ -227,7 +230,7 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
     }
   }
 
-  function handleSendButtonClick() {
+  async function handleSendButtonClick() {
     if (globalState.requestLoading.get()) {
       globalState.requestLoading.set(false);
       return;
@@ -238,28 +241,140 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
       data: { ...currentRequest.data, response: null },
     } as Request;
 
-    const requestCollection = collections.find(
-      (c) => c.id === currentRequest.collectionId,
-    );
-
-    var selectedEnvProxy = 'ext';
-    var selectedEnvName: string | undefined;
-
-    if (requestCollection) {
-      const selectedEnv = getSelectedEnv(requestCollection);
-      selectedEnvProxy = selectedEnv?.proxy ?? 'ext';
-      selectedEnvName = getSelectedEnvs()[requestCollection.id];
+    let response: Response;
+    try {
+      response = await sendRequest(requestWithoutResponse);
+    } catch (e: any) {
+      errorToast(e.message, toast);
+      globalState.requestLoading.set(false);
+      return;
     }
 
-    if (selectedEnvProxy === 'server') {
-      sendRequestToServer(requestWithoutResponse, selectedEnvName);
+    const req = getRequest(requestWithoutResponse.id);
+    if (!req) {
+      errorToast('The request could not be saved.', toast);
+      return;
+    }
+    const newRequest: any = {
+      ...req,
+      data: {
+        ...req.data,
+        response: response,
+      },
+    };
+
+    if (user?.data?.settings?.saveOnSend) {
+      const response = await fetch(BASE_PATH + 'api/request', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newRequest),
+      });
+      if (response.status !== 200) throw new Error();
+      writeRequestToCollections(newRequest);
+    }
+    globalState.currentRequest.set(newRequest);
+  }
+
+  const getRequestFromMessageId = (messageId?: string): Request | undefined => {
+    if (messageId) {
+      const requestId = getRequestIdFromMessageId(messageId);
+      return globalState.collections
+        .get()
+        .flatMap((c) => c.requests)
+        .find((r) => r.id === requestId);
     } else {
-      if (!isExtInitialized.current) {
-        openExtModal();
-        return;
-      }
-      sendRequestToExtension(requestWithoutResponse, selectedEnvName);
+      // TODO: remove once v1.3 of extension is not used anymore and all requests have a messageId
+      return globalState.currentRequest.get({ noproxy: true });
     }
+  };
+
+  async function sendRequest(
+    request: Request,
+    envName?: string,
+    n?: number,
+  ): Promise<Response> {
+    if (n && n >= 5) {
+      throw Error('Exec loop detected in request script');
+    }
+
+    let proxy = 'ext';
+    const env = getEnv(request.collectionId, envName);
+    if (env) {
+      proxy = env.proxy;
+    }
+
+    if (request.data.requestScript) {
+      if (proxy === 'ext' && getMinorVersion(extVersion.current) < 3) {
+        throw Error(`Request scripts are not supported in this version of the extension. 
+          Please update to the latest version or remove the request script.`);
+      }
+      await doRequestScript(request, envName, n);
+    }
+
+    let response = null;
+    switch (proxy) {
+      case 'server':
+        response = await sendRequestToServer(request, envName);
+        break;
+      case 'ext':
+        if (!isExtInitialized.current) {
+          openExtModal();
+          throw Error('Extension not initialized');
+        }
+        response = await sendRequestToExtension(request, envName);
+        break;
+      default:
+        throw Error('Unknown proxy');
+    }
+
+    if (request.data.responseScript) {
+      doResponseScript(request, response, envName);
+    }
+
+    return response;
+  }
+
+  async function doRequestScript(request: Request, envName?: string, n?: number) {
+    const requestScript = request.data.requestScript;
+    if (!requestScript) {
+      return;
+    }
+    // NOTE: cannot pass state on top level because it does not use most current state
+    const set = (key: string, value: string) =>
+      setEnvVar(request.collectionId, envName)(globalState, key, value);
+    const get = (key: string): string =>
+      getEnvVar(request.collectionId, envName)(globalState, key);
+    const exec = async (requestId: number, envName?: string) => {
+      const request = globalState.collections
+        .get({ noproxy: true })
+        .flatMap((c) => c.requests)
+        .find((r) => r.id === requestId);
+      if (!request) {
+        throw Error(`Request with id ${requestId} not found`);
+      }
+      if (!n) n = 0;
+      return await sendRequest(request, envName, n + 1);
+    };
+    await executeRequestScript(request, requestScript, set, get, exec, toast, envName);
+  }
+
+  function doResponseScript(request: Request, response: Response, envName?: string) {
+    // NOTE: cannot pass state on top level because it does not use most current state
+    const set = (key: string, value: string) =>
+      setEnvVar(request.collectionId, envName)(globalState, key, value);
+    const get = (key: string): string =>
+      getEnvVar(request.collectionId, envName)(globalState, key);
+    executeResponseScript(
+      response,
+      request?.data?.responseScript,
+      set,
+      get,
+      toast,
+      request.id,
+      envName,
+    );
   }
 
   async function sendRequestWaitResponse(request: Request, envName?: string, n?: number) {
@@ -284,20 +399,6 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
             .find((r) => r.id === request.id);
           if (req?.data?.responseScript) {
             const envName = event.data.response.metaData.envName;
-            // NOTE: cannot pass state on top level because it does not use most current state
-            const set = (key: string, value: string) =>
-              setEnvVar(request.collectionId, envName)(globalState, key, value);
-            const get = (key: string): string =>
-              getEnvVar(request.collectionId, envName)(globalState, key);
-            executeResponseScript(
-              response,
-              req?.data?.responseScript,
-              set,
-              get,
-              toast,
-              req.id,
-              envName,
-            );
           }
 
           resolve(event.data.response);
@@ -323,34 +424,9 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
     messageId?: string,
     n: number = 0,
     isRequestScript: boolean = false,
-  ) {
+  ): Promise<Response> {
     const requestScript = request.data.requestScript;
     if (requestScript) {
-      if (getMinorVersion(extVersion.current) < 3) {
-        errorToast(
-          'Request scripts are not supported in this version of the extension. Please update to the latest version or remove the request script.',
-          toast,
-          10000,
-        );
-        return;
-      }
-      // NOTE: cannot pass state on top level because it does not use most current state
-      const set = (key: string, value: string) =>
-        setEnvVar(request.collectionId, envName)(globalState, key, value);
-      const get = (key: string): string =>
-        getEnvVar(request.collectionId, envName)(globalState, key);
-      const exec = async (requestId: number, envName?: string) => {
-        const request = globalState.collections
-          .get({ noproxy: true })
-          .flatMap((c) => c.requests)
-          .find((r) => r.id === requestId);
-        if (!request) {
-          throw Error(`Request with id ${requestId} not found`);
-        }
-        if (!n) n = 0;
-        return sendRequestWaitResponse(request, envName, n + 1);
-      };
-      await executeRequestScript(request, requestScript, set, get, exec, toast, envName);
     }
 
     if (envName) {
@@ -391,7 +467,10 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
     );
   }
 
-  async function sendRequestToServer(request: Request, envName?: string) {
+  async function sendRequestToServer(
+    request: Request,
+    envName?: string,
+  ): Promise<Response> {
     if (envName) {
       const collection = globalState.collections
         .get({ noproxy: true })
@@ -418,7 +497,6 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
       const resBody = await res.json();
       if (resBody.error) throw new Error(resBody.error);
 
-      globalState.requestLoading.set(false);
       const response = parseResponse(resBody);
 
       const responseScript = request.data.responseScript;
