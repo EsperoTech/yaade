@@ -12,7 +12,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useEventListener } from 'usehooks-ts';
 
@@ -21,23 +21,8 @@ import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
-import Request from '../../model/Request';
-import Response from '../../model/Response';
-import {
-  getEnvVar,
-  setEnvVar,
-  useGlobalState,
-  writeRequestToCollections,
-} from '../../state/GlobalState';
-import {
-  BASE_PATH,
-  errorToast,
-  getRequestIdFromMessageId,
-  parseExtensionResponse,
-  parseLocation,
-} from '../../utils';
-import { executeResponseScript } from '../../utils/script';
-import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
+import { useGlobalState } from '../../state/GlobalState';
+import { BASE_PATH, errorToast, parseLocation } from '../../utils';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
@@ -101,104 +86,7 @@ function Dashboard() {
     }
   };
 
-  const handleResponseMessage = async (event: MessageEvent<any>) => {
-    if (
-      event.data.type === 'receive-response' &&
-      event.data.response &&
-      !event.data.response.metaData?.isRequestScript
-    ) {
-      globalState.requestLoading.set(false);
-      if (event.data.response.err) {
-        errorToast(event.data.response.err, toast);
-        return;
-      }
-
-      const req = getRequestFromMessageId(event.data.metaData?.messageId);
-      if (!req) {
-        errorToast(
-          'Could not get requestId from messageId: ' + event.data.metaData?.messageId,
-          toast,
-        );
-        return;
-      }
-
-      const response = parseExtensionResponse(event);
-
-      if (req.data.responseScript) {
-        doResponseScript(req, response, event.data.metaData?.envName);
-      }
-
-      const newRequest = {
-        ...req,
-        data: {
-          ...req.data,
-          response: response,
-        },
-      };
-
-      if (req.id !== -1 && user?.data?.settings?.saveOnSend) {
-        const response = await fetch(BASE_PATH + 'api/request', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newRequest),
-        });
-        if (response.status !== 200) throw new Error();
-        writeRequestToCollections(newRequest);
-      }
-      if (req.id === globalState.currentRequest.value.id) {
-        globalState.currentRequest.set(newRequest);
-      }
-    }
-  };
-
-  const getRequestFromMessageId = (messageId?: string): Request | undefined => {
-    if (messageId) {
-      const requestId = getRequestIdFromMessageId(messageId);
-      return globalState.collections
-        .get()
-        .flatMap((c) => c.requests)
-        .find((r) => r.id === requestId);
-    } else {
-      // TODO: remove once v1.3 of extension is not used anymore and all requests have a messageId
-      return globalState.currentRequest.get({ noproxy: true });
-    }
-  };
-
-  const doResponseScript = async (
-    request: Request,
-    response: Response,
-    envName?: string,
-  ) => {
-    const responseScript = request.data.responseScript;
-    if (responseScript) {
-      if (!envName) {
-        const envs = getSelectedEnvs();
-        envName = envs[request.collectionId];
-      }
-
-      if (envName) {
-        // NOTE: cannot pass state on top level because it does not use most current state
-        const set = (key: string, value: string) =>
-          setEnvVar(request.collectionId, envName)(globalState, key, value);
-        const get = (key: string): string =>
-          getEnvVar(request.collectionId, envName)(globalState, key);
-        executeResponseScript(
-          response,
-          responseScript,
-          set,
-          get,
-          toast,
-          request.id,
-          envName,
-        );
-      }
-    }
-  };
-
   useEventListener('message', handlePongMessage);
-  useEventListener('message', handleResponseMessage);
 
   return (
     <div className={styles.parent}>

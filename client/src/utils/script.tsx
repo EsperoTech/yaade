@@ -64,9 +64,12 @@ async function executeRequestScript(
     console.log(`[Request Script: ${request.id} - ${envName ?? 'NO_ENV'}]`, ...data);
   try {
     await asyncSandboxedFunction(args, script);
-  } catch (err) {
-    console.log(err);
-    errorToast(`${err}`, toast, 5000, 'Error in request script');
+  } catch (err: any) {
+    // NOTE: this is to prevent stacked error messages due to exec loop
+    const msg = err.message.startsWith('Error in request script')
+      ? err.message
+      : `Error in request script [id: ${request.id}]: ${err}`;
+    throw Error(msg);
   }
 }
 

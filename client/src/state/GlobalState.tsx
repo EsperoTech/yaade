@@ -63,6 +63,13 @@ function writeRequestToCollections(request: Request) {
   }
 }
 
+function getRequest(id: number): Request | undefined {
+  return state.collections
+    .get({ noproxy: true })
+    .flatMap((c) => c.requests)
+    .find((r) => r.id === id);
+}
+
 function removeRequest(request: Request) {
   const collectionIndex = state.collections.findIndex(
     (c) => c.id.get() === request.collectionId,
@@ -97,6 +104,19 @@ function saveCollection(collection: Collection) {
 
 function setCurrentRequest(request: Request) {
   state.currentRequest.set(request);
+}
+
+function getEnv(collectionId: number, envName?: string) {
+  if (!envName) return;
+
+  const i = state.collections.findIndex((c: any) => c.id.get() === collectionId);
+  if (i === -1) return;
+  const collection = state.collections[i].get({ noproxy: true });
+
+  const envs = collection.data?.envs;
+  if (!envs) return;
+
+  return envs[envName];
 }
 
 function getEnvVar(collectionId: number, envName?: string) {
@@ -152,7 +172,9 @@ function setEnvVar(collectionId: number, envName?: string) {
 
 export {
   defaultRequest,
+  getEnv,
   getEnvVar,
+  getRequest,
   removeCollection,
   removeRequest,
   saveCollection,
