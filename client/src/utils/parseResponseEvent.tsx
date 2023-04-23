@@ -13,11 +13,6 @@ function getSize(headers: Array<KVRow>): number {
 const getContentType = (headers: Array<KVRow>) =>
   headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
-function parseExtensionResponse(event: any): Response {
-  const res = event.data.response;
-  return parseResponse(res);
-}
-
 function parseResponse(res: any): Response {
   const headers: Array<KVRow> = res.headers;
   const contentType = getContentType(headers);
@@ -41,4 +36,4 @@ function parseResponse(res: any): Response {
   };
 }
 
-export { parseExtensionResponse, parseResponse };
+export { parseResponse };

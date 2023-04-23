@@ -23,21 +23,15 @@ import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
 import Request from '../../model/Request';
 import Response from '../../model/Response';
-import {
-  getEnvVar,
-  setEnvVar,
-  useGlobalState,
-  writeRequestToCollections,
-} from '../../state/GlobalState';
+import { getEnvVar, setEnvVar, useGlobalState } from '../../state/GlobalState';
 import {
   BASE_PATH,
   errorToast,
   getRequestIdFromMessageId,
-  parseExtensionResponse,
   parseLocation,
 } from '../../utils';
 import { executeResponseScript } from '../../utils/script';
-import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
+import { getSelectedEnvs } from '../../utils/store';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
@@ -198,7 +192,7 @@ function Dashboard() {
   };
 
   useEventListener('message', handlePongMessage);
-  useEventListener('message', handleResponseMessage);
+  // useEventListener('message', handleResponseMessage);
 
   return (
     <div className={styles.parent}>

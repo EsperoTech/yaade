@@ -2,7 +2,7 @@ import beautify from 'beautify';
 import { Location } from 'react-router-dom';
 
 import KVRow from '../model/KVRow';
-import { parseExtensionResponse, parseResponse } from './parseResponseEvent';
+import { parseResponse } from './parseResponseEvent';
 
 const BASE_PATH = import.meta.env.BASE_URL;
 
@@ -160,7 +160,6 @@ export {
   groupsStrToArray,
   kvRowsToMap,
   mapToKvRows,
-  parseExtensionResponse,
   parseLocation,
   parseResponse,
   successToast,

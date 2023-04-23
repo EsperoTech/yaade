@@ -33,7 +33,6 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
     contentType: 'application/json',
   });
   const { colorMode } = useColorMode();
-  console.log(colorMode);
   const toast = useToast();
   const globalState = useGlobalState();
   const collections = globalState.collections.get({ noproxy: true });

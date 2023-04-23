@@ -21,15 +21,13 @@ import {
   createMessageId,
   errorToast,
   getMinorVersion,
-  getRequestIdFromMessageId,
   kvRowsToMap,
-  parseExtensionResponse,
   parseResponse,
   successToast,
 } from '../../utils';
 import interpolate from '../../utils/interpolate';
 import { executeRequestScript, executeResponseScript } from '../../utils/script';
-import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
+import { getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import BodyEditor from '../bodyEditor';
@@ -231,64 +229,69 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
   }
 
   async function handleSendButtonClick() {
-    if (globalState.requestLoading.get()) {
-      globalState.requestLoading.set(false);
-      return;
-    }
-
-    let requestWithoutResponse = {
-      ...currentRequest,
-      data: { ...currentRequest.data, response: null },
-    } as Request;
-
-    let response: Response;
     try {
-      response = await sendRequest(requestWithoutResponse);
-    } catch (e: any) {
-      errorToast(e.message, toast);
-      globalState.requestLoading.set(false);
-      return;
-    }
+      if (globalState.requestLoading.get()) {
+        globalState.requestLoading.set(false);
+        return;
+      }
 
-    const req = getRequest(requestWithoutResponse.id);
-    if (!req) {
-      errorToast('The request could not be saved.', toast);
-      return;
-    }
-    const newRequest: any = {
-      ...req,
-      data: {
-        ...req.data,
-        response: response,
-      },
-    };
+      globalState.requestLoading.set(true);
 
-    if (user?.data?.settings?.saveOnSend) {
-      const response = await fetch(BASE_PATH + 'api/request', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+      let req = {
+        ...currentRequest,
+        data: { ...currentRequest.data, response: null },
+      } as Request;
+      const envName = getSelectedEnvs()[req.collectionId];
+
+      const response = await sendRequest(req, envName);
+
+      const newRequest: any = {
+        ...req,
+        data: {
+          ...req.data,
+          response: response,
         },
-        body: JSON.stringify(newRequest),
-      });
-      if (response.status !== 200) throw new Error();
-      writeRequestToCollections(newRequest);
+      };
+
+      globalState.currentRequest.set(newRequest);
+      if (user?.data?.settings?.saveOnSend) {
+        await saveRequestAndCollection(newRequest);
+      }
+    } catch (e: any) {
+      errorToast(e.message, toast, 5000);
     }
-    globalState.currentRequest.set(newRequest);
+
+    globalState.requestLoading.set(false);
   }
 
-  const getRequestFromMessageId = (messageId?: string): Request | undefined => {
-    if (messageId) {
-      const requestId = getRequestIdFromMessageId(messageId);
-      return globalState.collections
-        .get()
-        .flatMap((c) => c.requests)
-        .find((r) => r.id === requestId);
-    } else {
-      // TODO: remove once v1.3 of extension is not used anymore and all requests have a messageId
-      return globalState.currentRequest.get({ noproxy: true });
-    }
-  };
+  async function saveRequestAndCollection(request: Request) {
+    let response = await fetch(BASE_PATH + 'api/request', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+    if (response.status !== 200)
+      throw new Error(`Failed to save request [Status: ${response.status}]]`);
+    writeRequestToCollections(request);
+
+    const i = globalState.collections.findIndex(
+      (c: any) => c.id.get() === request.collectionId,
+    );
+    if (i === -1) return;
+    const collection = globalState.collections[i].get({ noproxy: true });
+
+    response = await fetch(BASE_PATH + 'api/collection', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(collection),
+    });
+    if (response.status !== 200)
+      throw new Error(`Failed to save collection [Status: ${response.status}]]`);
+  }
 
   async function sendRequest(
     request: Request,
@@ -377,7 +380,11 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
     );
   }
 
-  async function sendRequestWaitResponse(request: Request, envName?: string, n?: number) {
+  async function sendRequestToExtension(
+    request: Request,
+    envName?: string,
+    n?: number,
+  ): Promise<Response> {
     if (n && n >= 5) {
       throw Error('Exec loop detected in request script');
     }
@@ -385,23 +392,15 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
       const messageId = createMessageId(request.id);
 
       function handleMessage(event: any) {
-        if (
+        if (event?.data?.type === 'receive-response' && event?.data?.response?.err) {
+          reject(new Error(event.data.response.err));
+        } else if (
           event.data &&
           event.data.type === 'receive-response' &&
           event.data.response.metaData.messageId === messageId
         ) {
           window.removeEventListener('message', handleMessage);
-
-          const response = parseExtensionResponse(event);
-          const req = globalState.collections
-            .get()
-            .flatMap((c) => c.requests)
-            .find((r) => r.id === request.id);
-          if (req?.data?.responseScript) {
-            const envName = event.data.response.metaData.envName;
-          }
-
-          resolve(event.data.response);
+          resolve(parseResponse(event.data.response));
         }
       }
 
@@ -413,58 +412,44 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
         reject(new Error('Timeout wating for response from: ' + request.id));
       }, 5000);
 
-      // Send the message with the key and messageId
-      sendRequestToExtension(request, envName, messageId, n, true);
-    });
-  }
-
-  async function sendRequestToExtension(
-    request: Request,
-    envName?: string,
-    messageId?: string,
-    n: number = 0,
-    isRequestScript: boolean = false,
-  ): Promise<Response> {
-    const requestScript = request.data.requestScript;
-    if (requestScript) {
-    }
-
-    if (envName) {
-      const collection = globalState.collections
-        .get({ noproxy: true })
-        .find((c) => c.id === request.collectionId);
-      if (!collection) {
-        throw Error('Collection not found for id: ' + request.collectionId);
+      // TODO: check if this mutates the original request object
+      let interpolatedRequest = { ...request };
+      if (envName) {
+        const collection = globalState.collections
+          .get({ noproxy: true })
+          .find((c) => c.id === request.collectionId);
+        if (!collection) {
+          throw Error('Collection not found for id: ' + request.collectionId);
+        }
+        const selectedEnv = collection.data?.envs?.[envName];
+        const selectedEnvData = selectedEnv?.data ?? {};
+        const interpolateResult = interpolate(request, selectedEnvData);
+        interpolatedRequest = interpolateResult.result;
       }
-      const selectedEnv = collection.data?.envs?.[envName];
-      const selectedEnvData = selectedEnv?.data ?? {};
-      const interpolateResult = interpolate(request, selectedEnvData);
-      request = interpolateResult.result;
-    }
 
-    const url = appendHttpIfNoProtocol(request.data.uri);
+      const url = appendHttpIfNoProtocol(interpolatedRequest.data.uri);
 
-    const headers = kvRowsToMap(request.data.headers);
+      const headers = kvRowsToMap(interpolatedRequest.data.headers);
 
-    const options: any = { headers, method: request.data.method };
-    if (request.data.body) {
-      options['body'] = request.data.body;
-    }
-    globalState.requestLoading.set(true);
+      const options: any = { headers, method: interpolatedRequest.data.method };
+      if (interpolatedRequest.data.body) {
+        options['body'] = interpolatedRequest.data.body;
+      }
 
-    window.postMessage(
-      {
-        url,
-        type: 'send-request',
-        options: options,
-        metaData: {
-          messageId: messageId ?? createMessageId(request.id),
-          envName,
-          isRequestScript,
+      window.postMessage(
+        {
+          url,
+          type: 'send-request',
+          options: options,
+          metaData: {
+            messageId,
+            envName,
+            isRequestScript: n ?? 0 > 0,
+          },
         },
-      },
-      '*',
-    );
+        '*',
+      );
+    });
   }
 
   async function sendRequestToServer(
@@ -483,82 +468,21 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
       const interpolateResult = interpolate(request, selectedEnvData);
       request = interpolateResult.result;
     }
-    try {
-      globalState.requestLoading.set(true);
-      const res = await fetch(BASE_PATH + 'api/invoke', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ request, envName }),
+    return fetch(BASE_PATH + 'api/invoke', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ request, envName }),
+    })
+      .then((res) => {
+        if (res.status !== 200) throw new Error(`Server error. Status: ${res.status}`);
+        return res.json();
+      })
+      .then((resBody) => {
+        if (resBody.error) throw new Error(resBody.error);
+        return parseResponse(resBody);
       });
-      if (res.status !== 200) throw new Error(`Server error. Status: ${res.status}`);
-
-      const resBody = await res.json();
-      if (resBody.error) throw new Error(resBody.error);
-
-      const response = parseResponse(resBody);
-
-      const responseScript = request.data.responseScript;
-      if (responseScript) {
-        // NOTE: cannot pass state on top level because it does not use most current state
-        const set = (key: string, value: string) =>
-          setEnvVar(request.collectionId, envName)(globalState, key, value);
-        const get = (key: string): string =>
-          getEnvVar(request.collectionId, envName)(globalState, key);
-        executeResponseScript(
-          response,
-          responseScript,
-          set,
-          get,
-          toast,
-          request.id,
-          envName,
-        );
-      }
-
-      const curr = globalState.currentRequest.get({ noproxy: true });
-      const newRequest = {
-        ...curr,
-        data: {
-          ...curr.data,
-          response: response,
-        },
-      };
-
-      if (curr.id !== -1 && user?.data?.settings?.saveOnSend) {
-        let response = await fetch(BASE_PATH + 'api/request', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newRequest),
-        });
-        if (response.status !== 200) throw new Error();
-        writeRequestToCollections(newRequest);
-        globalState.currentRequest.set(newRequest);
-
-        const i = globalState.collections.findIndex(
-          (c: any) => c.id.get() === curr.collectionId,
-        );
-        if (i === -1) return;
-        const collection = globalState.collections[i].get({ noproxy: true });
-
-        response = await fetch(BASE_PATH + 'api/collection', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(collection),
-        });
-        if (response.status !== 200) throw new Error();
-      } else {
-        globalState.currentRequest.set(newRequest);
-      }
-    } catch (e) {
-      globalState.requestLoading.set(false);
-      errorToast(`${e}`, toast, 5000);
-    }
   }
 
   return (
