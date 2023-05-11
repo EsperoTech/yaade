@@ -29,7 +29,7 @@ import {
   successToast,
 } from '../../utils';
 import BasicModal from '../basicModal';
-import CollectionView from '../collectionView';
+import Collections from '../collections';
 import GroupsInput from '../groupsInput';
 import styles from './Sidebar.module.css';
 
@@ -146,14 +146,8 @@ function Sidebar() {
           onClick={onOpen}
         />
       </div>
-      <div className={styles.collections}>
-        {filteredCollections.map((collection) => (
-          <CollectionView
-            key={`sidebar-collection-${collection.id}`}
-            collection={collection}
-          />
-        ))}
-      </div>
+
+      <Collections collections={filteredCollections} />
 
       <BasicModal
         isOpen={isOpen}
