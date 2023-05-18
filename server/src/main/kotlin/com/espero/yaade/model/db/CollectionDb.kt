@@ -56,8 +56,20 @@ class CollectionDb {
         return json.getString("name")
     }
 
+    fun setData(data: JsonObject) {
+        this.data = data.encode().toByteArray()
+    }
+
     fun jsonData(): JsonObject {
         return JsonObject(data.decodeToString())
+    }
+
+    fun patchData(data: JsonObject) {
+        val newData = jsonData()
+        data.forEach { entry ->
+            newData.put(entry.key, entry.value)
+        }
+        setData(newData)
     }
 
     fun toJson(): JsonObject {

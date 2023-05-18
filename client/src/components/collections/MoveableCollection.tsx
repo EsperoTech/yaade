@@ -3,27 +3,15 @@ import { useRef } from 'react';
 import { useDrag, useDrop, XYCoord } from 'react-dnd';
 
 import Collection from '../../model/Collection';
+import { DragItem, DragTypes } from '../../utils/dnd';
 import CollectionView from '../collectionView';
-
-const style = {
-  //   border: '1px dashed gray',
-  //   padding: '0.5rem 1rem',
-  //   marginBottom: '.5rem',
-  //   backgroundColor: 'white',
-  //   cursor: 'move',
-};
+import { RequestDragItem } from '../collectionView/MoveableRequest';
 
 type MoveableCollectionProps = {
   collection: Collection;
   moveCollection: (dragIndex: number, hoverIndex: number) => void;
   index: number;
 };
-
-interface DragItem {
-  index: number;
-  id: string;
-  type: string;
-}
 
 function MoveableCollection({
   collection,
@@ -32,66 +20,39 @@ function MoveableCollection({
 }: MoveableCollectionProps) {
   const id = collection.id;
   const ref = useRef<HTMLDivElement>(null);
-  const [{ handlerId }, drop] = useDrop<DragItem, void, { handlerId: Identifier | null }>(
-    {
-      accept: 'collection',
-      collect(monitor) {
+  const [{ handlerId, hoveredDownwards, hoveredUpwards }, drop] = useDrop<
+    DragItem,
+    void,
+    { handlerId: Identifier | null; hoveredUpwards: boolean; hoveredDownwards: boolean }
+  >({
+    accept: DragTypes.COLLECTION,
+    collect(monitor) {
+      if (!ref.current || !monitor || !monitor.getItem() || monitor.getItem().id === id) {
         return {
-          handlerId: monitor.getHandlerId(),
+          handlerId: null,
+          hoveredDownwards: false,
+          hoveredUpwards: false,
         };
-      },
-      hover(item: DragItem, monitor) {
-        if (!ref.current) {
-          return;
-        }
-        const dragIndex = item.index;
-        const hoverIndex = index;
-
-        // Don't replace items with themselves
-        if (dragIndex === hoverIndex) {
-          return;
-        }
-
-        // Determine rectangle on screen
-        const hoverBoundingRect = ref.current?.getBoundingClientRect();
-
-        // Get vertical middle
-        const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-
-        // Determine mouse position
-        const clientOffset = monitor.getClientOffset();
-
-        // Get pixels to the top
-        const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top;
-
-        // Only perform the move when the mouse has crossed half of the items height
-        // When dragging downwards, only move when the cursor is below 50%
-        // When dragging upwards, only move when the cursor is above 50%
-
-        // Dragging downwards
-        if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-          return;
-        }
-
-        // Dragging upwards
-        if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-          return;
-        }
-
-        // Time to actually perform the action
-        moveCollection(dragIndex, hoverIndex);
-
-        // Note: we're mutating the monitor item here!
-        // Generally it's better to avoid mutations,
-        // but it's good here for the sake of performance
-        // to avoid expensive index searches.
-        item.index = hoverIndex;
-      },
+      }
+      const itemIndex = monitor.getItem().index;
+      const hoveredUpwards = monitor.isOver() && itemIndex > index;
+      const hoveredDownwards = monitor.isOver() && itemIndex < index;
+      return {
+        handlerId: monitor.getHandlerId(),
+        hoveredDownwards,
+        hoveredUpwards,
+      };
     },
-  );
+    drop(item: DragItem) {
+      if (item.index === index) {
+        return;
+      }
+      moveCollection(item.index, index);
+    },
+  });
 
   const [{ isDragging }, drag] = useDrag({
-    type: 'collection',
+    type: DragTypes.COLLECTION,
     item: () => {
       return { id, index };
     },
@@ -100,10 +61,18 @@ function MoveableCollection({
     }),
   });
 
-  const opacity = isDragging ? 0 : 1;
+  const opacity = isDragging ? 0.5 : 1;
+  let boxShadow = 'none';
+  if (hoveredDownwards) {
+    boxShadow = '0 2px 0 var(--chakra-colors-green-500)';
+  }
+  if (hoveredUpwards) {
+    boxShadow = '0 -2px 0 var(--chakra-colors-green-500)';
+  }
+
   drag(drop(ref));
   return (
-    <div ref={ref} style={{ ...style, opacity }} data-handler-id={handlerId}>
+    <div ref={ref} style={{ opacity, boxShadow }} data-handler-id={handlerId}>
       <CollectionView collection={collection} />
     </div>
   );

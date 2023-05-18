@@ -266,55 +266,66 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       <span className={cn(styles, 'requestName', [colorMode])}>{request.data.name}</span>
       <span className={styles.actionIcon}>
         <Menu>
-          <MenuButton
-            as={IconButton}
-            aria-label="Options"
-            icon={<VscEllipsis />}
-            variant="ghost"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <MenuList zIndex={50}>
-            <MenuItem
-              icon={<EditIcon />}
-              onClick={(e) => {
-                e.stopPropagation();
-                setState({ ...state, currentModal: 'rename' });
-                onOpen();
-              }}
-            >
-              Rename
-            </MenuItem>
-            <MenuItem
-              icon={<LinkIcon />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onCopy();
-                successToast('Link copied to clipboard.', toast);
-              }}
-            >
-              Copy Link
-            </MenuItem>
-            <MenuItem
-              icon={<CopyIcon />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onCopyRequestId();
-                successToast('Request ID copied to clipboard.', toast);
-              }}
-            >
-              Copy ID
-            </MenuItem>
-            <MenuItem
-              icon={<DeleteIcon />}
-              onClick={(e) => {
-                e.stopPropagation();
-                setState({ ...state, currentModal: 'delete' });
-                onOpen();
-              }}
-            >
-              Delete
-            </MenuItem>
-          </MenuList>
+          {({ isOpen }) => (
+            <>
+              <MenuButton
+                as={IconButton}
+                aria-label="Options"
+                icon={<VscEllipsis />}
+                variant="ghost"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <MenuList
+                zIndex={50}
+                style={{
+                  // this is a workaround to fix drag and drop preview not working
+                  // see: https://github.com/chakra-ui/chakra-ui/issues/6762
+                  display: isOpen ? '' : 'none',
+                }}
+              >
+                <MenuItem
+                  icon={<EditIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setState({ ...state, currentModal: 'rename' });
+                    onOpen();
+                  }}
+                >
+                  Rename
+                </MenuItem>
+                <MenuItem
+                  icon={<LinkIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCopy();
+                    successToast('Link copied to clipboard.', toast);
+                  }}
+                >
+                  Copy Link
+                </MenuItem>
+                <MenuItem
+                  icon={<CopyIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCopyRequestId();
+                    successToast('Request ID copied to clipboard.', toast);
+                  }}
+                >
+                  Copy ID
+                </MenuItem>
+                <MenuItem
+                  icon={<DeleteIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setState({ ...state, currentModal: 'delete' });
+                    onOpen();
+                  }}
+                >
+                  Delete
+                </MenuItem>
+              </MenuList>
+            </>
+          )}
         </Menu>
       </span>
       {currentModal}

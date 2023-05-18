@@ -12,8 +12,11 @@ import io.vertx.core.Vertx
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
+import io.vertx.ext.web.validation.RequestParameters
+import io.vertx.ext.web.validation.ValidationHandler
 import io.vertx.kotlin.coroutines.await
 import org.apache.http.HttpStatus
+
 
 class CollectionRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
 
@@ -27,10 +30,13 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         }
 
         val result = collections.map {
-            val requests = daoManager.requestDao.getAllInCollection(it.id).map(RequestDb::toJson)
+            val requests = daoManager.requestDao
+                .getAllInCollection(it.id)
+                .map(RequestDb::toJson)
+                .sortedBy { el -> el.getJsonObject("data").getInteger("rank") ?: 0 }
             it.hideSecrets()
             it.toJson().put("requests", requests)
-        }
+        }.sortedBy { it.getJsonObject("data").getInteger("rank") ?: 0 }
 
         ctx.end(JsonArray(result).encode()).await()
     }
@@ -59,8 +65,52 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         ctx.end().await()
     }
 
+    suspend fun moveCollection(ctx: RoutingContext) {
+        val body = ctx.body().asJsonObject()
+        val id = ctx.pathParam("id").toLong()
+        val newRank = body.getInteger("newRank") ?: throw RuntimeException("Invalid new rank")
+        val collection = daoManager.collectionDao.getById(id)
+            ?: throw RuntimeException("Collection not found")
+        val collections = daoManager.collectionDao
+            .getAll()
+            .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
+
+        val oldRank = collections.indexOfFirst { it.id == id }
+        if (oldRank == -1) {
+            throw RuntimeException("Collection not found")
+        }
+        if (newRank < 0 || newRank >= collections.size) {
+            throw RuntimeException("Invalid new rank")
+        }
+
+        val newCollections = collections.toMutableList()
+        newCollections.removeAt(oldRank)
+        newCollections.add(newRank, collection)
+        newCollections.forEachIndexed { index, collectionDb ->
+            collectionDb.patchData(JsonObject().put("rank", index))
+            daoManager.collectionDao.update(collectionDb)
+        }
+
+        ctx.end().await()
+    }
+
     suspend fun deleteCollection(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
+
+        val collections = daoManager
+            .collectionDao.getAll()
+            .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
+
+        val oldRank = collections.indexOfFirst { it.id == id }
+        if (oldRank == -1) {
+            throw RuntimeException("Collection not found")
+        }
+        val newCollections = collections.toMutableList()
+        newCollections.removeAt(oldRank)
+        newCollections.forEachIndexed { index, collectionDb ->
+            collectionDb.jsonData().put("rank", index)
+            daoManager.collectionDao.update(collectionDb)
+        }
 
         TransactionManager.callInTransaction(daoManager.connectionSource) {
             daoManager.collectionDao.delete(id)

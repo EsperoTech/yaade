@@ -80,6 +80,26 @@ paths:
           description: Success
       operationId: deleteCollection
       summary: Delete a collection
+  "/api/collection/{id}/move":
+    post:
+      tags:
+        - Collections
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+      requestBody:
+        content:
+            application/json:
+              schema:
+                  $ref: "#/components/schemas/MoveCollectionRequest"
+      responses:
+        "200":
+          description: Success
+      operationId: moveCollection
+      summary: Move collection
   /api/collection/importOpenApi:
     post:
       tags:
@@ -173,6 +193,26 @@ paths:
           description: Success
       operationId: deleteRequest
       summary: Delete a request
+  /api/request/{id}/move:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveRequestRequest"
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+      tags:
+        - Collections
+      responses:
+        "200":
+          description: Success
+      operationId: moveRequest
+      summary: Move request
   /api/login:
     get:
       tags:
@@ -632,5 +672,25 @@ components:
           description: ''
         env:
           description: ''
-
-
+    MoveRequestRequest:
+      type: object
+      properties:
+        newRank:
+          format: int64
+          type: integer
+          description: |
+              The new rank of the request. If set, the newCollectionId field will be ignored 
+              and the request will be moved to the new rank in the same collection.
+        newCollectionId:
+          format: int64
+          type: integer
+          description: |
+            The new collection id of the request. If set, the newRank field will be ignored 
+            and the request will be appended to the list of requests in the target collection.
+    MoveCollectionRequest:
+      type: object
+      properties:
+        newRank:
+          format: int64
+          type: integer
+          description: The new rank of the collection.

@@ -8,7 +8,7 @@
 
 .request:focus {
   outline: 1px solid var(--chakra-colors-green-500) !important;
-  outline-offset: -1px;
+  outline-offset: -1px; 
 }
 
 .request--light {

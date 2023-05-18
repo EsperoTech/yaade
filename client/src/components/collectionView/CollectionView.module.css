@@ -1,6 +1,3 @@
-.root {
-}
-
 .header {
   width: 100%;
   height: 60px;
@@ -71,4 +68,9 @@
 
 .requests--open {
   display: block;
+}
+
+.hovered {
+  outline: 1px solid var(--chakra-colors-green-500) !important;
+  outline-offset: -1px;
 }
