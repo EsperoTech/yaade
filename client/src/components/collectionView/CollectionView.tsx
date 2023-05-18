@@ -39,7 +39,6 @@ import { BASE_PATH, errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import { DragTypes } from '../../utils/dnd';
 import BasicModal from '../basicModal';
-import CollectionRequest from '../CollectionRequest/CollectionRequest';
 import GroupsInput from '../groupsInput';
 import styles from './CollectionView.module.css';
 import EnvironmentModal from './EnvironmentModal';
@@ -339,22 +338,16 @@ function CollectionView({ collection }: CollectionProps) {
       };
     },
     drop(item: RequestDragItem) {
-      if (!ref.current) {
+      if (!ref.current || item.type !== DragTypes.REQUEST) {
         return;
       }
-      if (item.type !== DragTypes.REQUEST) {
-        return;
-      }
-      const dragRequestId = item.id;
-      const dragCollectionId = item.collectionId;
-      const hoverCollectionId = collection.id;
 
       // Don't do anything if it's the same collection
-      if (dragCollectionId === hoverCollectionId) {
+      if (item.collectionId === collection.id) {
         return;
       }
 
-      moveRequest(dragRequestId, undefined, hoverCollectionId);
+      moveRequest(item.id, undefined, collection.id);
     },
   });
 

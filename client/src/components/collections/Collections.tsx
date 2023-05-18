@@ -72,11 +72,7 @@ function Collections({ collections }: CollectionsProps) {
   return (
     <div className={styles.collections}>
       <DndProvider backend={HTML5Backend}>
-        <>
-          {collections.map((collection: Collection, i) =>
-            renderCollection(collection, i),
-          )}
-        </>
+        {collections.map((collection: Collection, i) => renderCollection(collection, i))}
       </DndProvider>
     </div>
   );
