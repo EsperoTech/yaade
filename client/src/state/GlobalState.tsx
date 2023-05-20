@@ -43,7 +43,6 @@ const state = createState<GlobalState>({
 });
 
 function writeRequestToCollections(request: Request) {
-  const x = state.get({ noproxy: true });
   const collectionIndex = state.collections.findIndex(
     (c) => c.id.get() === request.collectionId,
   );
