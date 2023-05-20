@@ -55,8 +55,6 @@ public class ExampleGenerator {
     private OpenAPI openAPI;
     private Random random;
 
-
-
     public ExampleGenerator(Map<String, Schema> examples, OpenAPI openAPI) {
         this.examples = examples;
         this.openAPI = openAPI;

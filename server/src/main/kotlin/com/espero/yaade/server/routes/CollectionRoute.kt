@@ -12,11 +12,8 @@ import io.vertx.core.Vertx
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
-import io.vertx.ext.web.validation.RequestParameters
-import io.vertx.ext.web.validation.ValidationHandler
 import io.vertx.kotlin.coroutines.await
 import org.apache.http.HttpStatus
-
 
 class CollectionRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
 
