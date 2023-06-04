@@ -11,6 +11,7 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
+import { State } from '@hookstate/core';
 import { FunctionComponent, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
@@ -62,7 +63,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   );
   const { onCopy: onCopyRequestId } = useClipboard(`${request.id}`);
   const navigate = useNavigate();
-  const variants = globalState.currentRequest.id.get() === request.id ? ['selected'] : [];
+  const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  const variants = currentRequest?.id === request.id ? ['selected'] : [];
 
   async function handleSaveRequest(currentRequest: Request) {
     try {
@@ -80,20 +82,21 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
     }
   }
 
-  async function handleRequestClick() {
+  function handleRequestClick() {
+    globalState.currentCollection.set(undefined);
     navigate(`/${request.collectionId}/${request.id}`);
     if (
       user?.data?.settings?.saveOnClose &&
       globalState.requestChanged.value &&
-      globalState.currentRequest.id.value !== -1
+      currentRequest?.id !== -1
     ) {
-      const currentRequest = globalState.currentRequest.get({ noproxy: true });
+      if (!currentRequest) return;
       handleSaveRequest(currentRequest);
       globalState.currentRequest.set(request);
     } else if (
       !user?.data.settings?.saveOnClose &&
       globalState.requestChanged.value &&
-      globalState.currentRequest.id.value !== -1
+      currentRequest?.id !== -1
     ) {
       setState({ ...state, currentModal: 'save' });
       onOpen();
@@ -142,7 +145,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
         method: 'DELETE',
       });
       if (response.status !== 200) throw new Error();
-      if (request.id === globalState.currentRequest.id.value) {
+      if (request.id === currentRequest?.id) {
         globalState.currentRequest.set(defaultRequest);
       }
       removeRequest(request);
@@ -205,6 +208,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       heading={`Request not saved`}
       onClick={() => {
         const currentRequest = globalState.currentRequest.get({ noproxy: true });
+        if (!currentRequest) return;
         handleSaveRequest(currentRequest);
         globalState.currentRequest.set(request);
         onCloseClear();

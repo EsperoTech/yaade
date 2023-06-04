@@ -35,6 +35,14 @@
   background-color: var(--chakra-colors-gray-700);
 }
 
+.header--dark.header--selected {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.header--light.header--selected {
+  background-color: var(--chakra-colors-gray-300);
+}
+
 .icon {
   margin-right: 16px;
 }

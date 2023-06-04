@@ -10,7 +10,7 @@ import Response from '../../model/Response';
 import {
   getEnv,
   getEnvVar,
-  getRequest,
+  patchCurrentRequestData,
   setEnvVar,
   useGlobalState,
   writeRequestToCollections,
@@ -72,12 +72,18 @@ function getParamsFromUri(uri: string): Array<KVRow> {
 }
 
 type RequestPanelProps = {
+  currentRequest: Request;
   isExtInitialized: MutableRefObject<boolean>;
   extVersion: MutableRefObject<string | undefined>;
   openExtModal: () => void;
 };
 
-function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPanelProps) {
+function RequestPanel({
+  currentRequest,
+  isExtInitialized,
+  extVersion,
+  openExtModal,
+}: RequestPanelProps) {
   const [newReqForm, setNewReqForm] = useState<NewReqFormState>({
     collectionId: -1,
     name: '',
@@ -91,7 +97,6 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
   useKeyPress(handleSaveRequestClick, 's', true);
 
   const collections = globalState.collections.get({ noproxy: true });
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
 
   if (collections.length > 0 && newReqForm.collectionId === -1) {
     setNewReqForm({ ...newReqForm, collectionId: collections[0].id });
@@ -113,32 +118,32 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
       : [{ key: '', value: '' }];
 
   const setMethod = (method: string) => {
-    globalState.currentRequest.data.merge({ method });
+    patchCurrentRequestData({ method });
     globalState.requestChanged.set(true);
   };
 
   const setUri = (uri: string) => {
-    globalState.currentRequest.data.merge({ uri });
+    patchCurrentRequestData({ uri });
     globalState.requestChanged.set(true);
   };
 
   const setHeaders = (headers: Array<KVRow>) => {
-    globalState.currentRequest.data.merge({ headers });
+    patchCurrentRequestData({ headers });
     globalState.requestChanged.set(true);
   };
 
   const setBody = (body: string) => {
-    globalState.currentRequest.data.merge({ body });
+    patchCurrentRequestData({ body });
     globalState.requestChanged.set(true);
   };
 
   const setResponseScript = (responseScript: string) => {
-    globalState.currentRequest.data.merge({ responseScript });
+    patchCurrentRequestData({ responseScript });
     globalState.requestChanged.set(true);
   };
 
   const setRequestScript = (requestScript: string) => {
-    globalState.currentRequest.data.merge({ requestScript });
+    patchCurrentRequestData({ requestScript });
     globalState.requestChanged.set(true);
   };
 
@@ -210,10 +215,7 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
 
   async function handleSaveRequestClick() {
     try {
-      if (
-        globalState.currentRequest.id.get() === -1 &&
-        globalState.currentRequest.collectionId.get() === -1
-      ) {
+      if (currentRequest.id === -1 && currentRequest.collectionId === -1) {
         onOpen();
         return;
       } else {
@@ -489,9 +491,9 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
     <Box className={styles.box} bg="panelBg" h="100%">
       <div style={{ display: 'flex' }}>
         <UriBar
-          uri={globalState.currentRequest.data.value.uri ?? ''}
+          uri={currentRequest.data.uri ?? ''}
           setUri={setUri}
-          method={globalState.currentRequest.data.value.method ?? ''}
+          method={currentRequest.data.method ?? ''}
           setMethod={setMethod}
           handleSendButtonClick={handleSendButtonClick}
           isLoading={globalState.requestLoading.get()}
@@ -531,20 +533,17 @@ function RequestPanel({ isExtInitialized, extVersion, openExtModal }: RequestPan
             <KVEditor name="headers" kvs={headers} setKvs={setHeaders} />
           </TabPanel>
           <TabPanel h="100%">
-            <BodyEditor
-              content={globalState.currentRequest.data.value.body ?? ''}
-              setContent={setBody}
-            />
+            <BodyEditor content={currentRequest.data.body ?? ''} setContent={setBody} />
           </TabPanel>
           <TabPanel h="100%">
             <Editor
-              content={globalState.currentRequest.data.value.requestScript ?? ''}
+              content={currentRequest.data.requestScript ?? ''}
               setContent={setRequestScript}
             />
           </TabPanel>
           <TabPanel h="100%">
             <Editor
-              content={globalState.currentRequest.data.value.responseScript ?? ''}
+              content={currentRequest.data.responseScript ?? ''}
               setContent={setResponseScript}
             />
           </TabPanel>

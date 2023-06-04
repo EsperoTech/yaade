@@ -28,6 +28,7 @@ import { useNavigate } from 'react-router-dom';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
 import {
+  defaultRequest,
   getRequest,
   removeCollection,
   removeRequest,
@@ -39,9 +40,9 @@ import { BASE_PATH, errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import { DragTypes } from '../../utils/dnd';
 import BasicModal from '../basicModal';
+import EnvironmentEditor from '../collectionPanel/EnvironmentsTab';
 import GroupsInput from '../groupsInput';
 import styles from './CollectionView.module.css';
-import EnvironmentModal from './EnvironmentModal';
 import MoveableRequest, { RequestDragItem } from './MoveableRequest';
 
 type CollectionProps = {
@@ -68,7 +69,9 @@ function CollectionView({ collection }: CollectionProps) {
   const initialRef = useRef(null);
   const ref = useRef<HTMLDivElement>(null);
   const { colorMode } = useColorMode();
-  const variants = collection.open ? ['open'] : [];
+  const headerVariants =
+    globalState.currentCollection.value?.id === collection.id ? ['selected'] : [];
+  const iconVariants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
   const { onCopy } = useClipboard(`${window.location.origin}/#/${collection.id}`);
@@ -141,6 +144,8 @@ function CollectionView({ collection }: CollectionProps) {
   }
 
   function handleCollectionClick() {
+    globalState.currentCollection.set(JSON.parse(JSON.stringify(collection)));
+    globalState.currentRequest.set(undefined);
     navigate(`/${collection.id}`);
     saveCollection({
       ...collection,
@@ -244,7 +249,6 @@ function CollectionView({ collection }: CollectionProps) {
             return (
               <BasicModal
                 isOpen={isOpen}
-                initialRef={undefined}
                 onClose={onCloseClear}
                 heading={`Delete "${collection.data.name}"`}
                 onClick={handleDeleteCollectionClick}
@@ -258,15 +262,7 @@ function CollectionView({ collection }: CollectionProps) {
               </BasicModal>
             );
           case 'env':
-            return (
-              <EnvironmentModal
-                collection={collection}
-                saveCollection={saveCollection}
-                isOpen={isOpen}
-                onOpen={onOpen}
-                onClose={onClose}
-              />
-            );
+            return <></>;
         }
       })(state.currentModal);
 
@@ -372,14 +368,16 @@ function CollectionView({ collection }: CollectionProps) {
     <div className={styles.root}>
       <div
         ref={ref}
-        className={cn(styles, 'header', [colorMode]) + ' ' + hoverClass}
+        className={
+          cn(styles, 'header', [...headerVariants, colorMode]) + ' ' + hoverClass
+        }
         onClick={handleCollectionClick}
         onKeyDown={(e) => handleOnKeyDown(e, handleCollectionClick)}
         role="button"
         tabIndex={0}
         data-handler-id={handlerId}
       >
-        <ChevronRightIcon className={cn(styles, 'icon', [...variants, colorMode])} />
+        <ChevronRightIcon className={cn(styles, 'icon', [...iconVariants, colorMode])} />
         <span className={styles.name}>{collection.data.name}</span>
         <span className={styles.actionIcon}>
           <Menu>
@@ -456,7 +454,7 @@ function CollectionView({ collection }: CollectionProps) {
           </Menu>
         </span>
       </div>
-      <div className={cn(styles, 'requests', [...variants, colorMode])}>
+      <div className={cn(styles, 'requests', [...iconVariants, colorMode])}>
         {collection.requests?.map((request, i) => renderRequest(request, i))}
       </div>
       {currentModal}
