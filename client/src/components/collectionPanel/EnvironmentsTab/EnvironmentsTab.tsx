@@ -1,4 +1,11 @@
-import { AddIcon, CheckIcon, CloseIcon, CopyIcon, DeleteIcon } from '@chakra-ui/icons';
+import {
+  AddIcon,
+  CheckIcon,
+  CloseIcon,
+  CopyIcon,
+  DeleteIcon,
+  NotAllowedIcon,
+} from '@chakra-ui/icons';
 import {
   Heading,
   HStack,
@@ -10,26 +17,23 @@ import {
 } from '@chakra-ui/react';
 import { FunctionComponent, useEffect, useRef, useState } from 'react';
 
-import Collection from '../../../model/Collection';
 import KVRow from '../../../model/KVRow';
-import {
-  BASE_PATH,
-  errorToast,
-  kvRowsToMap,
-  mapToKvRows,
-  successToast,
-} from '../../../utils';
+import { BASE_PATH, errorToast, kvRowsToMap, successToast } from '../../../utils';
 import { getSelectedEnvs, saveSelectedEnv } from '../../../utils/store';
-import BasicModal from '../../basicModal';
 import KVEditor from '../../kvEditor';
-import styles from './EnvironmentModal.module.css';
+import styles from './EnvironmentsTab.module.css';
+
+type Environment = {
+  data: Record<string, string>;
+  proxy: string;
+  secretKeys: string[];
+};
 
 type EnvironmentModalProps = {
-  collection: Collection;
-  saveCollection: (c: Collection) => void;
-  isOpen: boolean;
-  onOpen: () => void;
-  onClose: () => void;
+  collectionId: number;
+  envs: Record<string, Environment>;
+  setEnvs: (envs: Record<string, Environment>) => void;
+  markCollectionChanged: () => void;
 };
 
 type Secret = {
@@ -38,31 +42,39 @@ type Secret = {
   isChanged: boolean;
 };
 
-type EnvironmentModalState = {
+type EnvironmentTabState = {
   modalState: 'create' | 'copy' | 'default';
   newEnvName: string;
   envNameToCopy?: string;
   selectedEnvName?: string;
-  selectedEnvData?: KVRow[];
+  // we need duplicate state here because leaving variables as
+  // a map would lead to weird input behavior on duplicate keys
+  selectedEnvKVs?: KVRow[];
   selectedEnvSecrets: Secret[];
-  selectedEnvProxy?: string;
   newSecretKey: string;
   newSecretValue: string;
 };
 
+const DEFAULT_ENV = {
+  data: {},
+  proxy: 'ext',
+  secretKeys: [],
+};
+
 const DEFAULT_SECRET_VALUE = '*******';
 
-const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
-  collection,
-  saveCollection,
-  isOpen,
-  onClose,
+const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
+  collectionId,
+  envs,
+  setEnvs,
+  markCollectionChanged,
 }) => {
-  const [state, setState] = useState<EnvironmentModalState>({
+  const [state, setState] = useState<EnvironmentTabState>({
     modalState: 'default',
     newEnvName: '',
     newSecretKey: '',
     newSecretValue: '',
+    selectedEnvKVs: [],
     selectedEnvSecrets: [],
   });
   const { colorMode } = useColorMode();
@@ -75,34 +87,34 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     }
   }, [state.modalState]);
 
-  const envNames = Object.keys(collection.data?.envs ?? {});
-  const selectedEnvs = getSelectedEnvs();
+  useEffect(() => {
+    setDefaultEnv();
+  }, [collectionId]);
 
-  function getEnvData(name?: string): KVRow[] {
-    if (!name) return [];
-    const env = collection.data?.envs?.[name];
-    const data = Object.entries(env?.data ?? {}).map(([key, value]) => ({
+  const envNames = Object.keys(envs ?? {});
+  const selectedEnvs = getSelectedEnvs();
+  const selectedEnv = getEnvOrDefault(state.selectedEnvName);
+
+  function mapEnvDataToKVRows(data: Record<string, string>): KVRow[] {
+    if (Object.keys(data).length === 0) {
+      return [{ key: '', value: '' }];
+    }
+    return Object.entries(data).map(([key, value]) => ({
       key,
       value: value as string,
     }));
-
-    if (data.length === 0) {
-      return [{ key: '', value: '' }];
-    }
-
-    return data;
   }
 
-  function getEnv(name?: string): any {
-    if (!name) return {};
-    return collection.data?.envs?.[name];
+  function getEnvOrDefault(name?: string): Environment {
+    console.log('getEnvOrDefault', name, collectionId);
+    if (!name) return DEFAULT_ENV;
+    return envs[name] ?? DEFAULT_ENV;
   }
 
   function envSelected(name: string) {
-    const selectedEnv = getEnv(name);
-    const selectedEnvData = getEnvData(name);
-    const selectedEnvProxy = selectedEnv?.proxy ?? 'ext';
+    const selectedEnv = getEnvOrDefault(name);
     const secretsKeys = selectedEnv?.secretKeys ?? [];
+    const selectedEnvKVs = mapEnvDataToKVRows(selectedEnv.data ?? {});
     const selectedEnvSecrets: Secret[] = secretsKeys.map((key: any) => {
       return {
         key,
@@ -113,15 +125,14 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     setState({
       ...state,
       selectedEnvName: name,
-      selectedEnvData,
-      selectedEnvProxy,
+      selectedEnvKVs,
       selectedEnvSecrets,
     });
-    saveSelectedEnv(collection.id, name);
+    saveSelectedEnv(collectionId, name);
   }
 
   function setDefaultEnv() {
-    let defaultEnvName = envNames.find((el) => el === selectedEnvs[collection.id]);
+    let defaultEnvName = envNames.find((el) => el === selectedEnvs[collectionId]);
     if (!defaultEnvName && envNames.length !== 0) {
       defaultEnvName = envNames[0];
     }
@@ -131,37 +142,40 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   if (!state.selectedEnvName) {
+    console.log('setDefaultEnv');
     setDefaultEnv();
   }
 
   // NOTE: use this to rerender in case of response script env change
-  useEffect(() => {
-    if (!state.selectedEnvName) return;
-    const env = collection.data?.envs?.[state.selectedEnvName];
-    const data = Object.entries(env?.data ?? {}).map(([key, value]) => ({
-      key,
-      value: value as string,
-    }));
+  // useEffect(() => {
+  //   if (!state.selectedEnvName) return;
+  //   const env = envs[state.selectedEnvName];
+  //   const data = Object.entries(env?.data ?? {}).map(([key, value]) => ({
+  //     key,
+  //     value: value as string,
+  //   }));
 
-    if (data.length === 0) {
-      data.push({ key: '', value: '' });
-    }
+  //   if (data.length === 0) {
+  //     data.push({ key: '', value: '' });
+  //   }
 
-    setState((s) => {
-      return {
-        ...s,
-        selectedEnvData: data,
-      };
-    });
-  }, [collection, state.selectedEnvName, setState]);
+  //   setState((s) => {
+  //     return {
+  //       ...s,
+  //       selectedEnvData: data,
+  //     };
+  //   });
+  // }, [collection, state.selectedEnvName, setState]);
 
   async function handleCreateEnvClicked() {
+    // TODO: created envs need to be directly written to global state
     try {
       let options: any = {
         method: 'POST',
       };
-      const copiedData = kvRowsToMap(getEnvData(state.envNameToCopy));
-      const proxy = getEnv(state.envNameToCopy)?.proxy ?? 'ext';
+      const envToCopy = getEnvOrDefault(state.envNameToCopy);
+      const copiedData = JSON.parse(JSON.stringify(envToCopy));
+      const proxy = envToCopy.proxy;
 
       if (state.modalState === 'copy') {
         const body = { data: copiedData, proxy };
@@ -169,34 +183,27 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       }
 
       const res = await fetch(
-        BASE_PATH + `api/collection/${collection.id}/envs/${state.newEnvName}`,
+        BASE_PATH + `api/collection/${collectionId}/envs/${state.newEnvName}`,
         options,
       );
       if (res.status !== 200) throw Error();
 
       const data = state.modalState === 'copy' ? copiedData : {};
 
-      saveCollection({
-        ...collection,
-        data: {
-          ...collection.data,
-          envs: {
-            ...collection.data?.envs,
-            [state.newEnvName]: {
-              data,
-              proxy,
-            },
-          },
+      setEnvs({
+        ...envs,
+        [state.newEnvName]: {
+          data,
+          proxy,
+          secretKeys: [],
         },
       });
-      saveSelectedEnv(collection.id, state.newEnvName);
+      saveSelectedEnv(collectionId, state.newEnvName);
       setState({
         ...state,
         newEnvName: '',
         modalState: 'default',
         selectedEnvName: state.newEnvName,
-        selectedEnvProxy: proxy,
-        selectedEnvData: mapToKvRows(copiedData),
         selectedEnvSecrets: [],
         envNameToCopy: undefined,
       });
@@ -210,29 +217,22 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     try {
       if (!state.selectedEnvName || envNames.length <= 1) throw Error();
       const res = await fetch(
-        BASE_PATH + `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
+        BASE_PATH + `api/collection/${collectionId}/envs/${state.selectedEnvName}`,
         {
           method: 'DELETE',
         },
       );
       if (res.status !== 200) throw Error();
 
-      const newEnvs = collection.data?.envs ?? {};
+      const newEnvs = envs ?? {};
       delete newEnvs[state.selectedEnvName];
 
-      saveCollection({
-        ...collection,
-        data: {
-          ...collection.data,
-          envs: newEnvs,
-        },
-      });
+      setEnvs(newEnvs);
       setState({
         ...state,
         newEnvName: '',
         modalState: 'default',
         selectedEnvName: undefined,
-        selectedEnvData: undefined,
         selectedEnvSecrets: [],
         envNameToCopy: undefined,
       });
@@ -242,64 +242,82 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     }
   }
 
-  async function handleSaveClicked() {
-    try {
-      if (!state.selectedEnvName) {
-        onClose();
-        return;
-      }
-
-      const data = kvRowsToMap(state.selectedEnvData ?? []);
-      const proxy = state.selectedEnvProxy ?? 'ext';
-
-      const body = { data, proxy };
-
-      const res = await fetch(
-        BASE_PATH + `api/collection/${collection.id}/envs/${state.selectedEnvName}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
-        },
-      );
-      if (res.status !== 200) throw Error('Could not save environment');
-
-      const oldEnvs = collection.data?.envs ?? {};
-      const oldEnv = oldEnvs[state.selectedEnvName] ?? {};
-
-      saveCollection({
-        ...collection,
-        data: {
-          ...collection.data,
-          envs: {
-            ...oldEnvs,
-            [state.selectedEnvName]: {
-              ...oldEnv,
-              data,
-              proxy,
-            },
-          },
-        },
-      });
-      onCloseClear();
-      successToast('Environment saved.', toast);
-    } catch (e) {
-      errorToast('Could not save environment', toast);
-    }
-  }
-
-  function onCloseClear() {
+  function setSelectedEnvData(selectedEnvData: KVRow[]) {
+    if (!state.selectedEnvName) return;
     setState({
       ...state,
-      modalState: 'default',
-      newEnvName: '',
-      selectedEnvName: undefined,
-      selectedEnvData: undefined,
+      selectedEnvKVs: selectedEnvData,
     });
-    onClose();
+    const data = kvRowsToMap(selectedEnvData);
+    const selectedEnv = getEnvOrDefault(state.selectedEnvName);
+    setEnvs({
+      ...envs,
+      [state.selectedEnvName]: {
+        ...selectedEnv,
+        data,
+      },
+    });
+    markCollectionChanged();
   }
+
+  function setProxy(proxy: string) {
+    if (!state.selectedEnvName) return;
+    const selectedEnv = getEnvOrDefault(state.selectedEnvName);
+    setEnvs({
+      ...envs,
+      [state.selectedEnvName]: {
+        ...selectedEnv,
+        proxy,
+      },
+    });
+    markCollectionChanged();
+  }
+
+  // async function handleSaveClicked() {
+  //   try {
+  //     if (!state.selectedEnvName) {
+  //       return;
+  //     }
+
+  //     const data = kvRowsToMap(state.selectedEnvData ?? []);
+  //     const proxy = state.selectedEnvProxy ?? 'ext';
+
+  //     const body = { data, proxy };
+
+  //     const res = await fetch(
+  //       BASE_PATH + `api/collection/${collectionId}/envs/${state.selectedEnvName}`,
+  //       {
+  //         method: 'PUT',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify(body),
+  //       },
+  //     );
+  //     if (res.status !== 200) throw Error('Could not save environment');
+
+  //     const oldEnvs = collection.data?.envs ?? {};
+  //     const oldEnv = oldEnvs[state.selectedEnvName] ?? {};
+
+  //     // saveCollection({
+  //     //   ...collection,
+  //     //   data: {
+  //     //     ...collection.data,
+  //     //     envs: {
+  //     //       ...oldEnvs,
+  //     //       [state.selectedEnvName]: {
+  //     //         ...oldEnv,
+  //     //         data,
+  //     //         proxy,
+  //     //       },
+  //     //     },
+  //     //   },
+  //     // });
+  //     successToast('Environment saved.', toast);
+  //   } catch (e) {
+  //     errorToast('Could not save environment', toast);
+  //   }
+  // }
 
   function isCreateDisabled() {
     return (
@@ -314,7 +332,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     try {
       const res = await fetch(
         BASE_PATH +
-          `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${state.newSecretKey}`,
+          `api/collection/${collectionId}/envs/${state.selectedEnvName}/secrets/${state.newSecretKey}`,
         {
           method: 'PUT',
           headers: {
@@ -333,13 +351,17 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     }
   }
 
+  function handleClearSecretClicked() {
+    setState({ ...state, newSecretKey: '', newSecretValue: '' });
+  }
+
   async function handleSaveSecretClicked(i: number) {
     try {
       if (!state.selectedEnvSecrets) return;
       const secret = { ...state.selectedEnvSecrets[i] };
       const res = await fetch(
         BASE_PATH +
-          `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
+          `api/collection/${collectionId}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
         {
           method: 'PUT',
           headers: {
@@ -355,7 +377,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       secret.value = DEFAULT_SECRET_VALUE;
       secret.isChanged = false;
       setSecret(i, secret);
-      successToast('secret saved', toast);
+      successToast('Secret saved', toast);
     } catch (e) {
       errorToast('Failed to set secret', toast);
     }
@@ -367,7 +389,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       const secret = { ...state.selectedEnvSecrets[i] };
       const res = await fetch(
         BASE_PATH +
-          `api/collection/${collection.id}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
+          `api/collection/${collectionId}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
         {
           method: 'DELETE',
         },
@@ -388,7 +410,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       value: DEFAULT_SECRET_VALUE,
       isChanged: false,
     };
-    const selectedEnv = getEnv(state.selectedEnvName);
+    const selectedEnv = getEnvOrDefault(state.selectedEnvName);
     const newSecrets = [...state.selectedEnvSecrets, newSecret];
     const newSecretKeys = newSecrets.map((el) => el.key);
     setState({
@@ -397,17 +419,11 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       newSecretKey: '',
       newSecretValue: '',
     });
-    saveCollection({
-      ...collection,
-      data: {
-        ...collection.data,
-        envs: {
-          ...collection.data.envs,
-          [state.selectedEnvName]: {
-            ...selectedEnv,
-            secretKeys: newSecretKeys,
-          },
-        },
+    setEnvs({
+      ...envs,
+      [state.selectedEnvName]: {
+        ...selectedEnv,
+        secretKeys: newSecretKeys,
       },
     });
   }
@@ -421,22 +437,16 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
 
   function deleteSecret(i: number) {
     if (!state.selectedEnvSecrets || !state.selectedEnvName) return;
-    const selectedEnv = getEnv(state.selectedEnvName);
+    const selectedEnv = getEnvOrDefault(state.selectedEnvName);
     const newSecrets = [...state.selectedEnvSecrets];
     newSecrets.splice(i, 1);
     setState({ ...state, selectedEnvSecrets: newSecrets });
     const newSecretKeys = newSecrets.map((el) => el.key);
-    saveCollection({
-      ...collection,
-      data: {
-        ...collection.data,
-        envs: {
-          ...collection.data.envs,
-          [state.selectedEnvName]: {
-            ...selectedEnv,
-            secretKeys: newSecretKeys,
-          },
-        },
+    setEnvs({
+      ...envs,
+      [state.selectedEnvName]: {
+        ...selectedEnv,
+        secretKeys: newSecretKeys,
       },
     });
   }
@@ -471,19 +481,14 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
     return state.selectedEnvSecrets.map((el) => el.key).includes(state.newSecretKey);
   }
 
+  function isClearSecretDisabled(): boolean {
+    return state.newSecretKey === '' && state.newSecretValue === '';
+  }
+
   return (
-    <BasicModal
-      isOpen={isOpen}
-      initialRef={undefined}
-      onClose={onCloseClear}
-      heading="Environments"
-      onClick={handleSaveClicked}
-      buttonText="Save"
-      buttonColor="green"
-      isButtonDisabled={false}
-    >
+    <div>
       {state.modalState === 'create' || state.modalState === 'copy' ? (
-        <HStack mb="4">
+        <HStack>
           <Input
             placeholder="Name"
             w="100%"
@@ -523,7 +528,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
             value={state.selectedEnvName}
           >
             {envNames.map((env: any) => (
-              <option key={`${collection.id}-${env}`}>{env}</option>
+              <option key={`${collectionId}-${env}`}>{env}</option>
             ))}
           </Select>
           <IconButton
@@ -561,7 +566,7 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
       )}
 
       {state.selectedEnvName ? (
-        <div style={{ maxHeight: '60vh', overflow: 'auto' }}>
+        <div style={{ overflow: 'auto' }}>
           <Heading as="h6" size="xs" my="4">
             Proxy
           </Heading>
@@ -569,8 +574,8 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
             w="100%"
             borderRadius={20}
             colorScheme="green"
-            onChange={(e) => setState({ ...state, selectedEnvProxy: e.target.value })}
-            value={state.selectedEnvProxy}
+            onChange={(e) => setProxy(e.target.value)}
+            value={selectedEnv?.proxy ?? 'ext'}
           >
             <option value="ext">Extension</option>
             <option value="server">Server</option>
@@ -580,10 +585,10 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
           </Heading>
           <KVEditor
             name="env"
-            kvs={state.selectedEnvData ?? []}
-            setKvs={(kvs: KVRow[]) => setState({ ...state, selectedEnvData: kvs })}
+            kvs={state.selectedEnvKVs ?? []}
+            setKvs={(kvs: KVRow[]) => setSelectedEnvData(kvs)}
           />
-          {state.selectedEnvProxy === 'server' ? (
+          {selectedEnv?.proxy === 'server' ? (
             <>
               <HStack>
                 <Heading as="h6" size="xs" my="4">
@@ -615,6 +620,15 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
                   colorScheme="green"
                   icon={<CheckIcon />}
                   onClick={handleCreateSecretClicked}
+                />
+                <IconButton
+                  aria-label="clear-secret"
+                  isRound
+                  variant="ghost"
+                  disabled={isClearSecretDisabled()}
+                  colorScheme="red"
+                  icon={<NotAllowedIcon />}
+                  onClick={handleClearSecretClicked}
                 />
               </div>
               {state.selectedEnvSecrets.map((secret, i) => {
@@ -670,12 +684,14 @@ const EnvironmentModal: FunctionComponent<EnvironmentModalProps> = ({
                   </div>
                 );
               })}
+              {/* this is just some padding to prevent a hard cutoff on overflow */}
+              <div style={{ minHeight: '20px' }} />
             </>
           ) : null}
         </div>
       ) : null}
-    </BasicModal>
+    </div>
   );
 };
 
-export default EnvironmentModal;
+export default EnvironmentTab;

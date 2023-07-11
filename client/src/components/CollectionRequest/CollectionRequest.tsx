@@ -11,18 +11,21 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
+import { State } from '@hookstate/core';
 import { FunctionComponent, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 import { useNavigate } from 'react-router-dom';
 
 import { UserContext } from '../../context';
+import Collection from '../../model/Collection';
 import Request from '../../model/Request';
 import {
   defaultRequest,
   removeRequest,
   setCurrentRequest,
   useGlobalState,
+  writeCollectionData,
   writeRequestToCollections,
 } from '../../state/GlobalState';
 import { BASE_PATH, errorToast, successToast } from '../../utils';
@@ -62,43 +65,77 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   );
   const { onCopy: onCopyRequestId } = useClipboard(`${request.id}`);
   const navigate = useNavigate();
-  const variants = globalState.currentRequest.id.get() === request.id ? ['selected'] : [];
+  const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  const currentCollection = globalState.currentCollection.get({ noproxy: true });
+  const variants = currentRequest?.id === request.id ? ['selected'] : [];
 
-  async function handleSaveRequest(currentRequest: Request) {
+  async function handleSaveRequest(request: Request) {
     try {
       const response = await fetch(BASE_PATH + 'api/request', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(currentRequest),
+        body: JSON.stringify(request),
       });
       if (response.status !== 200) throw new Error();
-      writeRequestToCollections(currentRequest);
+      writeRequestToCollections(request);
+      globalState.requestChanged.set(false);
     } catch (e) {
       errorToast('Could not save request', toast);
     }
   }
 
-  async function handleRequestClick() {
-    navigate(`/${request.collectionId}/${request.id}`);
-    if (
-      user?.data?.settings?.saveOnClose &&
-      globalState.requestChanged.value &&
-      globalState.currentRequest.id.value !== -1
-    ) {
-      const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  async function handleSaveCollection(collection: Collection) {
+    try {
+      const response = await fetch(BASE_PATH + 'api/collection', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(collection),
+      });
+      if (response.status !== 200) throw new Error();
+
+      writeCollectionData(collection.id, collection.data);
+      globalState.collectionChanged.set(false);
+      successToast('Collection was saved.', toast);
+    } catch (e) {
+      errorToast('The collection could not be saved.', toast);
+    }
+  }
+
+  function saveOnClose() {
+    if (currentRequest && globalState.requestChanged.value && currentRequest?.id !== -1) {
       handleSaveRequest(currentRequest);
-      globalState.currentRequest.set(request);
+    } else if (currentCollection && globalState.collectionChanged.value) {
+      handleSaveCollection(currentCollection);
+    }
+    globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
+    globalState.currentCollection.set(undefined);
+    globalState.requestChanged.set(false);
+    globalState.collectionChanged.set(false);
+  }
+
+  function handleRequestClick() {
+    console.log(globalState.collections.get({ noproxy: true }));
+    navigate(`/${request.collectionId}/${request.id}`);
+    if (currentRequest?.id === request.id) return;
+    if (user?.data?.settings?.saveOnClose) {
+      saveOnClose();
     } else if (
-      !user?.data.settings?.saveOnClose &&
+      currentRequest &&
       globalState.requestChanged.value &&
-      globalState.currentRequest.id.value !== -1
+      currentRequest?.id !== -1
     ) {
-      setState({ ...state, currentModal: 'save' });
+      setState({ ...state, currentModal: 'save-request' });
+      onOpen();
+    } else if (currentCollection && globalState.collectionChanged.value) {
+      setState({ ...state, currentModal: 'save-collection' });
       onOpen();
     } else {
-      globalState.currentRequest.set(request);
+      globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
+      globalState.currentCollection.set(undefined);
     }
   }
 
@@ -142,7 +179,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
         method: 'DELETE',
       });
       if (response.status !== 200) throw new Error();
-      if (request.id === globalState.currentRequest.id.value) {
+      if (request.id === currentRequest?.id) {
         globalState.currentRequest.set(defaultRequest);
       }
       removeRequest(request);
@@ -204,9 +241,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       onClose={onCloseClear}
       heading={`Request not saved`}
       onClick={() => {
-        const currentRequest = globalState.currentRequest.get({ noproxy: true });
-        handleSaveRequest(currentRequest);
-        globalState.currentRequest.set(request);
+        saveOnClose();
         onCloseClear();
       }}
       buttonText="Save"
@@ -214,12 +249,41 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       isButtonDisabled={false}
       secondaryButtonText="Discard"
       onSecondaryButtonClick={() => {
-        globalState.currentRequest.set(request);
+        globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
+        globalState.requestChanged.set(false);
         onCloseClear();
       }}
     >
       The request has unsaved changes which will be lost if you choose to change the tab
       now.
+      <br />
+      Do you want to save the changes now?
+    </BasicModal>
+  );
+
+  const collectionNotSavedModal = (
+    <BasicModal
+      isOpen={isOpen}
+      initialRef={undefined}
+      onClose={onCloseClear}
+      heading={`Collection not saved`}
+      onClick={() => {
+        saveOnClose();
+        onCloseClear();
+      }}
+      buttonText="Save"
+      buttonColor="green"
+      isButtonDisabled={false}
+      secondaryButtonText="Discard"
+      onSecondaryButtonClick={() => {
+        globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
+        globalState.currentCollection.set(undefined);
+        globalState.collectionChanged.set(false);
+        onCloseClear();
+      }}
+    >
+      The collection has unsaved changes which will be lost if you choose to change the
+      tab now.
       <br />
       Do you want to save the changes now?
     </BasicModal>
@@ -231,8 +295,10 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
     currentModal = renameModal;
   } else if (state.currentModal === 'delete') {
     currentModal = deleteModal;
-  } else if (state.currentModal === 'save') {
+  } else if (state.currentModal === 'save-request') {
     currentModal = requestNotSavedModal;
+  } else if (state.currentModal === 'save-collection') {
+    currentModal = collectionNotSavedModal;
   }
 
   let methodName = request.data.method;

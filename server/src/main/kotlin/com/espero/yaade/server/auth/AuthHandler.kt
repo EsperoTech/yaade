@@ -255,7 +255,7 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
             }.onFailure {
                 ctx.session().destroy()
                 ctx.setUser(null)
-                ctx.fail(500, it)
+                ctx.fail(500, RuntimeException("Failed to get user info: ${it.message}"))
             }
     }
 

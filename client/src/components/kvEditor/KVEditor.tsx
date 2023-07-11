@@ -19,6 +19,8 @@ const isRowEmpty = (row: KVRow) => row.key === '' && row.value === '';
 function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   const { colorMode } = useColorMode();
 
+  // we copy the data so we can append an empty last row without
+  // mutating the original data
   const displayKvs = kvs ? [...kvs] : [];
 
   if (

@@ -12,10 +12,11 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useEventListener } from 'usehooks-ts';
 
+import CollectionPanel from '../../components/collectionPanel';
 import Header from '../../components/header';
 import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
@@ -28,7 +29,6 @@ import styles from './Dashboard.module.css';
 function Dashboard() {
   const globalState = useGlobalState();
   const location = useLocation();
-  const { user } = useContext(UserContext);
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
   const extVersion = useRef<string | undefined>(undefined);
@@ -88,6 +88,30 @@ function Dashboard() {
 
   useEventListener('message', handlePongMessage);
 
+  const currentCollection = globalState.currentCollection.get({ noproxy: true });
+  const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  let panel = <div>Select a Request or Collection</div>;
+  if (currentCollection) {
+    panel = <CollectionPanel currentCollection={currentCollection} />;
+  }
+  if (currentRequest) {
+    panel = (
+      <Allotment vertical defaultSizes={[200, 100]} snap>
+        <div className={styles.requestPanel}>
+          <RequestPanel
+            currentRequest={currentRequest}
+            isExtInitialized={isExtInitialized}
+            extVersion={extVersion}
+            openExtModal={onOpen}
+          />
+        </div>
+        <div className={styles.responsePanel}>
+          <ResponsePanel />
+        </div>
+      </Allotment>
+    );
+  }
+
   return (
     <div className={styles.parent}>
       <header>
@@ -98,20 +122,7 @@ function Dashboard() {
           <div className={styles.sidebar}>
             <Sidebar />
           </div>
-          <div className={styles.main}>
-            <Allotment vertical defaultSizes={[200, 100]} snap>
-              <div className={styles.requestPanel}>
-                <RequestPanel
-                  isExtInitialized={isExtInitialized}
-                  extVersion={extVersion}
-                  openExtModal={onOpen}
-                />
-              </div>
-              <div className={styles.responsePanel}>
-                <ResponsePanel />
-              </div>
-            </Allotment>
-          </div>
+          <div className={styles.main}>{panel}</div>
         </Allotment>
       </div>
       <Modal isOpen={isOpen} onClose={() => {}}>

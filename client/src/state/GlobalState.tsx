@@ -1,9 +1,10 @@
-import { createState, none, useHookstate } from '@hookstate/core';
+import { createState, none, State, useHookstate } from '@hookstate/core';
 
 import Collection from '../model/Collection';
 import Request from '../model/Request';
+import { mapToKvRows } from '../utils';
 
-const defaultRequest: Request = {
+const DEFAULT_REQUEST: Request = {
   id: -1,
   collectionId: -1,
   type: 'REST',
@@ -30,19 +31,24 @@ const defaultRequest: Request = {
 
 interface GlobalState {
   collections: Collection[];
-  currentRequest: Request;
+  currentRequest?: Request;
+  currentCollection?: Collection;
   requestChanged: boolean;
   requestLoading: boolean;
+  collectionChanged: boolean;
 }
 
 const state = createState<GlobalState>({
   collections: [],
-  currentRequest: defaultRequest,
+  currentRequest: DEFAULT_REQUEST,
+  currentCollection: undefined,
   requestChanged: false,
   requestLoading: false,
+  collectionChanged: false,
 });
 
 function writeRequestToCollections(request: Request) {
+  console.log('writeRequestToCollections', request);
   const collectionIndex = state.collections.findIndex(
     (c) => c.id.get() === request.collectionId,
   );
@@ -90,6 +96,14 @@ function removeCollection(collectionId: number) {
   state.collections[collectionIndex].set(none);
 }
 
+function writeCurrentCollectionData(collectionId: number, data: any) {
+  const collectionIndex = state.collections.findIndex((c) => c.id.get() === collectionId);
+  if (collectionIndex === -1) {
+    return;
+  }
+  state.collections[collectionIndex].data.merge(data);
+}
+
 function saveCollection(collection: Collection) {
   const collectionIndex = state.collections.findIndex(
     (c) => c.id.get() === collection.id,
@@ -103,6 +117,16 @@ function saveCollection(collection: Collection) {
 
 function setCurrentRequest(request: Request) {
   state.currentRequest.set(request);
+}
+
+function patchCurrentRequestData(patch: any) {
+  const cr: State<Request> | undefined = state.currentRequest.ornull;
+  cr?.data.merge(patch);
+}
+
+function patchCurrentCollectionData(patch: any) {
+  const cc: State<Collection> | undefined = state.currentCollection.ornull;
+  cc?.data.merge(patch);
 }
 
 function getEnv(collectionId: number, envName?: string) {
@@ -169,16 +193,26 @@ function setEnvVar(collectionId: number, envName?: string) {
   };
 }
 
+function collapseAllCollections() {
+  state.collections.map((c) => {
+    c.open.set(false);
+  });
+}
+
 export {
-  defaultRequest,
+  collapseAllCollections,
+  DEFAULT_REQUEST as defaultRequest,
   getEnv,
   getEnvVar,
   getRequest,
+  patchCurrentCollectionData,
+  patchCurrentRequestData,
   removeCollection,
   removeRequest,
   saveCollection,
   setCurrentRequest,
   setEnvVar,
+  writeCurrentCollectionData as writeCollectionData,
   writeRequestToCollections,
 };
 

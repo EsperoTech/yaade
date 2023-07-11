@@ -106,6 +106,7 @@ function kvRowsToMap(rows: KVRow[]): Record<string, string> {
   const res: Record<string, string> = {};
   rows.forEach((row) => {
     if (row.key === '') return;
+    if (res[row.key]) return;
     res[row.key] = row.value;
   });
   return res;

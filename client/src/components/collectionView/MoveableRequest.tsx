@@ -5,7 +5,7 @@ import { useDrag, useDrop, XYCoord } from 'react-dnd';
 
 import Request from '../../model/Request';
 import { DragItem, DragTypes } from '../../utils/dnd';
-import CollectionRequest from '../CollectionRequest';
+import CollectionRequest from '../collectionRequest';
 
 type MoveableRequestProps = {
   request: Request;

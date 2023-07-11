@@ -1,0 +1,25 @@
+.box {
+    height: 100%;
+    width: 100%;
+    padding: 1rem;
+    scrollbar-gutter: stable;
+}
+
+.input {
+    width: 100%;
+    min-height: 30px;
+    border-radius: 20px;
+    padding: 0 1rem;
+}
+
+.input--light {
+    background-color: var(--chakra-colors-white);
+}
+
+.input--dark {
+    background-color: var(--chakra-colors-gray-900);
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    border: 1px solid var(--chakra-colors-gray-700);
+}
