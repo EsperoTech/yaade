@@ -22,13 +22,14 @@ import styles from './BodyEditor.module.css';
 type BodyEditorProps = {
   content: string;
   setContent: any;
+  selectedEnv: any;
 };
 
 type BodyEditorState = {
   contentType: string;
 };
 
-function BodyEditor({ content, setContent }: BodyEditorProps) {
+function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   const [state, setState] = useState<BodyEditorState>({
     contentType: 'application/json',
   });
@@ -36,11 +37,6 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
   const toast = useToast();
   const globalState = useGlobalState();
   const collections = globalState.collections.get({ noproxy: true });
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
-  const requestCollection = collections.find(
-    (c) => c.id === currentRequest?.collectionId,
-  );
-  const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
   const customHighlight = HighlightStyle.define([
     {
       tag: tags.moduleKeyword,

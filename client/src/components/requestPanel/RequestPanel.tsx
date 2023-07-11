@@ -27,7 +27,7 @@ import {
 } from '../../utils';
 import interpolate from '../../utils/interpolate';
 import { executeRequestScript, executeResponseScript } from '../../utils/script';
-import { getSelectedEnvs } from '../../utils/store';
+import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import BodyEditor from '../bodyEditor';
@@ -97,6 +97,11 @@ function RequestPanel({
   useKeyPress(handleSaveRequestClick, 's', true);
 
   const collections = globalState.collections.get({ noproxy: true });
+
+  const requestCollection = collections.find(
+    (c) => c.id === currentRequest?.collectionId,
+  );
+  const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
 
   if (collections.length > 0 && newReqForm.collectionId === -1) {
     setNewReqForm({ ...newReqForm, collectionId: collections[0].id });
@@ -533,7 +538,11 @@ function RequestPanel({
             <KVEditor name="headers" kvs={headers} setKvs={setHeaders} />
           </TabPanel>
           <TabPanel h="100%">
-            <BodyEditor content={currentRequest.data.body ?? ''} setContent={setBody} />
+            <BodyEditor
+              content={currentRequest.data.body ?? ''}
+              setContent={setBody}
+              selectedEnv={selectedEnv}
+            />
           </TabPanel>
           <TabPanel h="100%">
             <Editor
