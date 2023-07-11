@@ -37,7 +37,9 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
   const globalState = useGlobalState();
   const collections = globalState.collections.get({ noproxy: true });
   const currentRequest = globalState.currentRequest.get({ noproxy: true });
-  const requestCollection = collections.find((c) => c.id === currentRequest.collectionId);
+  const requestCollection = collections.find(
+    (c) => c.id === currentRequest?.collectionId,
+  );
   const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
   const customHighlight = HighlightStyle.define([
     {

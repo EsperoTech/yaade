@@ -42,7 +42,8 @@ const getContentType = (headers: Array<KVRow>) =>
 
 function ResponsePanel() {
   const globalState = useGlobalState();
-  const response = globalState.currentRequest.data.get().response;
+  const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  const response = currentRequest?.data.response;
   const { colorMode } = useColorMode();
   const toast = useToast();
   const { onCopy } = useClipboard(response?.body ?? '');
