@@ -1,6 +1,7 @@
-import { AddIcon } from '@chakra-ui/icons';
+import { AddIcon, HamburgerIcon } from '@chakra-ui/icons';
 import {
   Box,
+  Icon,
   IconButton,
   Input,
   Select,
@@ -10,24 +11,21 @@ import {
   TabPanels,
   Tabs,
   Text,
+  Tooltip,
   useColorMode,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { Dispatch, SetStateAction, useContext, useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 
 import { UserContext } from '../../context';
 import Collection from '../../model/Collection';
-import Request from '../../model/Request';
-import { saveCollection, useGlobalState } from '../../state/GlobalState';
 import {
-  BASE_PATH,
-  cn,
-  errorToast,
-  groupsArrayToStr,
-  groupsStrToArray,
-  successToast,
-} from '../../utils';
+  collapseAllCollections,
+  saveCollection,
+  useGlobalState,
+} from '../../state/GlobalState';
+import { BASE_PATH, cn, errorToast, groupsArrayToStr, successToast } from '../../utils';
 import BasicModal from '../basicModal';
 import Collections from '../collections';
 import GroupsInput from '../groupsInput';
@@ -144,6 +142,12 @@ function Sidebar() {
           icon={<AddIcon />}
           variant="ghost"
           onClick={onOpen}
+        />
+        <IconButton
+          aria-label="collapse-all-collection"
+          icon={<HamburgerIcon />}
+          variant="ghost"
+          onClick={collapseAllCollections}
         />
       </div>
 

@@ -20,27 +20,27 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import type { Identifier } from 'dnd-core';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useContext, useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
 import { VscEllipsis } from 'react-icons/vsc';
 import { useNavigate } from 'react-router-dom';
 
+import { UserContext } from '../../context';
 import Collection from '../../model/Collection';
 import Request from '../../model/Request';
 import {
-  defaultRequest,
   getRequest,
   removeCollection,
   removeRequest,
   saveCollection,
   useGlobalState,
+  writeCollectionData,
   writeRequestToCollections,
 } from '../../state/GlobalState';
 import { BASE_PATH, errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import { DragTypes } from '../../utils/dnd';
 import BasicModal from '../basicModal';
-import EnvironmentEditor from '../collectionPanel/EnvironmentsTab';
 import GroupsInput from '../groupsInput';
 import styles from './CollectionView.module.css';
 import MoveableRequest, { RequestDragItem } from './MoveableRequest';
@@ -73,6 +73,9 @@ function CollectionView({ collection }: CollectionProps) {
     globalState.currentCollection.value?.id === collection.id ? ['selected'] : [];
   const iconVariants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const currentRequest = globalState.currentRequest.get({ noproxy: true });
+  const currentCollection = globalState.currentCollection.get({ noproxy: true });
+  const { user } = useContext(UserContext);
   const toast = useToast();
   const { onCopy } = useClipboard(`${window.location.origin}/#/${collection.id}`);
   const navigate = useNavigate();
@@ -143,10 +146,46 @@ function CollectionView({ collection }: CollectionProps) {
     }
   }
 
-  function handleCollectionClick() {
-    globalState.currentCollection.set(JSON.parse(JSON.stringify(collection)));
+  function saveOnClose() {
+    if (currentRequest && globalState.requestChanged.value && currentRequest?.id !== -1) {
+      handleSaveRequest(currentRequest);
+    } else if (currentCollection && globalState.collectionChanged.value) {
+      handleSaveCollection(currentCollection);
+    }
     globalState.currentRequest.set(undefined);
+    globalState.currentCollection.set(JSON.parse(JSON.stringify(collection)));
+    globalState.requestChanged.set(false);
+    globalState.collectionChanged.set(false);
+  }
+
+  function handleCollectionClick() {
+    saveCollection({
+      ...collection,
+      open: true,
+    });
+    if (currentCollection?.id === collection.id) {
+      return;
+    }
     navigate(`/${collection.id}`);
+    if (user?.data?.settings?.saveOnClose) {
+      saveOnClose();
+    } else if (
+      currentRequest &&
+      globalState.requestChanged.value &&
+      currentRequest?.id !== -1
+    ) {
+      setState({ ...state, currentModal: 'save-request' });
+      onOpen();
+    } else if (currentCollection && globalState.collectionChanged.value) {
+      setState({ ...state, currentModal: 'save-collection' });
+      onOpen();
+    } else {
+      globalState.currentRequest.set(undefined);
+      globalState.currentCollection.set(JSON.parse(JSON.stringify(collection)));
+    }
+  }
+
+  function handleArrowClick() {
     saveCollection({
       ...collection,
       open: !collection.open,
@@ -175,6 +214,42 @@ function CollectionView({ collection }: CollectionProps) {
       groups: collection.data?.groups ?? [],
     });
     onClose();
+  }
+
+  async function handleSaveRequest(request: Request) {
+    try {
+      const response = await fetch(BASE_PATH + 'api/request', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+      if (response.status !== 200) throw new Error();
+      writeRequestToCollections(request);
+      globalState.requestChanged.set(false);
+    } catch (e) {
+      errorToast('Could not save request', toast);
+    }
+  }
+
+  async function handleSaveCollection(collection: Collection) {
+    try {
+      const response = await fetch(BASE_PATH + 'api/collection', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(collection),
+      });
+      if (response.status !== 200) throw new Error();
+
+      writeCollectionData(collection.id, collection.data);
+      globalState.collectionChanged.set(false);
+      // successToast('Collection was saved.', toast);
+    } catch (e) {
+      errorToast('The collection could not be saved.', toast);
+    }
   }
 
   // NOTE: Setting to null is a workaround for the modal not updating
@@ -261,8 +336,65 @@ function CollectionView({ collection }: CollectionProps) {
                 The collection cannot be recovered!
               </BasicModal>
             );
-          case 'env':
-            return <></>;
+          case 'save-request':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                initialRef={undefined}
+                onClose={onCloseClear}
+                heading={`Request not saved`}
+                onClick={() => {
+                  saveOnClose();
+                  onCloseClear();
+                }}
+                buttonText="Save"
+                buttonColor="green"
+                isButtonDisabled={false}
+                secondaryButtonText="Discard"
+                onSecondaryButtonClick={() => {
+                  globalState.currentCollection.set(
+                    JSON.parse(JSON.stringify(collection)),
+                  );
+                  globalState.currentRequest.set(undefined);
+                  globalState.requestChanged.set(false);
+                  onCloseClear();
+                }}
+              >
+                The request has unsaved changes which will be lost if you choose to change
+                the tab now.
+                <br />
+                Do you want to save the changes now?
+              </BasicModal>
+            );
+          case 'save-collection':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                initialRef={undefined}
+                onClose={onCloseClear}
+                heading={`Collection not saved`}
+                onClick={() => {
+                  saveOnClose();
+                  onCloseClear();
+                }}
+                buttonText="Save"
+                buttonColor="green"
+                isButtonDisabled={false}
+                secondaryButtonText="Discard"
+                onSecondaryButtonClick={() => {
+                  globalState.currentCollection.set(
+                    JSON.parse(JSON.stringify(collection)),
+                  );
+                  globalState.collectionChanged.set(false);
+                  onCloseClear();
+                }}
+              >
+                The collection has unsaved changes which will be lost if you choose to
+                change the tab now.
+                <br />
+                Do you want to save the changes now?
+              </BasicModal>
+            );
         }
       })(state.currentModal);
 
@@ -368,91 +500,88 @@ function CollectionView({ collection }: CollectionProps) {
     <div className={styles.root}>
       <div
         ref={ref}
+        data-handler-id={handlerId}
         className={
           cn(styles, 'header', [...headerVariants, colorMode]) + ' ' + hoverClass
         }
-        onClick={handleCollectionClick}
-        onKeyDown={(e) => handleOnKeyDown(e, handleCollectionClick)}
-        role="button"
-        tabIndex={0}
-        data-handler-id={handlerId}
       >
-        <ChevronRightIcon className={cn(styles, 'icon', [...iconVariants, colorMode])} />
-        <span className={styles.name}>{collection.data.name}</span>
-        <span className={styles.actionIcon}>
-          <Menu>
-            {({ isOpen }) => (
-              <>
-                <MenuButton
-                  as={IconButton}
-                  aria-label="Options"
-                  icon={<VscEllipsis />}
-                  variant="ghost"
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <MenuList
-                  zIndex={50}
-                  style={{
-                    // this is a workaround to fix drag and drop preview not working
-                    // see: https://github.com/chakra-ui/chakra-ui/issues/6762
-                    display: isOpen ? '' : 'none',
-                  }}
-                >
-                  <MenuItem
-                    icon={<AddIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setState({ ...state, currentModal: 'newRequest' });
-                      onOpen();
+        <ChevronRightIcon
+          className={cn(styles, 'icon', [...iconVariants, colorMode])}
+          onClick={handleArrowClick}
+        />
+        <div
+          className={styles.wrapper}
+          onClick={handleCollectionClick}
+          onKeyDown={(e) => handleOnKeyDown(e, handleArrowClick)}
+          role="button"
+          tabIndex={0}
+        >
+          <span className={styles.name}>{collection.data.name}</span>
+          <span className={styles.actionIcon}>
+            <Menu>
+              {({ isOpen }) => (
+                <>
+                  <MenuButton
+                    as={IconButton}
+                    aria-label="Options"
+                    icon={<VscEllipsis />}
+                    variant="ghost"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <MenuList
+                    zIndex={50}
+                    style={{
+                      // this is a workaround to fix drag and drop preview not working
+                      // see: https://github.com/chakra-ui/chakra-ui/issues/6762
+                      display: isOpen ? '' : 'none',
                     }}
                   >
-                    New Request
-                  </MenuItem>
-                  <MenuItem
-                    icon={<EditIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setState({ ...state, currentModal: 'edit' });
-                      onOpen();
-                    }}
-                  >
-                    Edit
-                  </MenuItem>
-                  <MenuItem
-                    icon={<DragHandleIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setState({ ...state, currentModal: 'env' });
-                      onOpen();
-                    }}
-                  >
-                    Environment
-                  </MenuItem>
-                  <MenuItem
-                    icon={<LinkIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCopy();
-                      successToast('Link copied to clipboard.', toast);
-                    }}
-                  >
-                    Copy Link
-                  </MenuItem>
-                  <MenuItem
-                    icon={<DeleteIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setState({ ...state, currentModal: 'delete' });
-                      onOpen();
-                    }}
-                  >
-                    Delete
-                  </MenuItem>
-                </MenuList>
-              </>
-            )}
-          </Menu>
-        </span>
+                    <MenuItem
+                      icon={<AddIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setState({ ...state, currentModal: 'newRequest' });
+                        onOpen();
+                      }}
+                    >
+                      New Request
+                    </MenuItem>
+                    <MenuItem
+                      icon={<EditIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setState({ ...state, currentModal: 'edit' });
+                        onOpen();
+                      }}
+                    >
+                      Edit
+                    </MenuItem>
+                    <MenuItem
+                      icon={<LinkIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCopy();
+                        successToast('Link copied to clipboard.', toast);
+                      }}
+                    >
+                      Copy Link
+                    </MenuItem>
+                    <MenuItem
+                      icon={<DeleteIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setState({ ...state, currentModal: 'delete' });
+                        onOpen();
+                      }}
+                    >
+                      Delete
+                    </MenuItem>
+                  </MenuList>
+                </>
+              )}
+            </Menu>
+          </span>
+        </div>
       </div>
       <div className={cn(styles, 'requests', [...iconVariants, colorMode])}>
         {collection.requests?.map((request, i) => renderRequest(request, i))}

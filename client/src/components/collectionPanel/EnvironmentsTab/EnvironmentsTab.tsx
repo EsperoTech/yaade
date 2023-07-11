@@ -47,6 +47,8 @@ type EnvironmentTabState = {
   newEnvName: string;
   envNameToCopy?: string;
   selectedEnvName?: string;
+  // we need duplicate state here because leaving variables as
+  // a map would lead to weird input behavior on duplicate keys
   selectedEnvKVs?: KVRow[];
   selectedEnvSecrets: Secret[];
   newSecretKey: string;
@@ -72,6 +74,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
     newEnvName: '',
     newSecretKey: '',
     newSecretValue: '',
+    selectedEnvKVs: [],
     selectedEnvSecrets: [],
   });
   const { colorMode } = useColorMode();
@@ -84,10 +87,13 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
     }
   }, [state.modalState]);
 
+  useEffect(() => {
+    setDefaultEnv();
+  }, [collectionId]);
+
   const envNames = Object.keys(envs ?? {});
   const selectedEnvs = getSelectedEnvs();
   const selectedEnv = getEnvOrDefault(state.selectedEnvName);
-  const selectedEnvKVs = mapEnvDataToKVRows(selectedEnv.data);
 
   function mapEnvDataToKVRows(data: Record<string, string>): KVRow[] {
     if (Object.keys(data).length === 0) {
@@ -100,6 +106,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   function getEnvOrDefault(name?: string): Environment {
+    console.log('getEnvOrDefault', name, collectionId);
     if (!name) return DEFAULT_ENV;
     return envs[name] ?? DEFAULT_ENV;
   }
@@ -107,6 +114,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   function envSelected(name: string) {
     const selectedEnv = getEnvOrDefault(name);
     const secretsKeys = selectedEnv?.secretKeys ?? [];
+    const selectedEnvKVs = mapEnvDataToKVRows(selectedEnv.data ?? {});
     const selectedEnvSecrets: Secret[] = secretsKeys.map((key: any) => {
       return {
         key,
@@ -117,6 +125,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
     setState({
       ...state,
       selectedEnvName: name,
+      selectedEnvKVs,
       selectedEnvSecrets,
     });
     saveSelectedEnv(collectionId, name);
@@ -133,6 +142,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   if (!state.selectedEnvName) {
+    console.log('setDefaultEnv');
     setDefaultEnv();
   }
 
@@ -158,6 +168,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   // }, [collection, state.selectedEnvName, setState]);
 
   async function handleCreateEnvClicked() {
+    // TODO: created envs need to be directly written to global state
     try {
       let options: any = {
         method: 'POST',
@@ -233,7 +244,10 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
 
   function setSelectedEnvData(selectedEnvData: KVRow[]) {
     if (!state.selectedEnvName) return;
-    console.log({ selectedEnvData });
+    setState({
+      ...state,
+      selectedEnvKVs: selectedEnvData,
+    });
     const data = kvRowsToMap(selectedEnvData);
     const selectedEnv = getEnvOrDefault(state.selectedEnvName);
     setEnvs({
@@ -552,7 +566,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
       )}
 
       {state.selectedEnvName ? (
-        <div style={{ maxHeight: '60vh', overflow: 'auto' }}>
+        <div style={{ overflow: 'auto' }}>
           <Heading as="h6" size="xs" my="4">
             Proxy
           </Heading>
@@ -571,7 +585,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
           </Heading>
           <KVEditor
             name="env"
-            kvs={selectedEnvKVs ?? []}
+            kvs={state.selectedEnvKVs ?? []}
             setKvs={(kvs: KVRow[]) => setSelectedEnvData(kvs)}
           />
           {selectedEnv?.proxy === 'server' ? (
@@ -670,6 +684,8 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
                   </div>
                 );
               })}
+              {/* this is just some padding to prevent a hard cutoff on overflow */}
+              <div style={{ minHeight: '20px' }} />
             </>
           ) : null}
         </div>

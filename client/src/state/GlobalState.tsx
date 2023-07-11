@@ -2,6 +2,7 @@ import { createState, none, State, useHookstate } from '@hookstate/core';
 
 import Collection from '../model/Collection';
 import Request from '../model/Request';
+import { mapToKvRows } from '../utils';
 
 const DEFAULT_REQUEST: Request = {
   id: -1,
@@ -47,6 +48,7 @@ const state = createState<GlobalState>({
 });
 
 function writeRequestToCollections(request: Request) {
+  console.log('writeRequestToCollections', request);
   const collectionIndex = state.collections.findIndex(
     (c) => c.id.get() === request.collectionId,
   );
@@ -94,7 +96,7 @@ function removeCollection(collectionId: number) {
   state.collections[collectionIndex].set(none);
 }
 
-function writeCollectionData(collectionId: number, data: any) {
+function writeCurrentCollectionData(collectionId: number, data: any) {
   const collectionIndex = state.collections.findIndex((c) => c.id.get() === collectionId);
   if (collectionIndex === -1) {
     return;
@@ -191,7 +193,14 @@ function setEnvVar(collectionId: number, envName?: string) {
   };
 }
 
+function collapseAllCollections() {
+  state.collections.map((c) => {
+    c.open.set(false);
+  });
+}
+
 export {
+  collapseAllCollections,
   DEFAULT_REQUEST as defaultRequest,
   getEnv,
   getEnvVar,
@@ -203,7 +212,7 @@ export {
   saveCollection,
   setCurrentRequest,
   setEnvVar,
-  writeCollectionData,
+  writeCurrentCollectionData as writeCollectionData,
   writeRequestToCollections,
 };
 

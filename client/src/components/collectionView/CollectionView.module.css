@@ -43,8 +43,18 @@
   background-color: var(--chakra-colors-gray-300);
 }
 
+.wrapper {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .icon {
   margin-right: 16px;
+  border-radius: 50%;
 }
 
 .icon--open {

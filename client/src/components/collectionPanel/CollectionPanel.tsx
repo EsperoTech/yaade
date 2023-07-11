@@ -60,6 +60,11 @@ export default function CollectionPanel({ currentCollection }: CollectionPanelPr
     globalState.collectionChanged.set(true);
   };
 
+  const setDescription = (description: string) => {
+    patchCurrentCollectionData({ description });
+    globalState.collectionChanged.set(true);
+  };
+
   const setEnvs = (envs: any) => {
     patchCurrentCollectionData({ envs });
     globalState.collectionChanged.set(true);
@@ -99,12 +104,13 @@ export default function CollectionPanel({ currentCollection }: CollectionPanelPr
         <TabList>
           <Tab>Overview</Tab>
           <Tab>Environments</Tab>
-          <Tab>Request Script</Tab>
-          <Tab>Response Script</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
-          <TabPanel>
-            <OverviewTab />
+          <TabPanel h="100%">
+            <OverviewTab
+              description={currentCollection.data.description ?? ''}
+              setDescription={setDescription}
+            />
           </TabPanel>
           <TabPanel>
             <EnvironmentsTab
@@ -113,18 +119,6 @@ export default function CollectionPanel({ currentCollection }: CollectionPanelPr
               setEnvs={setEnvs}
               markCollectionChanged={markCollectionChanged}
             />
-          </TabPanel>
-          <TabPanel h="100%">
-            {/* <Editor
-              content={currentCollection.data.requestScript ?? ''}
-              setContent={(value: string) => patchData({ requestScript: value })}
-            /> */}
-          </TabPanel>
-          <TabPanel h="100%">
-            {/* <Editor
-              content={currentCollection.data.responseScript ?? ''}
-              setContent={(value: string) => patchData({ responseScript: value })}
-            /> */}
           </TabPanel>
         </TabPanels>
       </Tabs>
