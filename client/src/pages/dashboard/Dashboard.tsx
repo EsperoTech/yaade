@@ -12,7 +12,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useEventListener } from 'usehooks-ts';
 
@@ -21,13 +21,38 @@ import Header from '../../components/header';
 import RequestPanel from '../../components/requestPanel';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
-import { UserContext } from '../../context';
-import { useGlobalState } from '../../state/GlobalState';
+import { SidebarCollection } from '../../model/Collection';
+import {
+  CollectionsActionType,
+  collectionsReducer,
+  defaultCollections,
+} from '../../state/Collections';
+import {
+  CurrentCollectionActionType,
+  currentCollectionReducer,
+} from '../../state/currentCollection';
+import {
+  CurrentRequestActionType,
+  currentRequestReducer,
+  defaultCurrentRequest,
+} from '../../state/currentRequest';
 import { BASE_PATH, errorToast, parseLocation } from '../../utils';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
-  const globalState = useGlobalState();
+  const [collections, dispatchCollections] = useReducer(
+    collectionsReducer,
+    defaultCollections,
+  );
+  const [currentRequest, dispatchCurrentRequest] = useReducer(
+    currentRequestReducer,
+    defaultCurrentRequest,
+  );
+  const [currentCollection, dispatchCurrentCollection] = useReducer(
+    currentCollectionReducer,
+    undefined,
+  );
+  const isRequestPanelOpen = currentRequest !== undefined;
   const location = useLocation();
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
@@ -41,6 +66,18 @@ function Dashboard() {
   };
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+  const sidebarCollections: SidebarCollection[] = collections.map((c) => ({
+    id: c.id,
+    name: c.data.name,
+    open: c.open,
+    selected: false,
+    groups: c.data.groups,
+    requests: c.requests?.map((r) => ({
+      id: r.id,
+      name: r.data.name,
+      method: r.data.method,
+    })),
+  }));
 
   useEffect(() => {
     if (isExtInitialized.current) return;
@@ -60,16 +97,27 @@ function Dashboard() {
         collections.forEach((c: any) => {
           if (loc.collectionId === c.id) {
             c.open = true;
-            if (c.requests) {
+            if (loc.requestId && c.requests) {
               c.requests.forEach((r: any) => {
                 if (loc.requestId === r.id) {
-                  globalState.currentRequest.set(r);
+                  dispatchCurrentRequest({
+                    type: CurrentRequestActionType.SET,
+                    request: r,
+                  });
                 }
+              });
+            } else {
+              dispatchCurrentCollection({
+                type: CurrentCollectionActionType.SET,
+                collection: c,
               });
             }
           }
         });
-        globalState.collections.set(collections);
+        dispatchCollections({
+          type: CollectionsActionType.SET,
+          collections: collections,
+        });
       } catch (e) {
         errorToast('Could not retrieve collections', toast);
       }
@@ -88,11 +136,15 @@ function Dashboard() {
 
   useEventListener('message', handlePongMessage);
 
-  const currentCollection = globalState.currentCollection.get({ noproxy: true });
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
   let panel = <div>Select a Request or Collection</div>;
   if (currentCollection) {
-    panel = <CollectionPanel currentCollection={currentCollection} />;
+    panel = (
+      <CollectionPanel
+        currentCollection={currentCollection}
+        dispatchCurrentCollection={dispatchCurrentCollection}
+        dispatchCollections={dispatchCollections}
+      />
+    );
   }
   if (currentRequest) {
     panel = (
@@ -100,6 +152,7 @@ function Dashboard() {
         <div className={styles.requestPanel}>
           <RequestPanel
             currentRequest={currentRequest}
+            dispatchCurrentRequest={dispatchCurrentRequest}
             isExtInitialized={isExtInitialized}
             extVersion={extVersion}
             openExtModal={onOpen}
@@ -120,7 +173,7 @@ function Dashboard() {
       <div className={styles.allotment}>
         <Allotment defaultSizes={[50, 200]} snap>
           <div className={styles.sidebar}>
-            <Sidebar />
+            <Sidebar collections={sidebarCollections} />
           </div>
           <div className={styles.main}>{panel}</div>
         </Allotment>

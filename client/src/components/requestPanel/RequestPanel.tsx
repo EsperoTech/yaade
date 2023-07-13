@@ -12,7 +12,7 @@ import {
   getEnvVar,
   patchCurrentRequestData,
   setEnvVar,
-  useGlobalState,
+  xxx,
   writeRequestToCollections,
 } from '../../state/GlobalState';
 import {
@@ -88,7 +88,7 @@ function RequestPanel({
     collectionId: -1,
     name: '',
   });
-  const globalState = useGlobalState();
+  const globalState = xxx();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef(null);
   const toast = useToast();

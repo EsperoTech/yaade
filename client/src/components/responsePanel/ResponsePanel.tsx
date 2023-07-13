@@ -16,7 +16,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import React from 'react';
 
 import KVRow from '../../model/KVRow';
-import { useGlobalState } from '../../state/GlobalState';
+import { xxx } from '../../state/GlobalState';
 import { cn, successToast } from '../../utils';
 import { json } from '../../utils/codemirror/lang-json';
 import KVEditor from '../kvEditor';
@@ -41,7 +41,7 @@ const getContentType = (headers: Array<KVRow>) =>
   headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
 function ResponsePanel() {
-  const globalState = useGlobalState();
+  const globalState = xxx();
   const currentRequest = globalState.currentRequest.get({ noproxy: true });
   const response = currentRequest?.data.response;
   const { colorMode } = useColorMode();

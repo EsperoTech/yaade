@@ -2,13 +2,13 @@ import type { Identifier } from 'dnd-core';
 import { useRef } from 'react';
 import { useDrag, useDrop, XYCoord } from 'react-dnd';
 
-import Collection from '../../model/Collection';
+import Collection, { SidebarCollection } from '../../model/Collection';
 import { DragItem, DragTypes } from '../../utils/dnd';
 import CollectionView from '../collectionView';
 import { RequestDragItem } from '../collectionView/MoveableRequest';
 
 type MoveableCollectionProps = {
-  collection: Collection;
+  collection: SidebarCollection;
   moveCollection: (dragIndex: number, hoverIndex: number) => void;
   index: number;
 };

@@ -119,6 +119,12 @@ function setCurrentRequest(request: Request) {
   state.currentRequest.set(request);
 }
 
+function setCurrentRequestById(requestId: number) {
+  const request = getRequest(requestId);
+  if (!request) return;
+  state.currentRequest.set(request);
+}
+
 function patchCurrentRequestData(patch: any) {
   const cr: State<Request> | undefined = state.currentRequest.ornull;
   cr?.data.merge(patch);
@@ -193,6 +199,30 @@ function setEnvVar(collectionId: number, envName?: string) {
   };
 }
 
+function moveCollection(oldIndex: number, newIndex: number) {
+  const newCollections = state.collections.slice();
+  if (
+    oldIndex === newIndex ||
+    oldIndex < 0 ||
+    newIndex < 0 ||
+    oldIndex >= newCollections.length ||
+    newIndex >= newCollections.length
+  ) {
+    console.error('Invalid moveCollection call');
+    return;
+  }
+  const [item] = newCollections.splice(oldIndex, 1);
+  newCollections.splice(newIndex, 0, item);
+}
+
+function getCollection(collectionId: number): Collection | undefined {
+  return state.collections
+    .find((c) => c.id.get() === collectionId)
+    ?.get({
+      noproxy: true,
+    });
+}
+
 function collapseAllCollections() {
   state.collections.map((c) => {
     c.open.set(false);
@@ -205,17 +235,19 @@ export {
   getEnv,
   getEnvVar,
   getRequest,
+  moveCollection,
   patchCurrentCollectionData,
   patchCurrentRequestData,
   removeCollection,
   removeRequest,
   saveCollection,
   setCurrentRequest,
+  setCurrentRequestById,
   setEnvVar,
   writeCurrentCollectionData as writeCollectionData,
   writeRequestToCollections,
 };
 
-export function useGlobalState() {
+export function xxx() {
   return useHookstate(state);
 }

@@ -19,11 +19,11 @@ import {
 import { useContext, useRef, useState } from 'react';
 
 import { UserContext } from '../../context';
-import Collection from '../../model/Collection';
+import Collection, { SidebarCollection } from '../../model/Collection';
 import {
   collapseAllCollections,
   saveCollection,
-  useGlobalState,
+  xxx,
 } from '../../state/GlobalState';
 import { BASE_PATH, cn, errorToast, groupsArrayToStr, successToast } from '../../utils';
 import BasicModal from '../basicModal';
@@ -41,7 +41,11 @@ type StateProps = {
   selectedImport: string;
 };
 
-function Sidebar() {
+type SidebarProps = {
+  collections: SidebarCollection[];
+};
+
+function Sidebar({ collections }: SidebarProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -56,12 +60,9 @@ function Sidebar() {
   });
   const { colorMode } = useColorMode();
   const initialRef = useRef(null);
-  const globalState = useGlobalState();
-
-  const collections = globalState.collections.get({ noproxy: true });
 
   const filteredCollections = collections.filter((c) =>
-    c.data.name.toLowerCase().includes(state.searchTerm.toLowerCase()),
+    c.name.toLowerCase().includes(state.searchTerm.toLowerCase()),
   );
 
   function onCloseClear() {

@@ -26,16 +26,17 @@ import { VscEllipsis } from 'react-icons/vsc';
 import { useNavigate } from 'react-router-dom';
 
 import { UserContext } from '../../context';
-import Collection from '../../model/Collection';
+import Collection, { SidebarCollection } from '../../model/Collection';
 import Request from '../../model/Request';
 import {
   getRequest,
   removeCollection,
   removeRequest,
   saveCollection,
-  useGlobalState,
+  setCurrentRequestById,
   writeCollectionData,
   writeRequestToCollections,
+  xxx,
 } from '../../state/GlobalState';
 import { BASE_PATH, errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
@@ -46,7 +47,7 @@ import styles from './CollectionView.module.css';
 import MoveableRequest, { RequestDragItem } from './MoveableRequest';
 
 type CollectionProps = {
-  collection: Collection;
+  collection: SidebarCollection;
 };
 
 type CollectionState = {
@@ -59,22 +60,18 @@ type CollectionState = {
 
 function CollectionView({ collection }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
-    name: collection.data.name,
-    groups: collection.data?.groups ?? [],
+    name: collection.name,
+    groups: collection.groups ?? [],
     newGroup: '',
     newRequestName: '',
     currentModal: '',
   });
-  const globalState = useGlobalState();
   const initialRef = useRef(null);
   const ref = useRef<HTMLDivElement>(null);
   const { colorMode } = useColorMode();
-  const headerVariants =
-    globalState.currentCollection.value?.id === collection.id ? ['selected'] : [];
+  const headerVariants = collection.selected ? ['selected'] : [];
   const iconVariants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
-  const currentCollection = globalState.currentCollection.get({ noproxy: true });
   const { user } = useContext(UserContext);
   const toast = useToast();
   const { onCopy } = useClipboard(`${window.location.origin}/#/${collection.id}`);
@@ -103,7 +100,7 @@ function CollectionView({ collection }: CollectionProps) {
       const newRequest = (await response.json()) as Request;
 
       writeRequestToCollections(newRequest);
-      globalState.currentRequest.set(newRequest);
+      setCurrentRequestById(newRequest.id);
       onCloseClear();
       successToast('A new request was created.', toast);
     } catch (e) {
@@ -112,44 +109,44 @@ function CollectionView({ collection }: CollectionProps) {
     }
   }
 
-  async function handleEditCollectionClick() {
-    try {
-      const response = await fetch(BASE_PATH + 'api/collection', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...collection,
-          data: {
-            ...collection.data,
-            name: state.name,
-            groups: state.groups,
-          },
-        }),
-      });
-      if (response.status !== 200) throw new Error();
+  // async function handleEditCollectionClick() {
+  //   try {
+  //     const response = await fetch(BASE_PATH + 'api/collection', {
+  //       method: 'PUT',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         ...collection,
+  //         data: {
+  //           ...collection.data,
+  //           name: state.name,
+  //           groups: state.groups,
+  //         },
+  //       }),
+  //     });
+  //     if (response.status !== 200) throw new Error();
 
-      saveCollection({
-        ...collection,
-        data: {
-          ...collection.data,
-          name: state.name,
-          groups: state.groups,
-        },
-      });
-      onClose();
-      successToast('Collection was changed.', toast);
-    } catch (e) {
-      console.log(e, state);
-      errorToast('The collection could not be changed.', toast);
-    }
-  }
+  //     saveCollection({
+  //       ...collection,
+  //       data: {
+  //         ...collection.data,
+  //         name: state.name,
+  //         groups: state.groups,
+  //       },
+  //     });
+  //     onClose();
+  //     successToast('Collection was changed.', toast);
+  //   } catch (e) {
+  //     console.log(e, state);
+  //     errorToast('The collection could not be changed.', toast);
+  //   }
+  // }
 
   function saveOnClose() {
-    if (currentRequest && globalState.requestChanged.value && currentRequest?.id !== -1) {
+    if (shouldSaveRequestOnClose) {
       handleSaveRequest(currentRequest);
-    } else if (currentCollection && globalState.collectionChanged.value) {
+    } else if (shouldSaveCollectionOnClose) {
       handleSaveCollection(currentCollection);
     }
     globalState.currentRequest.set(undefined);
