@@ -12,7 +12,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useEventListener } from 'usehooks-ts';
 
@@ -52,7 +52,24 @@ function Dashboard() {
     currentCollectionReducer,
     undefined,
   );
-  const isRequestPanelOpen = currentRequest !== undefined;
+  // TODO: potentially wrap in useRef - this will prevent unnecessary rerenders
+  const saveCurrentCollection = useCallback(() => {
+    if (!currentCollection || !currentCollection.isChanged || currentCollection.id === -1)
+      return;
+    dispatchCollections({
+      type: CollectionsActionType.WRITE_CURRENT_COLLECTION,
+      collection: currentCollection,
+    });
+    dispatchCurrentCollection({
+      type: CurrentCollectionActionType.SET_IS_CHANGED,
+      isChanged: false,
+    });
+    dispatchCurrentRequest({
+      type: CurrentRequestActionType.UNSET,
+    });
+  }, [currentCollection]);
+  const shouldSaveRequestOnClose =
+    currentRequest && currentRequest.isChanged && currentRequest.id !== -1;
   const location = useLocation();
   const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
   const isExtInitialized = useRef(_isExtInitialized);
@@ -134,6 +151,76 @@ function Dashboard() {
     }
   };
 
+  async function handleSaveRequest(request: Request) {
+    try {
+      const response = await fetch(BASE_PATH + 'api/request', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+      if (response.status !== 200) throw new Error();
+      writeRequestToCollections(request);
+      globalState.requestChanged.set(false);
+    } catch (e) {
+      errorToast('Could not save request', toast);
+    }
+  }
+
+  async function handleSaveCollection(collection: Collection) {
+    try {
+      const response = await fetch(BASE_PATH + 'api/collection', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(collection),
+      });
+      if (response.status !== 200) throw new Error();
+
+      writeCollectionData(collection.id, collection.data);
+      globalState.collectionChanged.set(false);
+      successToast('Collection was saved.', toast);
+    } catch (e) {
+      errorToast('The collection could not be saved.', toast);
+    }
+  }
+
+  function saveOnClose() {
+    if (currentRequest && globalState.requestChanged.value && currentRequest?.id !== -1) {
+      handleSaveRequest(currentRequest);
+    } else if (currentCollection && globalState.collectionChanged.value) {
+      handleSaveCollection(currentCollection);
+    }
+    globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
+    globalState.currentCollection.set(undefined);
+    globalState.requestChanged.set(false);
+    globalState.collectionChanged.set(false);
+  }
+
+  function handleRequestClick() {
+    console.log(globalState.collections.get({ noproxy: true }));
+    navigate(`/${request.collectionId}/${request.id}`);
+    if (currentRequest?.id === request.id) return;
+    if (user?.data?.settings?.saveOnClose) {
+      saveOnClose();
+    } else if (
+      currentRequest &&
+      globalState.requestChanged.value &&
+      currentRequest?.id !== -1
+    ) {
+      setState({ ...state, currentModal: 'save-request' });
+      onOpen();
+    } else if (currentCollection && globalState.collectionChanged.value) {
+      setState({ ...state, currentModal: 'save-collection' });
+      onOpen();
+    } else {
+      globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
+      globalState.currentCollection.set(undefined);
+    }
+  }
+
   useEventListener('message', handlePongMessage);
 
   let panel = <div>Select a Request or Collection</div>;
@@ -164,6 +251,61 @@ function Dashboard() {
       </Allotment>
     );
   }
+
+  const requestNotSavedModal = (
+    <BasicModal
+      isOpen={isOpen}
+      initialRef={undefined}
+      onClose={onCloseClear}
+      heading={`Request not saved`}
+      onClick={() => {
+        saveOnClose();
+        onCloseClear();
+      }}
+      buttonText="Save"
+      buttonColor="green"
+      isButtonDisabled={false}
+      secondaryButtonText="Discard"
+      onSecondaryButtonClick={() => {
+        globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
+        globalState.requestChanged.set(false);
+        onCloseClear();
+      }}
+    >
+      The request has unsaved changes which will be lost if you choose to change the tab
+      now.
+      <br />
+      Do you want to save the changes now?
+    </BasicModal>
+  );
+
+  const collectionNotSavedModal = (
+    <BasicModal
+      isOpen={isOpen}
+      initialRef={undefined}
+      onClose={onCloseClear}
+      heading={`Collection not saved`}
+      onClick={() => {
+        saveOnClose();
+        onCloseClear();
+      }}
+      buttonText="Save"
+      buttonColor="green"
+      isButtonDisabled={false}
+      secondaryButtonText="Discard"
+      onSecondaryButtonClick={() => {
+        globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
+        globalState.currentCollection.set(undefined);
+        globalState.collectionChanged.set(false);
+        onCloseClear();
+      }}
+    >
+      The collection has unsaved changes which will be lost if you choose to change the
+      tab now.
+      <br />
+      Do you want to save the changes now?
+    </BasicModal>
+  );
 
   return (
     <div className={styles.parent}>

@@ -20,11 +20,7 @@ import { useContext, useRef, useState } from 'react';
 
 import { UserContext } from '../../context';
 import Collection, { SidebarCollection } from '../../model/Collection';
-import {
-  collapseAllCollections,
-  saveCollection,
-  xxx,
-} from '../../state/GlobalState';
+import { collapseAllCollections, saveCollection } from '../../state/GlobalState';
 import { BASE_PATH, cn, errorToast, groupsArrayToStr, successToast } from '../../utils';
 import BasicModal from '../basicModal';
 import Collections from '../collections';

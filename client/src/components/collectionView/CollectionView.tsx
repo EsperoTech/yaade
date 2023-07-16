@@ -48,6 +48,9 @@ import MoveableRequest, { RequestDragItem } from './MoveableRequest';
 
 type CollectionProps = {
   collection: SidebarCollection;
+  panelState: 'request' | 'collection' | 'default-request';
+  saveCurrentCollection: () => void;
+  saveCurrentRequest: () => void;
 };
 
 type CollectionState = {
@@ -58,7 +61,12 @@ type CollectionState = {
   currentModal: string;
 };
 
-function CollectionView({ collection }: CollectionProps) {
+function CollectionView({
+  collection,
+  panelState,
+  saveCurrentCollection: writeCurrentCollection,
+  saveCurrentRequest: writeCurrentRequest,
+}: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
     name: collection.name,
     groups: collection.groups ?? [],
@@ -144,15 +152,11 @@ function CollectionView({ collection }: CollectionProps) {
   // }
 
   function saveOnClose() {
-    if (shouldSaveRequestOnClose) {
+    if (panelState === 'request') {
       handleSaveRequest(currentRequest);
-    } else if (shouldSaveCollectionOnClose) {
+    } else if (panelState === 'collection') {
       handleSaveCollection(currentCollection);
     }
-    globalState.currentRequest.set(undefined);
-    globalState.currentCollection.set(JSON.parse(JSON.stringify(collection)));
-    globalState.requestChanged.set(false);
-    globalState.collectionChanged.set(false);
   }
 
   function handleCollectionClick() {

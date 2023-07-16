@@ -8,6 +8,7 @@ const defaultCurrentCollection: CurrentCollection | undefined = {
 
 enum CurrentCollectionActionType {
   SET = 'SET',
+  UNSET = 'UNSET',
   SET_NAME = 'SET_NAME',
   SET_IS_CHANGED = 'SET_IS_CHANGED',
   SET_DESCRIPTION = 'SET_DESCRIPTION',
@@ -17,6 +18,10 @@ enum CurrentCollectionActionType {
 type SetAction = {
   type: CurrentCollectionActionType.SET;
   collection: Collection;
+};
+
+type UnsetAction = {
+  type: CurrentCollectionActionType.UNSET;
 };
 
 type SetNameAction = {
@@ -39,12 +44,16 @@ type SetEnvsAction = {
   envs: any;
 };
 
-function set(collection: Collection) {
+function set(collection: Collection): CurrentCollection {
   return {
     id: collection.id,
     data: collection.data,
     isChanged: false,
   };
+}
+
+function unset(): undefined {
+  return undefined;
 }
 
 function setData(
@@ -96,6 +105,7 @@ function setEnvs(
 
 type CurrentCollectionAction =
   | SetAction
+  | UnsetAction
   | SetNameAction
   | SetIsChangedAction
   | SetDescriptionAction
@@ -108,6 +118,8 @@ function currentCollectionReducer(
   switch (action.type) {
     case CurrentCollectionActionType.SET:
       return set(action.collection);
+    case CurrentCollectionActionType.UNSET:
+      return unset();
     case CurrentCollectionActionType.SET_NAME:
       return setName(state, action.name);
     case CurrentCollectionActionType.SET_IS_CHANGED:

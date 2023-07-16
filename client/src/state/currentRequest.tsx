@@ -29,15 +29,26 @@ const defaultCurrentRequest: CurrentRequest | undefined = {
 
 enum CurrentRequestActionType {
   SET = 'SET',
+  UNSET = 'UNSET',
   SET_NAME = 'SET_NAME',
 }
 
-type SetCurrentRequestAction = {
+type SetAction = {
   type: CurrentRequestActionType.SET;
   request: Request;
 };
 
-function setCurrentRequest(request: Request) {
+type UnsetAction = {
+  type: CurrentRequestActionType.UNSET;
+};
+
+type SetNameAction = {
+  type: CurrentRequestActionType.SET_NAME;
+  name: string;
+};
+
+function set(request: Request | undefined): CurrentRequest | undefined {
+  if (!request) return request;
   return {
     id: request.id,
     collectionId: request.collectionId,
@@ -49,10 +60,9 @@ function setCurrentRequest(request: Request) {
   };
 }
 
-type SetCurrentRequestNameAction = {
-  type: CurrentRequestActionType.SET_NAME;
-  name: string;
-};
+function unset(): undefined {
+  return undefined;
+}
 
 function setCurrentRequestName(state: CurrentRequest | undefined, name: string) {
   if (!state) return state;
@@ -66,7 +76,7 @@ function setCurrentRequestName(state: CurrentRequest | undefined, name: string) 
   };
 }
 
-type CurrentRequestAction = SetCurrentRequestAction | SetCurrentRequestNameAction;
+type CurrentRequestAction = SetAction | UnsetAction | SetNameAction;
 
 function currentRequestReducer(
   state: CurrentRequest | undefined = defaultCurrentRequest,
@@ -74,7 +84,9 @@ function currentRequestReducer(
 ) {
   switch (action.type) {
     case CurrentRequestActionType.SET:
-      return setCurrentRequest(action.request);
+      return set(action.request);
+    case CurrentRequestActionType.UNSET:
+      return unset();
     case CurrentRequestActionType.SET_NAME:
       return setCurrentRequestName(state, action.name);
     default:
