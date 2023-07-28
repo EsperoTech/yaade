@@ -33,7 +33,6 @@ type EnvironmentModalProps = {
   collectionId: number;
   envs: Record<string, Environment>;
   setEnvs: (envs: Record<string, Environment>) => void;
-  markCollectionChanged: () => void;
 };
 
 type Secret = {
@@ -67,7 +66,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   collectionId,
   envs,
   setEnvs,
-  markCollectionChanged,
 }) => {
   const [state, setState] = useState<EnvironmentTabState>({
     modalState: 'default',
@@ -106,7 +104,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   function getEnvOrDefault(name?: string): Environment {
-    console.log('getEnvOrDefault', name, collectionId);
     if (!name) return DEFAULT_ENV;
     return envs[name] ?? DEFAULT_ENV;
   }
@@ -142,7 +139,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   if (!state.selectedEnvName) {
-    console.log('setDefaultEnv');
     setDefaultEnv();
   }
 
@@ -257,7 +253,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
         data,
       },
     });
-    markCollectionChanged();
   }
 
   function setProxy(proxy: string) {
@@ -270,7 +265,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
         proxy,
       },
     });
-    markCollectionChanged();
   }
 
   // async function handleSaveClicked() {

@@ -1,11 +1,4 @@
-import {
-  AddIcon,
-  ChevronRightIcon,
-  DeleteIcon,
-  DragHandleIcon,
-  EditIcon,
-  LinkIcon,
-} from '@chakra-ui/icons';
+import { AddIcon, ChevronRightIcon, DeleteIcon, LinkIcon } from '@chakra-ui/icons';
 import {
   Heading,
   IconButton,
@@ -20,65 +13,62 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import type { Identifier } from 'dnd-core';
-import { useCallback, useContext, useRef, useState } from 'react';
+import { Dispatch, useCallback, useContext, useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
 import { VscEllipsis } from 'react-icons/vsc';
-import { useNavigate } from 'react-router-dom';
 
-import { UserContext } from '../../context';
-import Collection from '../../model/Collection';
-import Request from '../../model/Request';
-import {
-  getRequest,
-  removeCollection,
-  removeRequest,
-  saveCollection,
-  useGlobalState,
-  writeCollectionData,
-  writeRequestToCollections,
-} from '../../state/GlobalState';
-import { BASE_PATH, errorToast, successToast } from '../../utils';
+import api from '../../api';
+import { SidebarCollection } from '../../model/Collection';
+import Request, { SidebarRequest } from '../../model/Request';
+import { CollectionsAction, CollectionsActionType } from '../../state/collections';
+import { errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
 import { DragTypes } from '../../utils/dnd';
 import BasicModal from '../basicModal';
-import GroupsInput from '../groupsInput';
 import styles from './CollectionView.module.css';
 import MoveableRequest, { RequestDragItem } from './MoveableRequest';
 
 type CollectionProps = {
-  collection: Collection;
+  collection: SidebarCollection;
+  currentCollectionId?: number;
+  currentRequstId?: number;
+  selectCollection: any;
+  selectRequest: any;
+  renameRequest: (id: number, newName: string) => void;
+  deleteRequest: (id: number) => void;
+  dispatchCollections: Dispatch<CollectionsAction>;
 };
 
 type CollectionState = {
   name: string;
-  groups: Array<string>;
-  newGroup: string;
   newRequestName: string;
   currentModal: string;
 };
 
-function CollectionView({ collection }: CollectionProps) {
+function CollectionView({
+  collection,
+  currentRequstId,
+  currentCollectionId,
+  selectCollection,
+  selectRequest,
+  renameRequest,
+  deleteRequest,
+  dispatchCollections,
+}: CollectionProps) {
+  console.log('render collectionview');
   const [state, setState] = useState<CollectionState>({
-    name: collection.data.name,
-    groups: collection.data?.groups ?? [],
-    newGroup: '',
+    name: collection.name,
     newRequestName: '',
     currentModal: '',
   });
-  const globalState = useGlobalState();
   const initialRef = useRef(null);
   const ref = useRef<HTMLDivElement>(null);
   const { colorMode } = useColorMode();
-  const headerVariants =
-    globalState.currentCollection.value?.id === collection.id ? ['selected'] : [];
+  const headerVariants = currentCollectionId === collection.id ? ['selected'] : [];
   const iconVariants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
-  const currentCollection = globalState.currentCollection.get({ noproxy: true });
-  const { user } = useContext(UserContext);
   const toast = useToast();
   const { onCopy } = useClipboard(`${window.location.origin}/#/${collection.id}`);
-  const navigate = useNavigate();
 
   function handleOnKeyDown(e: any, action: any) {
     if (e.key === 'Enter') {
@@ -88,117 +78,42 @@ function CollectionView({ collection }: CollectionProps) {
 
   async function handleCreateRequestClick() {
     try {
-      const response = await fetch(BASE_PATH + 'api/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: state.newRequestName,
-          collectionId: collection.id,
-          type: 'REST',
-        }),
+      const response = await api.createRequest(collection.id, {
+        name: state.newRequestName,
       });
-
       const newRequest = (await response.json()) as Request;
 
-      writeRequestToCollections(newRequest);
-      globalState.currentRequest.set(newRequest);
+      dispatchCollections({
+        type: CollectionsActionType.ADD_REQUEST,
+        request: newRequest,
+      });
+      selectRequest.current(newRequest.id);
+
       onCloseClear();
       successToast('A new request was created.', toast);
     } catch (e) {
-      console.log(e);
+      console.error(e);
       errorToast('The request could be not created', toast);
     }
   }
 
-  async function handleEditCollectionClick() {
-    try {
-      const response = await fetch(BASE_PATH + 'api/collection', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...collection,
-          data: {
-            ...collection.data,
-            name: state.name,
-            groups: state.groups,
-          },
-        }),
-      });
-      if (response.status !== 200) throw new Error();
-
-      saveCollection({
-        ...collection,
-        data: {
-          ...collection.data,
-          name: state.name,
-          groups: state.groups,
-        },
-      });
-      onClose();
-      successToast('Collection was changed.', toast);
-    } catch (e) {
-      console.log(e, state);
-      errorToast('The collection could not be changed.', toast);
-    }
-  }
-
-  function saveOnClose() {
-    if (currentRequest && globalState.requestChanged.value && currentRequest?.id !== -1) {
-      handleSaveRequest(currentRequest);
-    } else if (currentCollection && globalState.collectionChanged.value) {
-      handleSaveCollection(currentCollection);
-    }
-    globalState.currentRequest.set(undefined);
-    globalState.currentCollection.set(JSON.parse(JSON.stringify(collection)));
-    globalState.requestChanged.set(false);
-    globalState.collectionChanged.set(false);
-  }
-
-  function handleCollectionClick() {
-    saveCollection({
-      ...collection,
-      open: true,
-    });
-    if (currentCollection?.id === collection.id) {
-      return;
-    }
-    navigate(`/${collection.id}`);
-    if (user?.data?.settings?.saveOnClose) {
-      saveOnClose();
-    } else if (
-      currentRequest &&
-      globalState.requestChanged.value &&
-      currentRequest?.id !== -1
-    ) {
-      setState({ ...state, currentModal: 'save-request' });
-      onOpen();
-    } else if (currentCollection && globalState.collectionChanged.value) {
-      setState({ ...state, currentModal: 'save-collection' });
-      onOpen();
-    } else {
-      globalState.currentRequest.set(undefined);
-      globalState.currentCollection.set(JSON.parse(JSON.stringify(collection)));
-    }
-  }
-
   function handleArrowClick() {
-    saveCollection({
-      ...collection,
-      open: !collection.open,
+    dispatchCollections({
+      type: CollectionsActionType.TOGGLE_OPEN_COLLECTION,
+      id: collection.id,
     });
   }
 
   async function handleDeleteCollectionClick() {
     try {
-      const response = await fetch(BASE_PATH + `api/collection/${collection.id}`, {
-        method: 'DELETE',
-      });
+      const response = await api.deleteCollection(collection.id);
       if (response.status !== 200) throw new Error();
-      removeCollection(collection.id);
+
+      dispatchCollections({
+        type: CollectionsActionType.DELETE_COLLECTION,
+        id: collection.id,
+      });
+
       onCloseClear();
       successToast('Collection was deleted.', toast);
     } catch (e) {
@@ -207,49 +122,8 @@ function CollectionView({ collection }: CollectionProps) {
   }
 
   function onCloseClear() {
-    setState({
-      ...state,
-      newRequestName: '',
-      name: collection.data.name,
-      groups: collection.data?.groups ?? [],
-    });
+    setState({ ...state, newRequestName: '' });
     onClose();
-  }
-
-  async function handleSaveRequest(request: Request) {
-    try {
-      const response = await fetch(BASE_PATH + 'api/request', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
-      if (response.status !== 200) throw new Error();
-      writeRequestToCollections(request);
-      globalState.requestChanged.set(false);
-    } catch (e) {
-      errorToast('Could not save request', toast);
-    }
-  }
-
-  async function handleSaveCollection(collection: Collection) {
-    try {
-      const response = await fetch(BASE_PATH + 'api/collection', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(collection),
-      });
-      if (response.status !== 200) throw new Error();
-
-      writeCollectionData(collection.id, collection.data);
-      globalState.collectionChanged.set(false);
-      // successToast('Collection was saved.', toast);
-    } catch (e) {
-      errorToast('The collection could not be saved.', toast);
-    }
   }
 
   // NOTE: Setting to null is a workaround for the modal not updating
@@ -281,51 +155,12 @@ function CollectionView({ collection }: CollectionProps) {
                 />
               </BasicModal>
             );
-          case 'edit':
-            return (
-              <BasicModal
-                isOpen={isOpen}
-                onClose={onCloseClear}
-                initialRef={initialRef}
-                heading={`Edit ${collection.data.name}`}
-                onClick={handleEditCollectionClick}
-                isButtonDisabled={state.name === ''}
-                buttonText="Edit"
-                buttonColor="green"
-              >
-                <Heading as="h6" size="xs" mb="4">
-                  Name
-                </Heading>
-                <Input
-                  placeholder="Name"
-                  w="100%"
-                  borderRadius={20}
-                  colorScheme="green"
-                  value={state.name}
-                  onChange={(e) => setState({ ...state, name: e.target.value })}
-                  ref={initialRef}
-                />
-                <Heading as="h6" size="xs" my="4">
-                  Groups
-                </Heading>
-                <GroupsInput
-                  groups={state.groups}
-                  setGroups={(groups: string[]) =>
-                    setState({
-                      ...state,
-                      groups,
-                    })
-                  }
-                  isRounded
-                />
-              </BasicModal>
-            );
           case 'delete':
             return (
               <BasicModal
                 isOpen={isOpen}
                 onClose={onCloseClear}
-                heading={`Delete "${collection.data.name}"`}
+                heading={`Delete "${collection.name}"`}
                 onClick={handleDeleteCollectionClick}
                 buttonText="Delete"
                 buttonColor="red"
@@ -336,116 +171,39 @@ function CollectionView({ collection }: CollectionProps) {
                 The collection cannot be recovered!
               </BasicModal>
             );
-          case 'save-request':
-            return (
-              <BasicModal
-                isOpen={isOpen}
-                initialRef={undefined}
-                onClose={onCloseClear}
-                heading={`Request not saved`}
-                onClick={() => {
-                  saveOnClose();
-                  onCloseClear();
-                }}
-                buttonText="Save"
-                buttonColor="green"
-                isButtonDisabled={false}
-                secondaryButtonText="Discard"
-                onSecondaryButtonClick={() => {
-                  globalState.currentCollection.set(
-                    JSON.parse(JSON.stringify(collection)),
-                  );
-                  globalState.currentRequest.set(undefined);
-                  globalState.requestChanged.set(false);
-                  onCloseClear();
-                }}
-              >
-                The request has unsaved changes which will be lost if you choose to change
-                the tab now.
-                <br />
-                Do you want to save the changes now?
-              </BasicModal>
-            );
-          case 'save-collection':
-            return (
-              <BasicModal
-                isOpen={isOpen}
-                initialRef={undefined}
-                onClose={onCloseClear}
-                heading={`Collection not saved`}
-                onClick={() => {
-                  saveOnClose();
-                  onCloseClear();
-                }}
-                buttonText="Save"
-                buttonColor="green"
-                isButtonDisabled={false}
-                secondaryButtonText="Discard"
-                onSecondaryButtonClick={() => {
-                  globalState.currentCollection.set(
-                    JSON.parse(JSON.stringify(collection)),
-                  );
-                  globalState.collectionChanged.set(false);
-                  onCloseClear();
-                }}
-              >
-                The collection has unsaved changes which will be lost if you choose to
-                change the tab now.
-                <br />
-                Do you want to save the changes now?
-              </BasicModal>
-            );
         }
       })(state.currentModal);
 
-  const fetchMoveRequest = useCallback(
+  const moveRequest = useCallback(
     async (id: number, newRank?: number, newCollectionId?: number) => {
       try {
-        const res = await fetch(BASE_PATH + `api/request/${id}/move`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        // move inside the same collection
+        if (!newCollectionId && newRank !== undefined) {
+          dispatchCollections({
+            type: CollectionsActionType.MOVE_REQUEST,
+            id,
             newRank,
+          });
+          const response = await api.moveRequest(id, newRank);
+          if (response.status !== 200) throw new Error();
+        } else {
+          if (!newCollectionId) throw new Error('newCollectionId is undefined');
+          dispatchCollections({
+            type: CollectionsActionType.CHANGE_REQUEST_COLLECTION,
+            id,
             newCollectionId,
-          }),
-        });
-        if (res.status !== 200) throw new Error();
-        successToast('Request was moved.', toast);
+          });
+          const res = await api.changeRequestCollection(id, newCollectionId);
+          if (res.status !== 200) throw new Error();
+
+          successToast('Request was moved.', toast);
+        }
       } catch (e) {
+        console.error(e);
         errorToast('Could not move request.', toast);
       }
     },
-    [toast],
-  );
-
-  const moveRequest = useCallback(
-    async (id: number, newRank?: number, newCollectionId?: number) => {
-      // move inside the same collection
-      if (!newCollectionId && newRank !== undefined) {
-        const newRequests = collection.requests.slice();
-        const currentRank = newRequests.findIndex((r) => r.id === id);
-        if (currentRank === -1) return;
-        const [item] = newRequests.splice(currentRank, 1);
-        newRequests.splice(newRank, 0, item);
-        const newCollection = {
-          ...collection,
-          requests: newRequests,
-        };
-        saveCollection(newCollection);
-        fetchMoveRequest(id, newRank);
-        return;
-      }
-      // move to another collection
-      const request = getRequest(id);
-      if (!request || !newCollectionId) return;
-      const newRequest = { ...request, collectionId: newCollectionId };
-      removeRequest(request);
-      writeRequestToCollections(newRequest);
-      fetchMoveRequest(id, 0, newCollectionId);
-    },
-    [collection, fetchMoveRequest],
+    [dispatchCollections, toast],
   );
 
   const [{ handlerId, hovered }, drop] = useDrop<
@@ -483,17 +241,29 @@ function CollectionView({ collection }: CollectionProps) {
   drop(ref);
 
   const renderRequest = useCallback(
-    (request: Request, index: number) => {
+    (request: SidebarRequest, index: number) => {
       return (
         <MoveableRequest
           key={request.id}
           request={request}
           index={index}
           moveRequest={moveRequest}
+          selected={currentRequstId === request.id}
+          selectRequest={selectRequest}
+          renameRequest={renameRequest}
+          deleteRequest={deleteRequest}
+          dispatchCollections={dispatchCollections}
         />
       );
     },
-    [moveRequest],
+    [
+      currentRequstId,
+      deleteRequest,
+      dispatchCollections,
+      moveRequest,
+      renameRequest,
+      selectRequest,
+    ],
   );
 
   return (
@@ -511,12 +281,12 @@ function CollectionView({ collection }: CollectionProps) {
         />
         <div
           className={styles.wrapper}
-          onClick={handleCollectionClick}
+          onClick={() => selectCollection.current(collection.id)}
           onKeyDown={(e) => handleOnKeyDown(e, handleArrowClick)}
           role="button"
           tabIndex={0}
         >
-          <span className={styles.name}>{collection.data.name}</span>
+          <span className={styles.name}>{collection.name}</span>
           <span className={styles.actionIcon}>
             <Menu>
               {({ isOpen }) => (
@@ -547,16 +317,6 @@ function CollectionView({ collection }: CollectionProps) {
                       New Request
                     </MenuItem>
                     <MenuItem
-                      icon={<EditIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setState({ ...state, currentModal: 'edit' });
-                        onOpen();
-                      }}
-                    >
-                      Edit
-                    </MenuItem>
-                    <MenuItem
                       icon={<LinkIcon />}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -583,9 +343,11 @@ function CollectionView({ collection }: CollectionProps) {
           </span>
         </div>
       </div>
-      <div className={cn(styles, 'requests', [...iconVariants, colorMode])}>
-        {collection.requests?.map((request, i) => renderRequest(request, i))}
-      </div>
+      {collection.open && (
+        <div className={cn(styles, 'requests', [...iconVariants, colorMode])}>
+          {collection.requests?.map((request, i) => renderRequest(request, i))}
+        </div>
+      )}
       {currentModal}
     </div>
   );
