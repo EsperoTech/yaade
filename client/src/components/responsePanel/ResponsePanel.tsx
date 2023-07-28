@@ -16,7 +16,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import React from 'react';
 
 import KVRow from '../../model/KVRow';
-import { xxx } from '../../state/GlobalState';
+import Response from '../../model/Response';
 import { cn, successToast } from '../../utils';
 import { json } from '../../utils/codemirror/lang-json';
 import KVEditor from '../kvEditor';
@@ -37,13 +37,14 @@ function getExtensions(contentType: string): Array<any> {
   return extensions;
 }
 
+type ResponsePanelProps = {
+  response: Response | undefined;
+};
+
 const getContentType = (headers: Array<KVRow>) =>
   headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
-function ResponsePanel() {
-  const globalState = xxx();
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
-  const response = currentRequest?.data.response;
+function ResponsePanel({ response }: ResponsePanelProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
   const { onCopy } = useClipboard(response?.body ?? '');
@@ -120,4 +121,4 @@ function ResponsePanel() {
   );
 }
 
-export default React.memo(ResponsePanel);
+export default ResponsePanel;

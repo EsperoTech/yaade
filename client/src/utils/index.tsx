@@ -1,10 +1,13 @@
 import beautify from 'beautify';
 import { Location } from 'react-router-dom';
 
+import Collection, { SidebarCollection } from '../model/Collection';
 import KVRow from '../model/KVRow';
+import Request, { CurrentRequest } from '../model/Request';
 import { parseResponse } from './parseResponseEvent';
 
-const BASE_PATH = import.meta.env.BASE_URL;
+// const BASE_PATH = import.meta.env.BASE_URL;
+const BASE_PATH = 'HTTP://localhost:9337/';
 
 function cn(styles: any, name: string, variants: Array<string>): string {
   const variantCns = variants.map((v) => styles[`${name}--${v}`]).join(' ');
@@ -147,12 +150,39 @@ function createMessageId(requestId: number): string {
   return `${requestId}_${Date.now()}`;
 }
 
+function currentRequestToRequest(currentRequest: CurrentRequest): Request {
+  return {
+    id: currentRequest.id,
+    collectionId: currentRequest.collectionId,
+    type: currentRequest.type,
+    version: currentRequest.version,
+    data: { ...currentRequest.data },
+  };
+}
+
+function mapCollectionToSidebarCollection(collection: Collection): SidebarCollection {
+  return {
+    id: collection.id,
+    name: collection.data.name,
+    open: collection.open,
+    selected: false,
+    groups: collection.data.groups,
+    requests: collection.requests?.map((r) => ({
+      id: r.id,
+      collectionId: r.collectionId,
+      name: r.data.name,
+      method: r.data.method,
+    })),
+  };
+}
+
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
   beautifyBody,
   cn,
   createMessageId,
+  currentRequestToRequest,
   errorToast,
   getMethodColor,
   getMinorVersion,
@@ -160,6 +190,7 @@ export {
   groupsArrayToStr,
   groupsStrToArray,
   kvRowsToMap,
+  mapCollectionToSidebarCollection,
   mapToKvRows,
   parseLocation,
   parseResponse,

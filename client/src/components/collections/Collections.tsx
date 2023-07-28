@@ -1,37 +1,54 @@
 import { useToast } from '@chakra-ui/react';
-import type { FC } from 'react';
-import { useCallback } from 'react';
-import { DndProvider, useDrag } from 'react-dnd';
+import { Dispatch, useEffect } from 'react';
+import React from 'react';
+import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import Collection, { SidebarCollection } from '../../model/Collection';
-import { moveCollection, xxx } from '../../state/GlobalState';
-import { BASE_PATH, errorToast, successToast } from '../../utils';
-import CollectionView from '../collectionView';
+import api from '../../api';
+import { SidebarCollection } from '../../model/Collection';
+import { CollectionsAction, CollectionsActionType } from '../../state/collections';
+import { errorToast, successToast } from '../../utils';
 import styles from './Collections.module.css';
 import MoveableCollection from './MoveableCollection';
 
 type CollectionsProps = {
   collections: SidebarCollection[];
+  currentCollectionId?: number;
+  currentRequstId?: number;
+  selectCollection: any;
+  selectRequest: (requestId: number) => void;
+  renameRequest: (id: number, newName: string) => void;
+  deleteRequest: (id: number) => void;
+  dispatchCollections: Dispatch<CollectionsAction>;
 };
 
-function Collections({ collections }: CollectionsProps) {
+function Collections({
+  collections,
+  currentCollectionId,
+  currentRequstId,
+  selectCollection,
+  selectRequest,
+  renameRequest,
+  deleteRequest,
+  dispatchCollections,
+}: CollectionsProps) {
   const toast = useToast();
+
+  useEffect(() => {
+    console.log('collections changed');
+  }, [collections]);
+
+  console.log('render collections');
 
   const dragCollection = async (dragIndex: number, hoverIndex: number) => {
     const item = collections[dragIndex];
-    moveCollection(dragIndex, hoverIndex);
+    dispatchCollections({
+      type: CollectionsActionType.MOVE_COLLECTION,
+      id: item.id,
+      newRank: hoverIndex,
+    });
     try {
-      const res = await fetch(BASE_PATH + `api/collection/${item.id}/move`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          newRank: hoverIndex,
-        }),
-      });
-      console.log(res);
+      const res = await api.moveCollection(item.id, hoverIndex);
       if (res.status !== 200) throw new Error();
       successToast('Collection was moved.', toast);
     } catch (e) {
@@ -46,6 +63,13 @@ function Collections({ collections }: CollectionsProps) {
         collection={collection}
         index={index}
         moveCollection={dragCollection}
+        currentCollectionId={currentCollectionId}
+        currentRequstId={currentRequstId}
+        selectCollection={selectCollection}
+        selectRequest={selectRequest}
+        renameRequest={renameRequest}
+        deleteRequest={deleteRequest}
+        dispatchCollections={dispatchCollections}
       />
     );
   };
@@ -61,4 +85,4 @@ function Collections({ collections }: CollectionsProps) {
   );
 }
 
-export default Collections;
+export default React.memo(Collections);

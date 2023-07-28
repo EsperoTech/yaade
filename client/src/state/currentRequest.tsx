@@ -30,7 +30,9 @@ const defaultCurrentRequest: CurrentRequest | undefined = {
 enum CurrentRequestActionType {
   SET = 'SET',
   UNSET = 'UNSET',
-  SET_NAME = 'SET_NAME',
+  PATCH_DATA = 'PATCH_DATA',
+  SET_IS_LOADING = 'SET_IS_LOADING',
+  SET_IS_CHANGED = 'SET_IS_CHANGED',
 }
 
 type SetAction = {
@@ -42,13 +44,22 @@ type UnsetAction = {
   type: CurrentRequestActionType.UNSET;
 };
 
-type SetNameAction = {
-  type: CurrentRequestActionType.SET_NAME;
-  name: string;
+type PatchDataAction = {
+  type: CurrentRequestActionType.PATCH_DATA;
+  data: any;
 };
 
-function set(request: Request | undefined): CurrentRequest | undefined {
-  if (!request) return request;
+type SetIsLoadingAction = {
+  type: CurrentRequestActionType.SET_IS_LOADING;
+  isLoading: boolean;
+};
+
+type SetIsChangedAction = {
+  type: CurrentRequestActionType.SET_IS_CHANGED;
+  isChanged: boolean;
+};
+
+function set(request: Request): CurrentRequest {
   return {
     id: request.id,
     collectionId: request.collectionId,
@@ -64,19 +75,40 @@ function unset(): undefined {
   return undefined;
 }
 
-function setCurrentRequestName(state: CurrentRequest | undefined, name: string) {
+function patchData(state: CurrentRequest | undefined, data: any) {
   if (!state) return state;
   return {
     ...state,
     data: {
       ...state.data,
-      name: name,
+      ...data,
     },
     isChanged: true,
   };
 }
 
-type CurrentRequestAction = SetAction | UnsetAction | SetNameAction;
+function setIsLoading(state: CurrentRequest | undefined, isLoading: boolean) {
+  if (!state) return state;
+  return {
+    ...state,
+    isLoading,
+  };
+}
+
+function setIsChanged(state: CurrentRequest | undefined, isChanged: boolean) {
+  if (!state) return state;
+  return {
+    ...state,
+    isChanged,
+  };
+}
+
+type CurrentRequestAction =
+  | SetAction
+  | UnsetAction
+  | PatchDataAction
+  | SetIsLoadingAction
+  | SetIsChangedAction;
 
 function currentRequestReducer(
   state: CurrentRequest | undefined = defaultCurrentRequest,
@@ -87,8 +119,12 @@ function currentRequestReducer(
       return set(action.request);
     case CurrentRequestActionType.UNSET:
       return unset();
-    case CurrentRequestActionType.SET_NAME:
-      return setCurrentRequestName(state, action.name);
+    case CurrentRequestActionType.PATCH_DATA:
+      return patchData(state, action.data);
+    case CurrentRequestActionType.SET_IS_LOADING:
+      return setIsLoading(state, action.isLoading);
+    case CurrentRequestActionType.SET_IS_CHANGED:
+      return setIsChanged(state, action.isChanged);
     default:
       console.error('Invalid action type');
       return state;

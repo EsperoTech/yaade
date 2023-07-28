@@ -2,6 +2,8 @@ import Collection, { CurrentCollection } from '../model/Collection';
 
 const defaultCurrentCollection: CurrentCollection | undefined = {
   id: -1,
+  ownerId: -1,
+  version: '1.0.0',
   data: {},
   isChanged: false,
 };
@@ -9,10 +11,8 @@ const defaultCurrentCollection: CurrentCollection | undefined = {
 enum CurrentCollectionActionType {
   SET = 'SET',
   UNSET = 'UNSET',
-  SET_NAME = 'SET_NAME',
   SET_IS_CHANGED = 'SET_IS_CHANGED',
-  SET_DESCRIPTION = 'SET_DESCRIPTION',
-  SET_ENVS = 'SET_ENVS',
+  PATCH_DATA = 'PATCH_DATA',
 }
 
 type SetAction = {
@@ -24,29 +24,21 @@ type UnsetAction = {
   type: CurrentCollectionActionType.UNSET;
 };
 
-type SetNameAction = {
-  type: CurrentCollectionActionType.SET_NAME;
-  name: string;
-};
-
 type SetIsChangedAction = {
   type: CurrentCollectionActionType.SET_IS_CHANGED;
   isChanged: boolean;
 };
 
-type SetDescriptionAction = {
-  type: CurrentCollectionActionType.SET_DESCRIPTION;
-  description: string;
-};
-
-type SetEnvsAction = {
-  type: CurrentCollectionActionType.SET_ENVS;
-  envs: any;
+type PatchDataAction = {
+  type: CurrentCollectionActionType.PATCH_DATA;
+  data: any;
 };
 
 function set(collection: Collection): CurrentCollection {
   return {
     id: collection.id,
+    ownerId: collection.ownerId,
+    version: collection.version,
     data: collection.data,
     isChanged: false,
   };
@@ -56,10 +48,15 @@ function unset(): undefined {
   return undefined;
 }
 
-function setData(
-  state: CurrentCollection | undefined,
-  data: any,
-): CurrentCollection | undefined {
+function setIsChanged(state: CurrentCollection | undefined, isChanged: boolean) {
+  if (!state) return state;
+  return {
+    ...state,
+    isChanged,
+  };
+}
+
+function patchData(state: CurrentCollection | undefined, data: any) {
   if (!state) return state;
   return {
     ...state,
@@ -71,45 +68,11 @@ function setData(
   };
 }
 
-function setName(
-  state: CurrentCollection | undefined,
-  name: string,
-): CurrentCollection | undefined {
-  return setData(state, { name });
-}
-
-function setIsChanged(
-  state: CurrentCollection | undefined,
-  isChanged: boolean,
-): CurrentCollection | undefined {
-  if (!state) return state;
-  return {
-    ...state,
-    isChanged: isChanged,
-  };
-}
-
-function setDescription(
-  state: CurrentCollection | undefined,
-  description: string,
-): CurrentCollection | undefined {
-  return setData(state, { description });
-}
-
-function setEnvs(
-  state: CurrentCollection | undefined,
-  envs: any,
-): CurrentCollection | undefined {
-  return setData(state, { envs });
-}
-
 type CurrentCollectionAction =
   | SetAction
   | UnsetAction
-  | SetNameAction
-  | SetIsChangedAction
-  | SetDescriptionAction
-  | SetEnvsAction;
+  | PatchDataAction
+  | SetIsChangedAction;
 
 function currentCollectionReducer(
   state: CurrentCollection | undefined = defaultCurrentCollection,
@@ -120,16 +83,12 @@ function currentCollectionReducer(
       return set(action.collection);
     case CurrentCollectionActionType.UNSET:
       return unset();
-    case CurrentCollectionActionType.SET_NAME:
-      return setName(state, action.name);
+    case CurrentCollectionActionType.PATCH_DATA:
+      return patchData(state, action.data);
     case CurrentCollectionActionType.SET_IS_CHANGED:
       return setIsChanged(state, action.isChanged);
-    case CurrentCollectionActionType.SET_DESCRIPTION:
-      return setDescription(state, action.description);
-    case CurrentCollectionActionType.SET_ENVS:
-      return setEnvs(state, action.envs);
     default:
-      console.error('Invalid action type');
+      console.error('Invalid action type', action);
       return state;
   }
 }

@@ -1,23 +1,38 @@
 import { border } from '@chakra-ui/react';
 import type { Identifier } from 'dnd-core';
-import { useRef } from 'react';
+import React, { Dispatch, useRef } from 'react';
 import { useDrag, useDrop, XYCoord } from 'react-dnd';
 
-import Request from '../../model/Request';
+import { SidebarRequest } from '../../model/Request';
+import { CollectionsAction } from '../../state/collections';
 import { DragItem, DragTypes } from '../../utils/dnd';
 import CollectionRequest from '../collectionRequest';
 
 type MoveableRequestProps = {
-  request: Request;
+  request: SidebarRequest;
+  selected: boolean;
   moveRequest: (id: number, newRank?: number, newCollectionId?: number) => void;
   index: number;
+  selectRequest: any;
+  renameRequest: (id: number, newName: string) => void;
+  deleteRequest: (id: number) => void;
+  dispatchCollections: Dispatch<CollectionsAction>;
 };
 
 export interface RequestDragItem extends DragItem {
   collectionId: number;
 }
 
-function MoveableRequest({ request, index, moveRequest }: MoveableRequestProps) {
+function MoveableRequest({
+  request,
+  index,
+  selected,
+  moveRequest,
+  selectRequest,
+  renameRequest,
+  deleteRequest,
+  dispatchCollections,
+}: MoveableRequestProps) {
   const id = request.id;
   const ref = useRef<HTMLDivElement>(null);
   const [{ handlerId, hoveredDownwards, hoveredUpwards }, drop] = useDrop<
@@ -91,9 +106,34 @@ function MoveableRequest({ request, index, moveRequest }: MoveableRequestProps) 
   drag(drop(ref));
   return (
     <div ref={ref} style={{ boxShadow, opacity, boxSizing: 'border-box' }}>
-      <CollectionRequest request={request} data-handler-id={handlerId} />
+      <CollectionRequest
+        request={request}
+        data-handler-id={handlerId}
+        selected={selected}
+        selectRequest={selectRequest}
+        dispatchCollections={dispatchCollections}
+        renameRequest={renameRequest}
+        deleteRequest={deleteRequest}
+      />
     </div>
   );
 }
 
-export default MoveableRequest;
+// NOTE: the unnecessary rerender of all requests caused a lot of performance issues.
+export default React.memo(MoveableRequest, (prevProps, nextProps) => {
+  if (prevProps.request.method !== nextProps.request.method) {
+    console.log('MEETHOD', prevProps.request.method, nextProps.request.method);
+  }
+  return (
+    prevProps.selected === nextProps.selected &&
+    prevProps.request.id === nextProps.request.id &&
+    prevProps.request.name === nextProps.request.name &&
+    prevProps.request.collectionId === nextProps.request.collectionId &&
+    prevProps.request.method === nextProps.request.method &&
+    prevProps.index === nextProps.index &&
+    prevProps.deleteRequest === nextProps.deleteRequest &&
+    prevProps.renameRequest === nextProps.renameRequest &&
+    prevProps.selectRequest === nextProps.selectRequest &&
+    prevProps.moveRequest === nextProps.moveRequest
+  );
+});

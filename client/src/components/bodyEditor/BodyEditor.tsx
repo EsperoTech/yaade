@@ -12,7 +12,6 @@ import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
 import React from 'react';
 
-import { xxx } from '../../state/GlobalState';
 import { beautifyBody, errorToast } from '../../utils';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { json } from '../../utils/codemirror/lang-json';
@@ -35,8 +34,6 @@ function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   });
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const globalState = xxx();
-  const collections = globalState.collections.get({ noproxy: true });
   const customHighlight = HighlightStyle.define([
     {
       tag: tags.moduleKeyword,
@@ -123,4 +120,4 @@ function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   );
 }
 
-export default React.memo(BodyEditor);
+export default BodyEditor;

@@ -10,6 +10,7 @@ interface Request {
 
 interface SidebarRequest {
   id: number;
+  collectionId: number;
   name: string;
   method: string;
 }

@@ -12,17 +12,12 @@ import {
 import React from 'react';
 import { VscSave } from 'react-icons/vsc';
 
-import Collection, { CurrentCollection } from '../../model/Collection';
-import { CollectionsAction, CollectionsActionType } from '../../state/Collections';
+import { CurrentCollection } from '../../model/Collection';
+import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import {
   CurrentCollectionAction,
   CurrentCollectionActionType,
 } from '../../state/currentCollection';
-import {
-  patchCurrentCollectionData,
-  writeCollectionData,
-  xxx,
-} from '../../state/GlobalState';
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
 import { useKeyPress } from '../../utils/useKeyPress';
 import styles from './CollectionPanel.module.css';
@@ -40,7 +35,6 @@ export default function CollectionPanel({
   dispatchCurrentCollection,
   dispatchCollections,
 }: CollectionPanelProps) {
-  const globalState = xxx();
   const { colorMode } = useColorMode();
   const toast = useToast();
 
@@ -56,8 +50,9 @@ export default function CollectionPanel({
       if (response.status !== 200) throw new Error();
 
       dispatchCollections({
-        type: CollectionsActionType.WRITE_CURRENT_COLLECTION,
-        collection: currentCollection,
+        type: CollectionsActionType.PATCH_COLLECTION_DATA,
+        id: currentCollection.id,
+        data: currentCollection.data,
       });
       dispatchCurrentCollection({
         type: CurrentCollectionActionType.SET_IS_CHANGED,
@@ -69,28 +64,22 @@ export default function CollectionPanel({
     }
   };
 
-  const markCollectionChanged = () =>
-    dispatchCurrentCollection({
-      type: CurrentCollectionActionType.SET_IS_CHANGED,
-      isChanged: true,
-    });
-
   const setName = (name: string) =>
     dispatchCurrentCollection({
-      type: CurrentCollectionActionType.SET_NAME,
-      name,
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { name },
     });
 
   const setDescription = (description: string) =>
     dispatchCurrentCollection({
-      type: CurrentCollectionActionType.SET_DESCRIPTION,
-      description,
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { description },
     });
 
   const setEnvs = (envs: any) =>
     dispatchCurrentCollection({
-      type: CurrentCollectionActionType.SET_ENVS,
-      envs,
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { envs },
     });
 
   useKeyPress(handleSaveCollection, 's', true);
@@ -111,7 +100,7 @@ export default function CollectionPanel({
           variant="ghost"
           size="sm"
           ml="2"
-          disabled={!globalState.collectionChanged.get()}
+          disabled={!currentCollection.isChanged}
           onClick={handleSaveCollection}
         />
       </div>
@@ -140,7 +129,6 @@ export default function CollectionPanel({
               collectionId={currentCollection.id}
               envs={currentCollection.data.envs}
               setEnvs={setEnvs}
-              markCollectionChanged={markCollectionChanged}
             />
           </TabPanel>
         </TabPanels>

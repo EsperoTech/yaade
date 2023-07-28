@@ -6,6 +6,8 @@ interface Collection {
     [key: string]: any;
   };
   open: boolean;
+  ownerId: number;
+  version: string;
   requests: Array<Request>;
 }
 
@@ -23,6 +25,8 @@ interface CurrentCollection {
   data: {
     [key: string]: any;
   };
+  ownerId: number;
+  version: string;
   isChanged: boolean;
 }
 
