@@ -29,7 +29,6 @@ import api from '../../api';
 import BasicModal from '../../components/basicModal';
 import CollectionPanel from '../../components/collectionPanel';
 import Header from '../../components/header';
-import RequestPanel from '../../components/requestPanel';
 import RequestSender from '../../components/requestPanel/RequestSender';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
@@ -142,6 +141,9 @@ function Dashboard() {
               dispatchCurrentCollection({
                 type: CurrentCollectionActionType.SET,
                 collection: c,
+              });
+              dispatchCurrentRequest({
+                type: CurrentRequestActionType.UNSET,
               });
             }
           }

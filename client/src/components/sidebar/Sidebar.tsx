@@ -1,7 +1,6 @@
 import { AddIcon, HamburgerIcon } from '@chakra-ui/icons';
 import {
   Box,
-  Icon,
   IconButton,
   Input,
   Select,
@@ -10,13 +9,11 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
-  Text,
-  Tooltip,
   useColorMode,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import React, { Dispatch, useContext, useEffect, useRef, useState } from 'react';
+import React, { Dispatch, useContext, useRef, useState } from 'react';
 
 import api from '../../api';
 import { UserContext } from '../../context';

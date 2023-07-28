@@ -97,40 +97,6 @@ function CollectionView({
     }
   }
 
-  // async function handleEditCollectionClick() {
-  //   try {
-  //     const response = await fetch(BASE_PATH + 'api/collection', {
-  //       method: 'PUT',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         ...collection,
-  //         data: {
-  //           ...collection.data,
-  //           name: state.name,
-  //           groups: state.groups,
-  //         },
-  //       }),
-  //     });
-  //     if (response.status !== 200) throw new Error();
-
-  //     saveCollection({
-  //       ...collection,
-  //       data: {
-  //         ...collection.data,
-  //         name: state.name,
-  //         groups: state.groups,
-  //       },
-  //     });
-  //     onClose();
-  //     successToast('Collection was changed.', toast);
-  //   } catch (e) {
-  //     console.log(e, state);
-  //     errorToast('The collection could not be changed.', toast);
-  //   }
-  // }
-
   function handleArrowClick() {
     dispatchCollections({
       type: CollectionsActionType.TOGGLE_OPEN_COLLECTION,
