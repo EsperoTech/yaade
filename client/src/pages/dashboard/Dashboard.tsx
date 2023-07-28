@@ -12,35 +12,103 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { Allotment } from 'allotment';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEventListener } from 'usehooks-ts';
 
+import api from '../../api';
+import BasicModal from '../../components/basicModal';
 import CollectionPanel from '../../components/collectionPanel';
 import Header from '../../components/header';
-import RequestPanel from '../../components/requestPanel';
+import RequestSender from '../../components/requestPanel/RequestSender';
 import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
-import { useGlobalState } from '../../state/GlobalState';
-import { BASE_PATH, errorToast, parseLocation } from '../../utils';
+import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
+import Request from '../../model/Request';
+import {
+  CollectionsActionType,
+  collectionsReducer,
+  defaultCollections,
+} from '../../state/collections';
+import {
+  CurrentCollectionActionType,
+  currentCollectionReducer,
+} from '../../state/currentCollection';
+import {
+  CurrentRequestActionType,
+  currentRequestReducer,
+  defaultCurrentRequest,
+} from '../../state/currentRequest';
+import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
 import styles from './Dashboard.module.css';
 
 function Dashboard() {
-  const globalState = useGlobalState();
+  const [collections, dispatchCollections] = useReducer(
+    collectionsReducer,
+    defaultCollections,
+  );
+  const [currentRequest, dispatchCurrentRequest] = useReducer(
+    currentRequestReducer,
+    defaultCurrentRequest,
+  );
+  const [currentCollection, dispatchCurrentCollection] = useReducer(
+    currentCollectionReducer,
+    undefined,
+  );
+  const [selectedRequestId, setSelectedRequestId] = useState<number | undefined>(
+    undefined,
+  );
+  const [selectedCollectionId, setSelectedCollectionId] = useState<number | undefined>(
+    undefined,
+  );
+  const navigate = useNavigate();
   const location = useLocation();
-  const [_isExtInitialized, _setIsExtInitialized] = useState<boolean>(false);
-  const isExtInitialized = useRef(_isExtInitialized);
+  const isExtInitialized = useRef(false);
   const extVersion = useRef<string | undefined>(undefined);
-  const setIsExtInitialized = (result: boolean) => {
-    _setIsExtInitialized(result);
-    isExtInitialized.current = result;
-  };
   const setExtVersion = (result: string) => {
     extVersion.current = result;
   };
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isSaveReqOpen,
+    onOpen: onSaveReqOpen,
+    onClose: onSaveReqClose,
+  } = useDisclosure();
+  const {
+    isOpen: isSaveCollectionOpen,
+    onOpen: onSaveCollectionOpen,
+    onClose: onSaveCollectionClose,
+  } = useDisclosure();
+  const { user } = useContext(UserContext);
+
   const toast = useToast();
+  //TODO: maybe get rid of this
+  const sidebarCollections: SidebarCollection[] = useMemo(() => {
+    console.log('sidebar collections changed');
+    return collections.map((c) => ({
+      id: c.id,
+      name: c.data.name,
+      open: c.open,
+      selected: false,
+      groups: c.data.groups,
+      requests: c.requests?.map((r) => ({
+        id: r.id,
+        collectionId: r.collectionId,
+        name: r.data.name,
+        method: r.data.method,
+      })),
+    }));
+  }, [collections]);
 
   useEffect(() => {
     if (isExtInitialized.current) return;
@@ -60,16 +128,30 @@ function Dashboard() {
         collections.forEach((c: any) => {
           if (loc.collectionId === c.id) {
             c.open = true;
-            if (c.requests) {
+            if (loc.requestId && c.requests) {
               c.requests.forEach((r: any) => {
                 if (loc.requestId === r.id) {
-                  globalState.currentRequest.set(r);
+                  dispatchCurrentRequest({
+                    type: CurrentRequestActionType.SET,
+                    request: r,
+                  });
                 }
+              });
+            } else {
+              dispatchCurrentCollection({
+                type: CurrentCollectionActionType.SET,
+                collection: c,
+              });
+              dispatchCurrentRequest({
+                type: CurrentRequestActionType.UNSET,
               });
             }
           }
         });
-        globalState.collections.set(collections);
+        dispatchCollections({
+          type: CollectionsActionType.SET,
+          collections: collections,
+        });
       } catch (e) {
         errorToast('Could not retrieve collections', toast);
       }
@@ -80,33 +162,266 @@ function Dashboard() {
   const handlePongMessage = (event: MessageEvent<any>) => {
     if (event.data.type === 'pong') {
       console.log('Extension connected');
-      setIsExtInitialized(true);
+      // setIsExtInitialized(true);
+      isExtInitialized.current = true;
       setExtVersion(event.data.version);
       onClose();
     }
   };
 
+  const dispatchSelectCollection = useCallback(
+    (id: number) => {
+      const collection = collections.find((c) => c.id === id);
+      if (!collection) throw new Error("Collection doesn't exist");
+      navigate(`/${id}`);
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.UNSET,
+      });
+      dispatchCurrentCollection({
+        type: CurrentCollectionActionType.SET,
+        collection: collection,
+      });
+    },
+    [collections, navigate],
+  );
+
+  const dispatchSelectRequest = useCallback(
+    (id: number) => {
+      const request = collections
+        .map((c) => c.requests)
+        .flat()
+        .find((r) => r.id === id);
+      if (!request) throw new Error("Request doesn't exist");
+      navigate(`/${request.collectionId}/${request.id}`);
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.SET,
+        request: request,
+      });
+      dispatchCurrentCollection({
+        type: CurrentCollectionActionType.UNSET,
+      });
+    },
+    [collections, navigate],
+  );
+
+  const updateRequest = useCallback(
+    (request: Request) =>
+      api
+        .updateRequest(request)
+        .then((res) => {
+          if (res.status !== 200) throw new Error();
+          successToast('Request was saved.', toast);
+        })
+        .catch((e) => {
+          console.error(e);
+          errorToast('Could not save request', toast);
+        }),
+    [toast],
+  );
+
+  const updateCollection = useCallback(
+    (collection: Collection | CurrentCollection) =>
+      api
+        .updateCollection(collection)
+        .then((res) => {
+          if (res.status !== 200) throw new Error();
+          successToast('Request was saved.', toast);
+        })
+        .catch((e) => {
+          console.error(e);
+          errorToast('Could not save request', toast);
+        }),
+    [toast],
+  );
+
+  const selectRequest = useCallback(
+    async (id: number) => {
+      try {
+        if (currentRequest?.id === id) return;
+        if (user?.data?.settings?.saveOnClose) {
+          if (currentRequest?.isChanged) {
+            updateRequest(currentRequest);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_REQUEST_DATA,
+              id: currentRequest.id,
+              data: { ...currentRequest.data },
+            });
+          } else if (currentCollection?.isChanged) {
+            updateCollection(currentCollection);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_COLLECTION_DATA,
+              id: currentCollection.id,
+              data: { ...currentCollection.data },
+            });
+          }
+          dispatchSelectRequest(id);
+        } else if (currentRequest?.isChanged && currentRequest?.id !== -1) {
+          setSelectedRequestId(id);
+          onSaveReqOpen();
+        } else if (currentCollection?.isChanged) {
+          setSelectedRequestId(id);
+          onSaveCollectionOpen();
+        } else {
+          dispatchSelectRequest(id);
+        }
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not select request', toast);
+      }
+    },
+    [
+      currentRequest,
+      user?.data?.settings?.saveOnClose,
+      currentCollection,
+      dispatchSelectRequest,
+      updateRequest,
+      updateCollection,
+      onSaveReqOpen,
+      onSaveCollectionOpen,
+      toast,
+    ],
+  );
+
+  const selectRequestRef = useRef(selectRequest);
+
+  useEffect(() => {
+    selectRequestRef.current = selectRequest;
+  }, [selectRequest]);
+
+  const selectCollection = useCallback(
+    async (id: number) => {
+      try {
+        if (currentCollection?.id === id) return;
+        if (user?.data?.settings?.saveOnClose) {
+          if (currentRequest?.isChanged) {
+            updateRequest(currentRequest);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_REQUEST_DATA,
+              id: currentRequest.id,
+              data: { ...currentRequest.data },
+            });
+          } else if (currentCollection?.isChanged) {
+            updateCollection(currentCollection);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_COLLECTION_DATA,
+              id: currentCollection.id,
+              data: { ...currentCollection.data },
+            });
+          }
+          dispatchSelectCollection(id);
+        } else if (currentRequest?.isChanged && currentRequest?.id !== -1) {
+          setSelectedCollectionId(id);
+          onSaveReqOpen();
+        } else if (currentCollection?.isChanged) {
+          setSelectedCollectionId(id);
+          onSaveCollectionOpen();
+        } else {
+          dispatchSelectCollection(id);
+        }
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not select collection', toast);
+      }
+    },
+    [
+      currentCollection,
+      currentRequest,
+      dispatchSelectCollection,
+      onSaveCollectionOpen,
+      onSaveReqOpen,
+      toast,
+      updateCollection,
+      updateRequest,
+      user?.data?.settings?.saveOnClose,
+    ],
+  );
+
+  const selectCollectionRef = useRef(selectCollection);
+
+  useEffect(() => {
+    selectCollectionRef.current = selectCollection;
+  }, [selectCollection]);
+
+  const renameRequest = useCallback(
+    async (id: number, name: string) => {
+      try {
+        const request = collections
+          .map((c) => c.requests)
+          .flat()
+          .find((r) => r.id === id);
+        if (!request) return;
+        const newRequest = { ...request, data: { ...request.data, name: name } };
+        await api.updateRequest(newRequest);
+        dispatchCollections({
+          type: CollectionsActionType.PATCH_REQUEST_DATA,
+          id: id,
+          data: { name: name },
+        });
+        if (currentRequest?.id === id) {
+          dispatchCurrentRequest({
+            type: CurrentRequestActionType.PATCH_DATA,
+            data: { name: name },
+          });
+        }
+        successToast('Request was renamed.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not rename request', toast);
+      }
+    },
+    [collections, currentRequest?.id, toast],
+  );
+  const deleteRequest = useCallback(
+    async (id: number) => {
+      try {
+        await api.deleteRequest(id);
+        dispatchCollections({
+          type: CollectionsActionType.DELETE_REQUEST,
+          id: id,
+        });
+        if (currentRequest?.id === id) {
+          dispatchCurrentRequest({
+            type: CurrentRequestActionType.SET,
+            request: defaultCurrentRequest!!,
+          });
+        }
+        successToast('Request was deleted.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not delete request', toast);
+      }
+    },
+    [currentRequest?.id, toast],
+  );
+
   useEventListener('message', handlePongMessage);
 
-  const currentCollection = globalState.currentCollection.get({ noproxy: true });
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
   let panel = <div>Select a Request or Collection</div>;
   if (currentCollection) {
-    panel = <CollectionPanel currentCollection={currentCollection} />;
+    panel = (
+      <CollectionPanel
+        currentCollection={currentCollection}
+        dispatchCurrentCollection={dispatchCurrentCollection}
+        dispatchCollections={dispatchCollections}
+      />
+    );
   }
   if (currentRequest) {
     panel = (
       <Allotment vertical defaultSizes={[200, 100]} snap>
         <div className={styles.requestPanel}>
-          <RequestPanel
+          <RequestSender
             currentRequest={currentRequest}
+            dispatchCurrentRequest={dispatchCurrentRequest}
+            collections={collections}
+            dispatchCollections={dispatchCollections}
             isExtInitialized={isExtInitialized}
             extVersion={extVersion}
             openExtModal={onOpen}
           />
         </div>
         <div className={styles.responsePanel}>
-          <ResponsePanel />
+          <ResponsePanel response={currentRequest?.data?.response} />
         </div>
       </Allotment>
     );
@@ -120,7 +435,16 @@ function Dashboard() {
       <div className={styles.allotment}>
         <Allotment defaultSizes={[50, 200]} snap>
           <div className={styles.sidebar}>
-            <Sidebar />
+            <Sidebar
+              collections={sidebarCollections}
+              currentCollectionId={currentCollection?.id}
+              currentRequstId={currentRequest?.id}
+              selectCollection={selectCollectionRef}
+              selectRequest={selectRequestRef}
+              renameRequest={renameRequest}
+              deleteRequest={deleteRequest}
+              dispatchCollections={dispatchCollections}
+            />
           </div>
           <div className={styles.main}>{panel}</div>
         </Allotment>
@@ -160,6 +484,98 @@ function Dashboard() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      <BasicModal
+        isOpen={isSaveReqOpen}
+        initialRef={undefined}
+        onClose={() => {
+          setSelectedRequestId(undefined);
+          setSelectedCollectionId(undefined);
+          onSaveReqClose();
+        }}
+        heading={`Request not saved`}
+        onClick={() => {
+          if (!currentRequest) return;
+          updateRequest(currentRequest);
+          dispatchCollections({
+            type: CollectionsActionType.PATCH_REQUEST_DATA,
+            id: currentRequest.id,
+            data: { ...currentRequest.data },
+          });
+          if (selectedRequestId) {
+            dispatchSelectRequest(selectedRequestId);
+            setSelectedRequestId(undefined);
+          } else if (selectedCollectionId) {
+            dispatchSelectCollection(selectedCollectionId);
+            setSelectedCollectionId(undefined);
+          }
+          onSaveReqClose();
+        }}
+        buttonText="Save"
+        buttonColor="green"
+        isButtonDisabled={false}
+        secondaryButtonText="Discard"
+        onSecondaryButtonClick={() => {
+          if (selectedRequestId) {
+            dispatchSelectRequest(selectedRequestId);
+            setSelectedRequestId(undefined);
+          } else if (selectedCollectionId) {
+            dispatchSelectCollection(selectedCollectionId);
+            setSelectedCollectionId(undefined);
+          }
+          onSaveReqClose();
+        }}
+      >
+        The request has unsaved changes which will be lost if you choose to change the tab
+        now.
+        <br />
+        Do you want to save the changes now?
+      </BasicModal>
+      <BasicModal
+        isOpen={isSaveCollectionOpen}
+        initialRef={undefined}
+        onClose={() => {
+          setSelectedRequestId(undefined);
+          setSelectedCollectionId(undefined);
+          onSaveCollectionClose();
+        }}
+        heading={`Collection not saved`}
+        onClick={() => {
+          if (!currentCollection) return;
+          updateCollection(currentCollection);
+          dispatchCollections({
+            type: CollectionsActionType.PATCH_COLLECTION_DATA,
+            id: currentCollection.id,
+            data: { ...currentCollection.data },
+          });
+          if (selectedRequestId) {
+            dispatchSelectRequest(selectedRequestId);
+            setSelectedRequestId(undefined);
+          } else if (selectedCollectionId) {
+            dispatchSelectCollection(selectedCollectionId);
+            setSelectedCollectionId(undefined);
+          }
+          onSaveCollectionClose();
+        }}
+        buttonText="Save"
+        buttonColor="green"
+        isButtonDisabled={false}
+        secondaryButtonText="Discard"
+        onSecondaryButtonClick={() => {
+          if (selectedRequestId) {
+            dispatchSelectRequest(selectedRequestId);
+            setSelectedRequestId(undefined);
+          } else if (selectedCollectionId) {
+            dispatchSelectCollection(selectedCollectionId);
+            setSelectedCollectionId(undefined);
+          }
+          onSaveCollectionClose();
+        }}
+      >
+        The collection has unsaved changes which will be lost if you choose to change the
+        tab now.
+        <br />
+        Do you want to save the changes now?
+      </BasicModal>
     </div>
   );
 }

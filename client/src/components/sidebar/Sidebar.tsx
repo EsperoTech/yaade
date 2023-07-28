@@ -1,7 +1,6 @@
 import { AddIcon, HamburgerIcon } from '@chakra-ui/icons';
 import {
   Box,
-  Icon,
   IconButton,
   Input,
   Select,
@@ -10,22 +9,17 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
-  Text,
-  Tooltip,
   useColorMode,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { useContext, useRef, useState } from 'react';
+import React, { Dispatch, useContext, useRef, useState } from 'react';
 
+import api from '../../api';
 import { UserContext } from '../../context';
-import Collection from '../../model/Collection';
-import {
-  collapseAllCollections,
-  saveCollection,
-  useGlobalState,
-} from '../../state/GlobalState';
-import { BASE_PATH, cn, errorToast, groupsArrayToStr, successToast } from '../../utils';
+import Collection, { SidebarCollection } from '../../model/Collection';
+import { CollectionsAction, CollectionsActionType } from '../../state/collections';
+import { cn, errorToast, successToast } from '../../utils';
 import BasicModal from '../basicModal';
 import Collections from '../collections';
 import GroupsInput from '../groupsInput';
@@ -41,7 +35,27 @@ type StateProps = {
   selectedImport: string;
 };
 
-function Sidebar() {
+type SidebarProps = {
+  collections: SidebarCollection[];
+  currentCollectionId?: number;
+  currentRequstId?: number;
+  selectCollection: any;
+  selectRequest: any;
+  renameRequest: (id: number, newName: string) => void;
+  deleteRequest: (id: number) => void;
+  dispatchCollections: Dispatch<CollectionsAction>;
+};
+
+function Sidebar({
+  collections,
+  dispatchCollections,
+  currentCollectionId,
+  currentRequstId,
+  selectCollection,
+  selectRequest,
+  renameRequest,
+  deleteRequest,
+}: SidebarProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -56,12 +70,13 @@ function Sidebar() {
   });
   const { colorMode } = useColorMode();
   const initialRef = useRef(null);
-  const globalState = useGlobalState();
 
-  const collections = globalState.collections.get({ noproxy: true });
-
-  const filteredCollections = collections.filter((c) =>
-    c.data.name.toLowerCase().includes(state.searchTerm.toLowerCase()),
+  const filteredCollections = React.useMemo(
+    () =>
+      collections.filter((c) =>
+        c.name.toLowerCase().includes(state.searchTerm.toLowerCase()),
+      ),
+    [collections, state.searchTerm],
   );
 
   function onCloseClear() {
@@ -84,42 +99,22 @@ function Sidebar() {
         data.append('File', state.uploadFile, 'file');
 
         if (state.selectedImport === 'openapi') {
-          response = await fetch(
-            BASE_PATH +
-              `api/collection/importOpenApi?basePath=${
-                state.basePath
-              }&groups=${groupsArrayToStr(state.groups)}`,
-            {
-              method: 'POST',
-              body: data,
-            },
-          );
+          response = await api.importOpenApi(state.basePath, state.groups, data);
         } else {
-          response = await fetch(
-            BASE_PATH +
-              `api/collection/importPostman?groups=${groupsArrayToStr(state.groups)}`,
-            {
-              method: 'POST',
-              body: data,
-            },
-          );
+          response = await api.importPostman(state.groups, data);
         }
       } else {
-        response = await fetch(BASE_PATH + 'api/collection', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: state.name,
-            groups: state.groups,
-          }),
-        });
+        response = await api.createCollection(state.name, state.groups);
       }
+
       if (response.status !== 200) throw new Error();
       const newCollection = (await response.json()) as Collection;
 
-      saveCollection(newCollection);
+      dispatchCollections({
+        type: CollectionsActionType.ADD_COLLECTION,
+        collection: newCollection,
+      });
+
       successToast('A new collection was created and saved', toast);
       onCloseClear();
     } catch (e) {
@@ -147,11 +142,20 @@ function Sidebar() {
           aria-label="collapse-all-collection"
           icon={<HamburgerIcon />}
           variant="ghost"
-          onClick={collapseAllCollections}
+          onClick={() => dispatchCollections({ type: CollectionsActionType.CLOSE_ALL })}
         />
       </div>
 
-      <Collections collections={filteredCollections} />
+      <Collections
+        collections={filteredCollections}
+        currentCollectionId={currentCollectionId}
+        currentRequstId={currentRequstId}
+        selectCollection={selectCollection}
+        selectRequest={selectRequest}
+        renameRequest={renameRequest}
+        deleteRequest={deleteRequest}
+        dispatchCollections={dispatchCollections}
+      />
 
       <BasicModal
         isOpen={isOpen}

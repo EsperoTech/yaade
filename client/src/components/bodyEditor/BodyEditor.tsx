@@ -12,7 +12,6 @@ import CodeMirror from '@uiw/react-codemirror';
 import { useState } from 'react';
 import React from 'react';
 
-import { useGlobalState } from '../../state/GlobalState';
 import { beautifyBody, errorToast } from '../../utils';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { json } from '../../utils/codemirror/lang-json';
@@ -22,25 +21,19 @@ import styles from './BodyEditor.module.css';
 type BodyEditorProps = {
   content: string;
   setContent: any;
+  selectedEnv: any;
 };
 
 type BodyEditorState = {
   contentType: string;
 };
 
-function BodyEditor({ content, setContent }: BodyEditorProps) {
+function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   const [state, setState] = useState<BodyEditorState>({
     contentType: 'application/json',
   });
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const globalState = useGlobalState();
-  const collections = globalState.collections.get({ noproxy: true });
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
-  const requestCollection = collections.find(
-    (c) => c.id === currentRequest?.collectionId,
-  );
-  const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
   const customHighlight = HighlightStyle.define([
     {
       tag: tags.moduleKeyword,
@@ -127,4 +120,4 @@ function BodyEditor({ content, setContent }: BodyEditorProps) {
   );
 }
 
-export default React.memo(BodyEditor);
+export default BodyEditor;

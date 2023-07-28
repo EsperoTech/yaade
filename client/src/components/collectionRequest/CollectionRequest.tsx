@@ -11,30 +11,25 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { State } from '@hookstate/core';
-import { FunctionComponent, useContext } from 'react';
+import { Dispatch, FunctionComponent, useContext } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
-import { useNavigate } from 'react-router-dom';
 
 import { UserContext } from '../../context';
-import Collection from '../../model/Collection';
-import Request from '../../model/Request';
-import {
-  defaultRequest,
-  removeRequest,
-  setCurrentRequest,
-  useGlobalState,
-  writeCollectionData,
-  writeRequestToCollections,
-} from '../../state/GlobalState';
+import { SidebarRequest } from '../../model/Request';
+import { CollectionsAction } from '../../state/collections';
 import { BASE_PATH, errorToast, successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
 import BasicModal from '../basicModal';
 import styles from './CollectionRequest.module.css';
 
 type CollectionRequestProps = {
-  request: Request;
+  request: SidebarRequest;
+  selected: boolean;
+  selectRequest: any;
+  dispatchCollections: Dispatch<CollectionsAction>;
+  renameRequest: (id: number, newName: string) => void;
+  deleteRequest: (id: number) => void;
 };
 
 type CollectionRequestState = {
@@ -48,12 +43,18 @@ function handleOnKeyDown(e: any, action: any) {
   }
 }
 
-const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request }) => {
+const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
+  request,
+  selected,
+  renameRequest,
+  selectRequest,
+  deleteRequest,
+}) => {
+  console.log('render request');
   const [state, setState] = useState<CollectionRequestState>({
-    name: request.data.name,
+    name: request.name,
     currentModal: '',
   });
-  const globalState = useGlobalState();
 
   const { user } = useContext(UserContext);
   const initialRef = useRef(null);
@@ -64,133 +65,10 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
     `${window.location.origin}/#/${request.collectionId}/${request.id}`,
   );
   const { onCopy: onCopyRequestId } = useClipboard(`${request.id}`);
-  const navigate = useNavigate();
-  const currentRequest = globalState.currentRequest.get({ noproxy: true });
-  const currentCollection = globalState.currentCollection.get({ noproxy: true });
-  const variants = currentRequest?.id === request.id ? ['selected'] : [];
-
-  async function handleSaveRequest(request: Request) {
-    try {
-      const response = await fetch(BASE_PATH + 'api/request', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
-      if (response.status !== 200) throw new Error();
-      writeRequestToCollections(request);
-      globalState.requestChanged.set(false);
-    } catch (e) {
-      errorToast('Could not save request', toast);
-    }
-  }
-
-  async function handleSaveCollection(collection: Collection) {
-    try {
-      const response = await fetch(BASE_PATH + 'api/collection', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(collection),
-      });
-      if (response.status !== 200) throw new Error();
-
-      writeCollectionData(collection.id, collection.data);
-      globalState.collectionChanged.set(false);
-      successToast('Collection was saved.', toast);
-    } catch (e) {
-      errorToast('The collection could not be saved.', toast);
-    }
-  }
-
-  function saveOnClose() {
-    if (currentRequest && globalState.requestChanged.value && currentRequest?.id !== -1) {
-      handleSaveRequest(currentRequest);
-    } else if (currentCollection && globalState.collectionChanged.value) {
-      handleSaveCollection(currentCollection);
-    }
-    globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
-    globalState.currentCollection.set(undefined);
-    globalState.requestChanged.set(false);
-    globalState.collectionChanged.set(false);
-  }
-
-  function handleRequestClick() {
-    console.log(globalState.collections.get({ noproxy: true }));
-    navigate(`/${request.collectionId}/${request.id}`);
-    if (currentRequest?.id === request.id) return;
-    if (user?.data?.settings?.saveOnClose) {
-      saveOnClose();
-    } else if (
-      currentRequest &&
-      globalState.requestChanged.value &&
-      currentRequest?.id !== -1
-    ) {
-      setState({ ...state, currentModal: 'save-request' });
-      onOpen();
-    } else if (currentCollection && globalState.collectionChanged.value) {
-      setState({ ...state, currentModal: 'save-collection' });
-      onOpen();
-    } else {
-      globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
-      globalState.currentCollection.set(undefined);
-    }
-  }
-
-  async function handleRenameRequestClick() {
-    try {
-      const response = await fetch(BASE_PATH + 'api/request', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...request,
-          data: {
-            ...request.data,
-            name: state.name,
-          },
-        }),
-      });
-      if (response.status !== 200) throw new Error();
-
-      const renamedRequest = {
-        ...request,
-        data: {
-          ...request.data,
-          name: state.name,
-        },
-      };
-
-      setCurrentRequest(renamedRequest);
-      writeRequestToCollections(renamedRequest);
-      onCloseClear();
-      successToast('Request was renamed.', toast);
-    } catch (e) {
-      errorToast('The request could not be renamed.', toast);
-    }
-  }
-
-  async function handleDeleteRequestClick() {
-    try {
-      const response = await fetch(BASE_PATH + `api/request/${request.id}`, {
-        method: 'DELETE',
-      });
-      if (response.status !== 200) throw new Error();
-      if (request.id === currentRequest?.id) {
-        globalState.currentRequest.set(defaultRequest);
-      }
-      removeRequest(request);
-      successToast('Request was deleted.', toast);
-    } catch (e) {
-      errorToast('Could not delete request.', toast);
-    }
-  }
+  const variants = selected ? ['selected'] : [];
 
   function onCloseClear() {
-    setState({ ...state, name: request.data.name });
+    setState({ ...state, name: request.name });
     onClose();
   }
 
@@ -199,9 +77,12 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       isOpen={isOpen}
       onClose={onCloseClear}
       initialRef={initialRef}
-      heading={`Rename ${request.data.name}`}
-      onClick={handleRenameRequestClick}
-      isButtonDisabled={state.name === request.data.name || state.name === ''}
+      heading={`Rename ${request.name}`}
+      onClick={() => {
+        renameRequest(request.id, state.name);
+        onCloseClear();
+      }}
+      isButtonDisabled={state.name === request.name || state.name === ''}
       buttonText="Rename"
       buttonColor="green"
     >
@@ -222,8 +103,8 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
       isOpen={isOpen}
       initialRef={undefined}
       onClose={onCloseClear}
-      heading={`Delete "${request.data.name}"`}
-      onClick={handleDeleteRequestClick}
+      heading={`Delete "${request.name}"`}
+      onClick={() => deleteRequest(request.id)}
       buttonText="Delete"
       buttonColor="red"
       isButtonDisabled={false}
@@ -234,74 +115,15 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
     </BasicModal>
   );
 
-  const requestNotSavedModal = (
-    <BasicModal
-      isOpen={isOpen}
-      initialRef={undefined}
-      onClose={onCloseClear}
-      heading={`Request not saved`}
-      onClick={() => {
-        saveOnClose();
-        onCloseClear();
-      }}
-      buttonText="Save"
-      buttonColor="green"
-      isButtonDisabled={false}
-      secondaryButtonText="Discard"
-      onSecondaryButtonClick={() => {
-        globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
-        globalState.requestChanged.set(false);
-        onCloseClear();
-      }}
-    >
-      The request has unsaved changes which will be lost if you choose to change the tab
-      now.
-      <br />
-      Do you want to save the changes now?
-    </BasicModal>
-  );
-
-  const collectionNotSavedModal = (
-    <BasicModal
-      isOpen={isOpen}
-      initialRef={undefined}
-      onClose={onCloseClear}
-      heading={`Collection not saved`}
-      onClick={() => {
-        saveOnClose();
-        onCloseClear();
-      }}
-      buttonText="Save"
-      buttonColor="green"
-      isButtonDisabled={false}
-      secondaryButtonText="Discard"
-      onSecondaryButtonClick={() => {
-        globalState.currentRequest.set(JSON.parse(JSON.stringify(request)));
-        globalState.currentCollection.set(undefined);
-        globalState.collectionChanged.set(false);
-        onCloseClear();
-      }}
-    >
-      The collection has unsaved changes which will be lost if you choose to change the
-      tab now.
-      <br />
-      Do you want to save the changes now?
-    </BasicModal>
-  );
-
   let currentModal;
 
   if (state.currentModal === 'rename') {
     currentModal = renameModal;
   } else if (state.currentModal === 'delete') {
     currentModal = deleteModal;
-  } else if (state.currentModal === 'save-request') {
-    currentModal = requestNotSavedModal;
-  } else if (state.currentModal === 'save-collection') {
-    currentModal = collectionNotSavedModal;
   }
 
-  let methodName = request.data.method;
+  let methodName = request.method;
 
   if (methodName === 'DELETE') {
     methodName = 'DEL';
@@ -318,18 +140,18 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({ request 
   return (
     <div
       className={cn(styles, 'request', [...variants, colorMode])}
-      onClick={handleRequestClick}
-      onKeyDown={(e) => handleOnKeyDown(e, handleRequestClick)}
+      onClick={() => selectRequest.current(request.id)}
+      onKeyDown={(e) => handleOnKeyDown(e, () => selectRequest.current(request.id))}
       role="button"
       tabIndex={0}
     >
       <span
         className={cn(styles, 'requestMethod', [colorMode])}
-        style={getMethodColor(request.data.method)}
+        style={getMethodColor(request.method)}
       >
         {methodName}
       </span>
-      <span className={cn(styles, 'requestName', [colorMode])}>{request.data.name}</span>
+      <span className={cn(styles, 'requestName', [colorMode])}>{request.name}</span>
       <span className={styles.actionIcon}>
         <Menu>
           {({ isOpen }) => (

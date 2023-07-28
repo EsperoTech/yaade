@@ -86,4 +86,4 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   );
 }
 
-export default React.memo(KVEditor);
+export default KVEditor;
