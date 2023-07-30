@@ -13,12 +13,13 @@ const jpath = function (expr: string, value: string) {
 };
 
 function executeResponseScript(
+  request: Request,
   response: Response,
   script: string,
   set: any,
   get: any,
   toast: any,
-  requestId: number,
+  isCollectionLevel: boolean,
   envName?: string,
 ) {
   const args: Record<string, any> = {};
@@ -30,8 +31,16 @@ function executeResponseScript(
   };
   args.jp = jpath;
   args.DateTime = DateTime;
-  args.log = (...data: any[]) =>
-    console.log(`[Response Script: ${requestId} - ${envName ?? 'NO_ENV'}]`, ...data);
+  if (isCollectionLevel) {
+    args.log = (...data: any[]) =>
+      console.log(
+        `[Collection Response Script: ${request.collectionId} - ${envName ?? 'NO_ENV'}]`,
+        ...data,
+      );
+  } else {
+    args.log = (...data: any[]) =>
+      console.log(`[Response Script: ${request.id} - ${envName ?? 'NO_ENV'}]`, ...data);
+  }
   try {
     sandboxedFunction(args, script);
   } catch (err) {
@@ -46,7 +55,7 @@ async function executeRequestScript(
   set: any,
   get: any,
   exec: any,
-  toast: any,
+  isCollectionLevel: boolean,
   envName?: string,
 ) {
   const args: Record<string, any> = {};
@@ -60,8 +69,16 @@ async function executeRequestScript(
   args.jp = jpath;
   args.DateTime = DateTime;
   args.exec = exec;
-  args.log = (...data: any[]) =>
-    console.log(`[Request Script: ${request.id} - ${envName ?? 'NO_ENV'}]`, ...data);
+  if (isCollectionLevel) {
+    args.log = (...data: any[]) =>
+      console.log(
+        `[Collection Request Script: ${request.collectionId} - ${envName ?? 'NO_ENV'}]`,
+        ...data,
+      );
+  } else {
+    args.log = (...data: any[]) =>
+      console.log(`[Request Script: ${request.id} - ${envName ?? 'NO_ENV'}]`, ...data);
+  }
   try {
     await asyncSandboxedFunction(args, script);
   } catch (err: any) {

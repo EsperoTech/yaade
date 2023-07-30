@@ -92,9 +92,7 @@ function Dashboard() {
   const { user } = useContext(UserContext);
 
   const toast = useToast();
-  //TODO: maybe get rid of this
   const sidebarCollections: SidebarCollection[] = useMemo(() => {
-    console.log('sidebar collections changed');
     return collections.map((c) => ({
       id: c.id,
       name: c.data.name,
