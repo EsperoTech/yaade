@@ -13,6 +13,7 @@ export default {
       {
         text: "Configuration",
         items: [
+          { text: "Collections & Requests", link: "/collections-requests" },
           { text: "Users & Groups", link: "/users-groups" },
           { text: "Environments", link: "/environments" },
           { text: "Scripts", link: "/scripts" },

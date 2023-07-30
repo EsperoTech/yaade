@@ -1,7 +1,6 @@
 # Scripts
 
-Yaade provides the ability to execute scripts written in a sandboxed version of JavaScript. It is sandboxed because most JavaScript functionality
-is deactivated, like calls to `window` or `document` to prevent potentially malicious code.
+Yaade provides the ability to execute scripts written in a sandboxed version of JavaScript. It is sandboxed because most JavaScript functionality is deactivated, like calls to `window` or `document` to prevent potentially malicious code.
 
 Some valid functionality includes:
 
@@ -28,7 +27,36 @@ const cookies = document.cookie
 Because Yaade uses JavaScript template literals to interpolate environment variables, template literals inside your scripts might be overwritten by your environment if keys match. It is therefore generally discouraged to use them in scripts.
 :::
 
-Currently Request Scripts and Response Scripts are supported.
+## Execution Order
+
+There are four types of scripts that are executed in the following order:
+
+1. Collection-level Request Script
+2. Request Script
+3. Response Script
+4. Collection-level Response Script
+
+As other requests can be executed in the request scripts, the scripts are executed in a depth-first manner. This means that if a request script executes another request, the request script of the target request is executed before the response script of the source request.
+
+Example:
+    
+```javascript
+// Request Script of Request 1
+await exec(2)
+// ... more code
+```
+
+Now if request 1 is executed, the execution order is as follows:
+
+1. Collection-level Request Script of Request 1
+2. First part of Request Script of Request 1
+3. Collection-level Request Script of Request 2
+4. Request Script of Request 2
+5. Response Script of Request 2
+6. Collection--level Response Script of Request 2
+7. The rest of Request Script of Request 1
+8. Response Script of Request 1
+9. Collection-level Response Script of Request 1
 
 ## Special Commands
 
