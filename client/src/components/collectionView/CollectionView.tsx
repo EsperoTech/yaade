@@ -55,7 +55,6 @@ function CollectionView({
   deleteRequest,
   dispatchCollections,
 }: CollectionProps) {
-  console.log('render collectionview');
   const [state, setState] = useState<CollectionState>({
     name: collection.name,
     newRequestName: '',

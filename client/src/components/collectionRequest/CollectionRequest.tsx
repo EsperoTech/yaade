@@ -50,7 +50,6 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
   selectRequest,
   deleteRequest,
 }) => {
-  console.log('render request');
   const [state, setState] = useState<CollectionRequestState>({
     name: request.name,
     currentModal: '',

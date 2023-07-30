@@ -90,13 +90,6 @@ class RequestDb {
             )
         }
 
-        fun fromOpenApiOperation(
-            collectionId: Long,
-            data: JsonObject,
-        ): RequestDb {
-            return RequestDb(collectionId, data)
-        }
-
         fun fromPostmanRequest(
             url: String,
             name: String,

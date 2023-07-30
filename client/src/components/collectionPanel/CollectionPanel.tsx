@@ -20,6 +20,7 @@ import {
 } from '../../state/currentCollection';
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
 import { useKeyPress } from '../../utils/useKeyPress';
+import Editor from '../editor';
 import styles from './CollectionPanel.module.css';
 import EnvironmentsTab from './EnvironmentsTab';
 import OverviewTab from './OverviewTab';
@@ -82,6 +83,18 @@ export default function CollectionPanel({
       data: { envs },
     });
 
+  const setRequestScript = (requestScript: string) =>
+    dispatchCurrentCollection({
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { requestScript },
+    });
+
+  const setResponseScript = (responseScript: string) =>
+    dispatchCurrentCollection({
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { responseScript },
+    });
+
   useKeyPress(handleSaveCollection, 's', true);
 
   return (
@@ -116,6 +129,8 @@ export default function CollectionPanel({
         <TabList>
           <Tab>Description</Tab>
           <Tab>Environments</Tab>
+          <Tab>Request Script</Tab>
+          <Tab>Response Script</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
           <TabPanel h="100%">
@@ -129,6 +144,18 @@ export default function CollectionPanel({
               collectionId={currentCollection.id}
               envs={currentCollection.data.envs}
               setEnvs={setEnvs}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <Editor
+              content={currentCollection.data.requestScript ?? ''}
+              setContent={setRequestScript}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <Editor
+              content={currentCollection.data.responseScript ?? ''}
+              setContent={setResponseScript}
             />
           </TabPanel>
         </TabPanels>

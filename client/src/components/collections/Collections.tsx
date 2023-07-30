@@ -34,12 +34,6 @@ function Collections({
 }: CollectionsProps) {
   const toast = useToast();
 
-  useEffect(() => {
-    console.log('collections changed');
-  }, [collections]);
-
-  console.log('render collections');
-
   const dragCollection = async (dragIndex: number, hoverIndex: number) => {
     const item = collections[dragIndex];
     dispatchCollections({
