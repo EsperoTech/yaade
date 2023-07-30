@@ -114,7 +114,7 @@ export default function CollectionPanel({
         mb="4"
       >
         <TabList>
-          <Tab>Overview</Tab>
+          <Tab>Description</Tab>
           <Tab>Environments</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">

@@ -30,6 +30,7 @@ object OpenApiService {
             }
         }
         val name = operation.operationId ?: path
+        val description = operation.description ?: ""
         var body: String? = null
         if (method != "GET") {
             val mediaTypes = operation.requestBody?.content?.keys?.toList() ?: mutableListOf()
@@ -44,7 +45,14 @@ object OpenApiService {
                 }
             }
         }
-        return RequestDb.fromOpenApiOperation(replacedPath, name, basePath, collection.id, method, queryParams, headers, body)
+
+        return RequestDb(collection.id, JsonObject()
+            .put("name", name)
+            .put("description", description)
+            .put("uri", basePath + path + queryParams)
+            .put("method", method)
+            .put("headers", headers)
+            .put("body", body))
     }
 
     fun createRequestsFromOpenApi(openApi: OpenAPI, basePath: String, collection: CollectionDb): List<RequestDb> {

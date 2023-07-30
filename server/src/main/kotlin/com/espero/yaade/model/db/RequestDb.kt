@@ -91,21 +91,9 @@ class RequestDb {
         }
 
         fun fromOpenApiOperation(
-            path: String,
-            name: String,
-            basePath: String,
             collectionId: Long,
-            method: String,
-            queryParams: String,
-            headers: JsonArray,
-            body: String?,
+            data: JsonObject,
         ): RequestDb {
-            val data = JsonObject()
-                .put("name", name)
-                .put("uri", basePath + path + queryParams)
-                .put("method", method)
-                .put("headers", headers)
-                .put("body", body)
             return RequestDb(collectionId, data)
         }
 
