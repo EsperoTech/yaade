@@ -180,8 +180,17 @@ function RequestSender({
 
     const collection = collections.find((c) => c.id === request.collectionId);
 
+    const collectionHeaders = collection?.data?.headers ?? [];
+    const injectedReq: Request = {
+      ...request,
+      data: {
+        ...request.data,
+        headers: [...collectionHeaders, ...request.data.headers],
+      },
+    };
+
     let proxy = 'ext';
-    const env = getEnv(request.collectionId, envName);
+    const env = getEnv(injectedReq.collectionId, envName);
     if (env) {
       proxy = env.proxy;
     }
@@ -191,40 +200,58 @@ function RequestSender({
         throw Error(`Request scripts are not supported in this version of the extension. 
               Please update to the latest version or remove the request script.`);
       }
-      await doRequestScript(request, collection?.data?.requestScript, true, envName, n);
+      await doRequestScript(
+        injectedReq,
+        collection?.data?.requestScript,
+        true,
+        envName,
+        n,
+      );
     }
 
-    if (request.data.requestScript) {
+    if (injectedReq.data.requestScript) {
       if (proxy === 'ext' && getMinorVersion(extVersion.current) < 3) {
         throw Error(`Request scripts are not supported in this version of the extension. 
               Please update to the latest version or remove the request script.`);
       }
-      await doRequestScript(request, request.data.requestScript, false, envName, n);
+      await doRequestScript(
+        injectedReq,
+        injectedReq.data.requestScript,
+        false,
+        envName,
+        n,
+      );
     }
 
     let response = null;
     switch (proxy) {
       case 'server':
-        response = await sendRequestToServer(request, envName);
+        response = await sendRequestToServer(injectedReq, envName);
         break;
       case 'ext':
         if (!isExtInitialized.current) {
           openExtModal();
           throw Error('Extension not initialized');
         }
-        response = await sendRequestToExtension(request, envName);
+        response = await sendRequestToExtension(injectedReq, envName);
         break;
       default:
         throw Error('Unknown proxy');
     }
 
-    if (request.data.responseScript) {
-      doResponseScript(request, response, request.data.responseScript, false, envName);
+    if (injectedReq.data.responseScript) {
+      doResponseScript(
+        injectedReq,
+        response,
+        injectedReq.data.responseScript,
+        false,
+        envName,
+      );
     }
 
     if (collection?.data?.responseScript) {
       doResponseScript(
-        request,
+        injectedReq,
         response,
         collection?.data?.responseScript,
         true,
