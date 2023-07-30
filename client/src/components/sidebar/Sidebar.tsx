@@ -43,6 +43,7 @@ type SidebarProps = {
   selectRequest: any;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
+  duplicateRequest: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
 };
 
@@ -55,6 +56,7 @@ function Sidebar({
   selectRequest,
   renameRequest,
   deleteRequest,
+  duplicateRequest,
 }: SidebarProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
@@ -154,6 +156,7 @@ function Sidebar({
         selectRequest={selectRequest}
         renameRequest={renameRequest}
         deleteRequest={deleteRequest}
+        duplicateRequest={duplicateRequest}
         dispatchCollections={dispatchCollections}
       />
 

@@ -19,6 +19,7 @@ type CollectionsProps = {
   selectRequest: (requestId: number) => void;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
+  duplicateRequest: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
 };
 
@@ -30,6 +31,7 @@ function Collections({
   selectRequest,
   renameRequest,
   deleteRequest,
+  duplicateRequest,
   dispatchCollections,
 }: CollectionsProps) {
   const toast = useToast();
@@ -63,6 +65,7 @@ function Collections({
         selectRequest={selectRequest}
         renameRequest={renameRequest}
         deleteRequest={deleteRequest}
+        duplicateRequest={duplicateRequest}
         dispatchCollections={dispatchCollections}
       />
     );

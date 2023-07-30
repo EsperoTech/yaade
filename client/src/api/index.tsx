@@ -76,7 +76,7 @@ const createRequest = (collectionId: number, data?: any): Promise<Response> =>
       collectionId: collectionId,
       type: 'REST',
       version: '1.0.0',
-      data: { ...data, method: 'GET' },
+      data: data,
     }),
   });
 
