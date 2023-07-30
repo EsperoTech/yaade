@@ -36,6 +36,7 @@ type CollectionProps = {
   selectRequest: any;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
+  duplicateRequest: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
 };
 
@@ -53,6 +54,7 @@ function CollectionView({
   selectRequest,
   renameRequest,
   deleteRequest,
+  duplicateRequest,
   dispatchCollections,
 }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
@@ -79,6 +81,7 @@ function CollectionView({
     try {
       const response = await api.createRequest(collection.id, {
         name: state.newRequestName,
+        method: 'GET',
       });
       const newRequest = (await response.json()) as Request;
 
@@ -251,6 +254,7 @@ function CollectionView({
           selectRequest={selectRequest}
           renameRequest={renameRequest}
           deleteRequest={deleteRequest}
+          duplicateRequest={duplicateRequest}
           dispatchCollections={dispatchCollections}
         />
       );
@@ -261,6 +265,7 @@ function CollectionView({
       dispatchCollections,
       moveRequest,
       renameRequest,
+      duplicateRequest,
       selectRequest,
     ],
   );

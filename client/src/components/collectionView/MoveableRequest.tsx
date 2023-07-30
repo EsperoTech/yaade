@@ -16,6 +16,7 @@ type MoveableRequestProps = {
   selectRequest: any;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
+  duplicateRequest: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
 };
 
@@ -31,6 +32,7 @@ function MoveableRequest({
   selectRequest,
   renameRequest,
   deleteRequest,
+  duplicateRequest,
   dispatchCollections,
 }: MoveableRequestProps) {
   const id = request.id;
@@ -114,6 +116,7 @@ function MoveableRequest({
         dispatchCollections={dispatchCollections}
         renameRequest={renameRequest}
         deleteRequest={deleteRequest}
+        duplicateRequest={duplicateRequest}
       />
     </div>
   );
