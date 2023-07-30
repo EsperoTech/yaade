@@ -13,6 +13,7 @@ import React from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import { CurrentCollection } from '../../model/Collection';
+import KVRow from '../../model/KVRow';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import {
   CurrentCollectionAction,
@@ -21,6 +22,7 @@ import {
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
 import { useKeyPress } from '../../utils/useKeyPress';
 import Editor from '../editor';
+import KVEditor from '../kvEditor';
 import styles from './CollectionPanel.module.css';
 import EnvironmentsTab from './EnvironmentsTab';
 import OverviewTab from './OverviewTab';
@@ -38,6 +40,11 @@ export default function CollectionPanel({
 }: CollectionPanelProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
+
+  const headers =
+    currentCollection.data?.headers && currentCollection.data.headers.length !== 0
+      ? currentCollection.data.headers
+      : [{ key: '', value: '' }];
 
   const handleSaveCollection = async () => {
     try {
@@ -81,6 +88,12 @@ export default function CollectionPanel({
     dispatchCurrentCollection({
       type: CurrentCollectionActionType.PATCH_DATA,
       data: { envs },
+    });
+
+  const setHeaders = (headers: Array<KVRow>) =>
+    dispatchCurrentCollection({
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { headers },
     });
 
   const setRequestScript = (requestScript: string) =>
@@ -129,6 +142,7 @@ export default function CollectionPanel({
         <TabList>
           <Tab>Description</Tab>
           <Tab>Environments</Tab>
+          <Tab>Headers</Tab>
           <Tab>Request Script</Tab>
           <Tab>Response Script</Tab>
         </TabList>
@@ -145,6 +159,9 @@ export default function CollectionPanel({
               envs={currentCollection.data.envs}
               setEnvs={setEnvs}
             />
+          </TabPanel>
+          <TabPanel>
+            <KVEditor name="headers" kvs={headers} setKvs={setHeaders} />
           </TabPanel>
           <TabPanel h="100%">
             <Editor
