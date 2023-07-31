@@ -1,16 +1,8 @@
-import { Box, Input, Select, useDisclosure, useToast } from '@chakra-ui/react';
+import { Box, useToast } from '@chakra-ui/react';
 import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
-import {
-  Dispatch,
-  MutableRefObject,
-  useCallback,
-  useContext,
-  useRef,
-  useState,
-} from 'react';
+import { Dispatch, useCallback, useContext } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
-import api from '../../api';
 import { UserContext } from '../../context';
 import KVRow from '../../model/KVRow';
 import Request, { CurrentRequest } from '../../model/Request';
@@ -19,23 +11,10 @@ import {
   CurrentRequestAction,
   CurrentRequestActionType,
 } from '../../state/currentRequest';
-import {
-  appendHttpIfNoProtocol,
-  BASE_PATH,
-  createMessageId,
-  currentRequestToRequest,
-  errorToast,
-  getMinorVersion,
-  kvRowsToMap,
-  parseResponse,
-  successToast,
-} from '../../utils';
-import interpolate from '../../utils/interpolate';
-import { executeRequestScript, executeResponseScript } from '../../utils/script';
-import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
-import { useKeyPress } from '../../utils/useKeyPress';
-import BasicModal from '../basicModal';
+import { currentRequestToRequest, errorToast } from '../../utils';
+import { getSelectedEnvs } from '../../utils/store';
 import BodyEditor from '../bodyEditor';
+import OverviewTab from '../collectionPanel/OverviewTab';
 import Editor from '../editor';
 import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
@@ -150,6 +129,15 @@ function RequestPanel({
     [dispatchCurrentRequest],
   );
 
+  const setDescription = useCallback(
+    (description: string) =>
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.PATCH_DATA,
+        data: { description },
+      }),
+    [dispatchCurrentRequest],
+  );
+
   function setUriFromParams(params: Array<KVRow>) {
     try {
       let uri = currentRequest.data.uri;
@@ -253,6 +241,7 @@ function RequestPanel({
         mb="4"
       >
         <TabList>
+          <Tab>Description</Tab>
           <Tab>Parameters</Tab>
           <Tab>Headers</Tab>
           <Tab>Body</Tab>
@@ -260,6 +249,12 @@ function RequestPanel({
           <Tab>Response Script</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
+          <TabPanel>
+            <OverviewTab
+              description={currentRequest?.data?.description ?? ''}
+              setDescription={setDescription}
+            />
+          </TabPanel>
           <TabPanel>
             <KVEditor name="params" kvs={params} setKvs={setUriFromParams} />
           </TabPanel>

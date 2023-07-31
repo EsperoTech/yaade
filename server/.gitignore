@@ -4,3 +4,4 @@ build/
 src/main/resources/webroot/
 *.mv.db
 app/
+bin/

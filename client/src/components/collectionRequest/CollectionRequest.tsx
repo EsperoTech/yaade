@@ -11,14 +11,13 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { Dispatch, FunctionComponent, useContext } from 'react';
+import { Dispatch, FunctionComponent } from 'react';
 import { useRef, useState } from 'react';
 import { VscEllipsis } from 'react-icons/vsc';
 
-import { UserContext } from '../../context';
 import { SidebarRequest } from '../../model/Request';
 import { CollectionsAction } from '../../state/collections';
-import { BASE_PATH, errorToast, successToast } from '../../utils';
+import { successToast } from '../../utils';
 import { cn, getMethodColor } from '../../utils';
 import BasicModal from '../basicModal';
 import styles from './CollectionRequest.module.css';
@@ -30,6 +29,7 @@ type CollectionRequestProps = {
   dispatchCollections: Dispatch<CollectionsAction>;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
+  duplicateRequest: (id: number, newName: string) => void;
 };
 
 type CollectionRequestState = {
@@ -49,14 +49,13 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
   renameRequest,
   selectRequest,
   deleteRequest,
+  duplicateRequest,
 }) => {
-  console.log('render request');
   const [state, setState] = useState<CollectionRequestState>({
     name: request.name,
     currentModal: '',
   });
 
-  const { user } = useContext(UserContext);
   const initialRef = useRef(null);
   const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -115,12 +114,40 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
     </BasicModal>
   );
 
+  const duplicateModal = (
+    <BasicModal
+      isOpen={isOpen}
+      initialRef={undefined}
+      onClose={onCloseClear}
+      heading={`Duplicate "${request.name}"`}
+      onClick={() => {
+        duplicateRequest(request.id, state.name);
+        onCloseClear();
+      }}
+      buttonText="Duplicate"
+      buttonColor="green"
+      isButtonDisabled={false}
+    >
+      <Input
+        placeholder="Name"
+        w="100%"
+        borderRadius={20}
+        colorScheme="green"
+        value={state.name}
+        onChange={(e) => setState({ ...state, name: e.target.value })}
+        ref={initialRef}
+      />
+    </BasicModal>
+  );
+
   let currentModal;
 
   if (state.currentModal === 'rename') {
     currentModal = renameModal;
   } else if (state.currentModal === 'delete') {
     currentModal = deleteModal;
+  } else if (state.currentModal === 'duplicate') {
+    currentModal = duplicateModal;
   }
 
   let methodName = request.method;
@@ -175,11 +202,25 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
                   icon={<EditIcon />}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setState({ ...state, currentModal: 'rename' });
+                    setState({ ...state, currentModal: 'rename', name: request.name });
                     onOpen();
                   }}
                 >
                   Rename
+                </MenuItem>
+                <MenuItem
+                  icon={<CopyIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setState({
+                      ...state,
+                      currentModal: 'duplicate',
+                      name: `${request.name} (copy)`,
+                    });
+                    onOpen();
+                  }}
+                >
+                  Duplicate
                 </MenuItem>
                 <MenuItem
                   icon={<LinkIcon />}

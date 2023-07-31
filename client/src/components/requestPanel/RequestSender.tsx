@@ -178,46 +178,97 @@ function RequestSender({
       throw Error('Exec loop detected in request script');
     }
 
+    const collection = collections.find((c) => c.id === request.collectionId);
+
+    const collectionHeaders = collection?.data?.headers ?? [];
+    const injectedReq: Request = {
+      ...request,
+      data: {
+        ...request.data,
+        headers: [...collectionHeaders, ...request.data.headers],
+      },
+    };
+
     let proxy = 'ext';
-    const env = getEnv(request.collectionId, envName);
+    const env = getEnv(injectedReq.collectionId, envName);
     if (env) {
       proxy = env.proxy;
     }
 
-    if (request.data.requestScript) {
+    if (collection?.data?.requestScript) {
       if (proxy === 'ext' && getMinorVersion(extVersion.current) < 3) {
         throw Error(`Request scripts are not supported in this version of the extension. 
               Please update to the latest version or remove the request script.`);
       }
-      await doRequestScript(request, envName, n);
+      await doRequestScript(
+        injectedReq,
+        collection?.data?.requestScript,
+        true,
+        envName,
+        n,
+      );
+    }
+
+    if (injectedReq.data.requestScript) {
+      if (proxy === 'ext' && getMinorVersion(extVersion.current) < 3) {
+        throw Error(`Request scripts are not supported in this version of the extension. 
+              Please update to the latest version or remove the request script.`);
+      }
+      await doRequestScript(
+        injectedReq,
+        injectedReq.data.requestScript,
+        false,
+        envName,
+        n,
+      );
     }
 
     let response = null;
     switch (proxy) {
       case 'server':
-        response = await sendRequestToServer(request, envName);
+        response = await sendRequestToServer(injectedReq, envName);
         break;
       case 'ext':
         if (!isExtInitialized.current) {
           openExtModal();
           throw Error('Extension not initialized');
         }
-        response = await sendRequestToExtension(request, envName);
+        response = await sendRequestToExtension(injectedReq, envName);
         break;
       default:
         throw Error('Unknown proxy');
     }
 
-    if (request.data.responseScript) {
-      doResponseScript(request, response, envName);
+    if (injectedReq.data.responseScript) {
+      doResponseScript(
+        injectedReq,
+        response,
+        injectedReq.data.responseScript,
+        false,
+        envName,
+      );
+    }
+
+    if (collection?.data?.responseScript) {
+      doResponseScript(
+        injectedReq,
+        response,
+        collection?.data?.responseScript,
+        true,
+        envName,
+      );
     }
 
     return response;
   }
 
-  async function doRequestScript(request: Request, envName?: string, n?: number) {
-    const requestScript = request.data.requestScript;
-    if (!requestScript) return;
+  async function doRequestScript(
+    request: Request,
+    requestScript: string,
+    isCollectionLevel: boolean,
+    envName?: string,
+    n?: number,
+  ) {
     // NOTE: cannot pass state on top level because it does not use most current state
     const set = (key: string, value: string) =>
       setEnvVar(request.collectionId, key, value, envName);
@@ -233,22 +284,37 @@ function RequestSender({
       if (!n) n = 0;
       return await sendRequest(request, envName, n + 1);
     };
-    await executeRequestScript(request, requestScript, set, get, exec, toast, envName);
+    await executeRequestScript(
+      request,
+      requestScript,
+      set,
+      get,
+      exec,
+      isCollectionLevel,
+      envName,
+    );
   }
 
-  function doResponseScript(request: Request, response: Response, envName?: string) {
+  function doResponseScript(
+    request: Request,
+    response: Response,
+    responseScript: string,
+    isCollectionLevel: boolean,
+    envName?: string,
+  ) {
     // NOTE: cannot pass state on top level because it does not use most current state
     const set = (key: string, value: string) =>
       setEnvVar(request.collectionId, key, value, envName);
     const get = (key: string): string =>
       getEnvVar(request.collectionId, envName)(collections, key);
     executeResponseScript(
+      request,
       response,
-      request?.data?.responseScript,
+      responseScript,
       set,
       get,
       toast,
-      request.id,
+      isCollectionLevel,
       envName,
     );
   }

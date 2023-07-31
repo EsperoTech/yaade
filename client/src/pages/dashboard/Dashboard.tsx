@@ -92,9 +92,7 @@ function Dashboard() {
   const { user } = useContext(UserContext);
 
   const toast = useToast();
-  //TODO: maybe get rid of this
   const sidebarCollections: SidebarCollection[] = useMemo(() => {
-    console.log('sidebar collections changed');
     return collections.map((c) => ({
       id: c.id,
       name: c.data.name,
@@ -394,6 +392,34 @@ function Dashboard() {
     [currentRequest?.id, toast],
   );
 
+  const duplicateRequest = useCallback(
+    async (id: number, newName: string) => {
+      try {
+        const request = collections
+          .map((c) => c.requests)
+          .flat()
+          .find((r) => r.id === id);
+        if (!request) return;
+        const res = await api.createRequest(request.collectionId, {
+          ...request.data,
+          name: newName,
+        });
+        if (res.status !== 200) throw new Error();
+        const newRequestData = await res.json();
+        dispatchCollections({
+          type: CollectionsActionType.ADD_REQUEST,
+          request: newRequestData,
+        });
+        selectRequestRef.current(newRequestData.id);
+        successToast('Request was duplicated.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not duplicate request', toast);
+      }
+    },
+    [collections, toast],
+  );
+
   useEventListener('message', handlePongMessage);
 
   let panel = <div>Select a Request or Collection</div>;
@@ -443,6 +469,7 @@ function Dashboard() {
               selectRequest={selectRequestRef}
               renameRequest={renameRequest}
               deleteRequest={deleteRequest}
+              duplicateRequest={duplicateRequest}
               dispatchCollections={dispatchCollections}
             />
           </div>
