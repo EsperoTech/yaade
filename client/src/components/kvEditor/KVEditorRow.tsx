@@ -1,10 +1,11 @@
 import { DeleteIcon } from '@chakra-ui/icons';
 import { IconButton, useColorMode } from '@chakra-ui/react';
 import { EditorView } from '@codemirror/view';
-import ReactCodeMirror from '@uiw/react-codemirror';
-import React from 'react';
+import ReactCodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 import { cmTheme } from '../../utils/codemirror/themes';
+import editor from '../editor';
 import styles from './KVEditorRow.module.css';
 
 const rawTheme = {
@@ -111,65 +112,75 @@ const kvThemeRight = EditorView.theme(rawRight);
 type KVEditorRowProps = {
   i: number;
   name: string;
-  key: string;
+  kKey: string;
   value: string;
   setKey: (i: number, key: string) => void;
   setValue: (i: number, value: string) => void;
   onDeleteRow: (i: number) => void;
-  deleteDisabled: boolean;
+  isDeleteDisabled?: boolean;
   readOnly?: boolean;
 };
 
 function KVEditorRow({
   i,
   name,
-  key,
+  kKey,
   value,
   setKey,
   setValue,
   onDeleteRow,
-  deleteDisabled,
+  isDeleteDisabled,
   readOnly,
 }: KVEditorRowProps) {
-  console.log({
-    i,
-    name,
-    key,
-    value,
-    setKey,
-    setValue,
-    onDeleteRow,
-    deleteDisabled,
-    readOnly,
-  });
   const { colorMode } = useColorMode();
+
+  const leftref = useRef<HTMLDivElement>(null);
+  const rightref = useRef<HTMLDivElement>(null);
+
+  const { setContainer: setLeftContainer } = useCodeMirror({
+    container: leftref.current,
+    onChange: (key: string) => setKey(i, key),
+    extensions: [kvThemeLeft],
+    theme: cmTheme,
+    value: kKey,
+    style: { height: '100%' },
+    placeholder: 'Key',
+  });
+  const { setContainer: setRightContainer } = useCodeMirror({
+    container: rightref.current,
+    onChange: (value: string) => setValue(i, value),
+    extensions: [kvThemeRight],
+    theme: cmTheme,
+    value,
+    style: { height: '100%' },
+    placeholder: 'Value',
+  });
+
+  useEffect(() => {
+    console.log('leftref.current', leftref.current, name, i);
+    if (leftref.current) {
+      setLeftContainer(leftref.current);
+    }
+  }, [i, leftref, name, setLeftContainer]);
+
+  useEffect(() => {
+    console.log('rightref.current', rightref.current, name, i);
+    if (rightref.current) {
+      setRightContainer(rightref.current);
+    }
+  }, [i, name, rightref, setRightContainer]);
+
   return (
     <div key={`${name}-${i}`} className={styles.row}>
       {!readOnly ? (
         <>
-          <ReactCodeMirror
-            className={styles.cm}
-            onChange={(key: string) => setKey(i, key)}
-            extensions={[kvThemeLeft]}
-            theme={cmTheme}
-            value={key}
-            style={{ height: '100%' }}
-            placeholder="Key"
-          />
-          <ReactCodeMirror
-            className={styles.cm}
-            onChange={(value: string) => setValue(i, value)}
-            extensions={[kvThemeRight]}
-            theme={cmTheme}
-            value={value}
-            style={{ height: '100%' }}
-            placeholder="Value"
-          />
+          <div className={styles.cm} ref={leftref} />
+          <div className={styles.cm} ref={rightref} />
           <IconButton
             aria-label="delete-row"
             isRound
             variant="ghost"
-            disabled={deleteDisabled}
+            disabled={isDeleteDisabled}
             onClick={() => onDeleteRow(i)}
             colorScheme="red"
             icon={<DeleteIcon />}
@@ -182,7 +193,7 @@ function KVEditorRow({
               styles[`input--${colorMode}`]
             }`}
             placeholder="Key"
-            value={key}
+            value={kKey}
             readOnly={readOnly}
           />
 
@@ -200,4 +211,30 @@ function KVEditorRow({
   );
 }
 
-export default KVEditorRow;
+export default React.memo(KVEditorRow, (prevProps, nextProps) => {
+  console.log(
+    'prevProps.kKey === nextProps.kKey',
+    prevProps.kKey === nextProps.kKey,
+    'prevProps.value === nextProps.value',
+    prevProps.value === nextProps.value,
+    'prevProps.setKey === nextProps.setKey',
+    prevProps.setKey === nextProps.setKey,
+    'prevProps.setValue === nextProps.setValue',
+    prevProps.setValue === nextProps.setValue,
+    'prevProps.onDeleteRow === nextProps.onDeleteRow',
+    prevProps.onDeleteRow === nextProps.onDeleteRow,
+    'prevProps.isDeleteDisabled === nextProps.isDeleteDisabled',
+    prevProps.isDeleteDisabled === nextProps.isDeleteDisabled,
+    'prevProps.readOnly === nextProps.readOnly',
+    prevProps.readOnly === nextProps.readOnly,
+  );
+  return (
+    prevProps.kKey === nextProps.kKey &&
+    prevProps.value === nextProps.value &&
+    prevProps.setKey === nextProps.setKey &&
+    prevProps.setValue === nextProps.setValue &&
+    prevProps.onDeleteRow === nextProps.onDeleteRow &&
+    prevProps.isDeleteDisabled === nextProps.isDeleteDisabled &&
+    prevProps.readOnly === nextProps.readOnly
+  );
+});

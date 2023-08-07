@@ -1,6 +1,6 @@
 import { Box, useToast } from '@chakra-ui/react';
 import { IconButton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
-import { Dispatch, useCallback, useContext } from 'react';
+import { Dispatch, useCallback, useContext, useMemo } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import { UserContext } from '../../context';
@@ -68,12 +68,18 @@ function RequestPanel({
   const toast = useToast();
   const { user } = useContext(UserContext);
 
-  const params = getParamsFromUri(currentRequest.data.uri);
+  const params = useMemo(
+    () => getParamsFromUri(currentRequest.data.uri),
+    [currentRequest.data.uri],
+  );
 
-  const headers =
-    currentRequest.data.headers && currentRequest.data.headers.length !== 0
-      ? currentRequest.data.headers
-      : [{ key: '', value: '' }];
+  const headers = useMemo(
+    () =>
+      currentRequest.data.headers && currentRequest.data.headers.length !== 0
+        ? currentRequest.data.headers
+        : [{ key: '', value: '' }],
+    [currentRequest.data.headers],
+  );
 
   const setMethod = useCallback(
     (method: string) =>
@@ -138,30 +144,33 @@ function RequestPanel({
     [dispatchCurrentRequest],
   );
 
-  function setUriFromParams(params: Array<KVRow>) {
-    try {
-      let uri = currentRequest.data.uri;
-      if (!uri.includes('?')) {
-        uri += '?';
-      }
-      const base = uri.split('?')[0];
-      let searchParams = '';
-      for (let i = 0; i < params.length; i++) {
-        if (params[i].key === '' && params[i].value === '') {
-          continue;
+  const setUriFromParams = useCallback(
+    (params: Array<KVRow>) => {
+      try {
+        let uri = currentRequest.data.uri;
+        if (!uri.includes('?')) {
+          uri += '?';
         }
-        if (i !== 0) searchParams += '&';
-        searchParams += `${params[i].key}=${params[i].value}`;
+        const base = uri.split('?')[0];
+        let searchParams = '';
+        for (let i = 0; i < params.length; i++) {
+          if (params[i].key === '' && params[i].value === '') {
+            continue;
+          }
+          if (i !== 0) searchParams += '&';
+          searchParams += `${params[i].key}=${params[i].value}`;
+        }
+        if (searchParams === '') {
+          setUri(base);
+        } else {
+          setUri(`${base}?${searchParams}`);
+        }
+      } catch (e) {
+        console.error(e);
       }
-      if (searchParams === '') {
-        setUri(base);
-      } else {
-        setUri(`${base}?${searchParams}`);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
+    },
+    [currentRequest.data.uri, setUri],
+  );
 
   async function handleSendButtonClick() {
     try {
@@ -207,7 +216,9 @@ function RequestPanel({
     });
   }
 
-  function handleSaveButtonClick() {}
+  function handleSaveButtonClick() {
+    // TODO: implement
+  }
 
   return (
     <Box className={styles.box} bg="panelBg" h="100%">
@@ -232,6 +243,7 @@ function RequestPanel({
       </div>
 
       <Tabs
+        isLazy
         colorScheme="green"
         mt="1"
         display="flex"

@@ -8,8 +8,8 @@ import {
   syntaxHighlighting,
 } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
-import CodeMirror from '@uiw/react-codemirror';
-import { useState } from 'react';
+import CodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
+import { useEffect, useRef, useState } from 'react';
 import React from 'react';
 
 import { beautifyBody, errorToast } from '../../utils';
@@ -28,18 +28,19 @@ type BodyEditorState = {
   contentType: string;
 };
 
+const customHighlight = HighlightStyle.define([
+  {
+    tag: tags.moduleKeyword,
+    cursor: 'help',
+  },
+]);
+
 function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   const [state, setState] = useState<BodyEditorState>({
     contentType: 'application/json',
   });
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const customHighlight = HighlightStyle.define([
-    {
-      tag: tags.moduleKeyword,
-      cursor: 'help',
-    },
-  ]);
 
   const extensions = [
     cursorTooltipBaseTheme,
@@ -56,6 +57,23 @@ function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   } else if (state.contentType === 'text/html') {
     extensions.push(html());
   }
+
+  const ref = useRef<HTMLDivElement>(null);
+
+  const { setContainer } = useCodeMirror({
+    container: ref.current,
+    onChange: (value: string) => setContent(value),
+    extensions: [extensions],
+    theme: colorMode,
+    value: content,
+    style: { height: '100%' },
+  });
+
+  useEffect(() => {
+    if (ref.current) {
+      setContainer(ref.current);
+    }
+  }, [ref, setContainer]);
 
   function handleBeautifyClick() {
     try {
@@ -107,15 +125,7 @@ function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
           />
         </div>
       </div>
-      <div className={styles.container}>
-        <CodeMirror
-          onChange={setContent}
-          extensions={extensions}
-          theme={colorMode}
-          value={content}
-          style={{ height: '100%' }}
-        />
-      </div>
+      <div className={styles.container} ref={ref} />
     </>
   );
 }

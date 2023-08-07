@@ -1,8 +1,8 @@
 import { Spinner, useColorMode } from '@chakra-ui/react';
 import { javascript } from '@codemirror/lang-javascript';
 import { createTheme } from '@uiw/codemirror-themes';
-import CodeMirror from '@uiw/react-codemirror';
-import { FormEvent } from 'react';
+import CodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
+import { FormEvent, useEffect, useRef } from 'react';
 
 import { cn } from '../../utils';
 import { baseTheme, cmTheme } from '../../utils/codemirror/themes';
@@ -30,8 +30,24 @@ function UriBar({
   handleSendButtonClick,
 }: UriBarProps) {
   const { colorMode } = useColorMode();
+  const ref = useRef<HTMLDivElement>(null);
 
-  const extensions = [baseTheme];
+  const { setContainer } = useCodeMirror({
+    container: ref.current,
+    onChange: (value: string) => setUri(value),
+    extensions: [baseTheme],
+    theme: cmTheme,
+    value: uri,
+    style: { height: '100%' },
+    placeholder: 'URL',
+  });
+
+  useEffect(() => {
+    console.log('ajdkfaslkdf');
+    if (ref.current) {
+      setContainer(ref.current);
+    }
+  }, [ref, setContainer]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -65,15 +81,7 @@ function UriBar({
           <MethodOption method="CONNECT" />
           <MethodOption method="TRACE" />
         </select>
-        <CodeMirror
-          className={styles.cm}
-          onChange={setUri}
-          extensions={extensions}
-          theme={cmTheme}
-          value={uri}
-          style={{ height: '100%' }}
-          placeholder="URL"
-        />
+        <div className={styles.cm} ref={ref} />
         <button
           className={cn(styles, 'button', [colorMode])}
           disabled={uri === ''}

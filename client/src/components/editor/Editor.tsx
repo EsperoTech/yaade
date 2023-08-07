@@ -1,9 +1,9 @@
 import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, useColorMode, useToast } from '@chakra-ui/react';
 import { javascript } from '@codemirror/lang-javascript';
-import CodeMirror from '@uiw/react-codemirror';
+import CodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
 import beautify from 'beautify';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { errorToast } from '../../utils';
 import styles from './Editor.module.css';
@@ -17,6 +17,23 @@ function Editor({ content, setContent }: EditorProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
   const extensions = [javascript()];
+
+  const ref = useRef<HTMLDivElement>(null);
+
+  const { setContainer } = useCodeMirror({
+    container: ref.current,
+    onChange: (value: string) => setContent(value),
+    extensions: [extensions],
+    theme: colorMode,
+    value: content,
+    style: { height: '100%' },
+  });
+
+  useEffect(() => {
+    if (ref.current) {
+      setContainer(ref.current);
+    }
+  }, [ref, setContainer]);
 
   function handleBeautifyClick() {
     try {
@@ -50,15 +67,7 @@ function Editor({ content, setContent }: EditorProps) {
           />
         </div>
       </div>
-      <div className={styles.container}>
-        <CodeMirror
-          onChange={setContent}
-          extensions={extensions}
-          theme={colorMode}
-          value={content}
-          style={{ height: '100%' }}
-        />
-      </div>
+      <div className={styles.container} ref={ref} />
     </>
   );
 }

@@ -135,6 +135,7 @@ export default function CollectionPanel({
         />
       </div>
       <Tabs
+        isLazy
         index={tabIndex}
         onChange={(index) => setTabIndex(index)}
         colorScheme="green"

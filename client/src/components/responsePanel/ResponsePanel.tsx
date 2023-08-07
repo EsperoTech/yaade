@@ -62,6 +62,7 @@ function ResponsePanel({ response }: ResponsePanelProps) {
     <Box className={styles.container} bg="panelBg" h="100%">
       {response ? (
         <Tabs
+          isLazy
           colorScheme="green"
           mt="1"
           display="flex"
@@ -99,13 +100,13 @@ function ResponsePanel({ response }: ResponsePanelProps) {
           </div>
           <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }}>
             <TabPanel>
-              <CodeMirror
+              {/* <CodeMirror
                 height="100%"
                 extensions={extensions}
                 theme={colorMode}
                 value={response.body}
                 editable={false}
-              />
+              /> */}
             </TabPanel>
             <TabPanel>
               <KVEditor name="response-headers" kvs={response.headers} readOnly />
