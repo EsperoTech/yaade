@@ -1,10 +1,8 @@
-import { DeleteIcon } from '@chakra-ui/icons';
-import { IconButton } from '@chakra-ui/react';
 import { useColorMode } from '@chakra-ui/react';
-import React from 'react';
 
 import KVRow from '../../model/KVRow';
 import styles from './KVEditor.module.css';
+import KVEditorRow from './KVEditorRow';
 
 type KVEditorProps = {
   kvs: Array<KVRow>;
@@ -17,8 +15,6 @@ const EMPTY_ROW = { key: '', value: '' };
 const isRowEmpty = (row: KVRow) => row.key === '' && row.value === '';
 
 function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
-  const { colorMode } = useColorMode();
-
   // we copy the data so we can append an empty last row without
   // mutating the original data
   const displayKvs = kvs ? [...kvs] : [];
@@ -30,15 +26,19 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
     displayKvs.push({ ...EMPTY_ROW });
   }
 
-  const onChangeRow = (i: number, param: string, e: any) => {
+  const onChangeRow = (i: number, param: string, value: string) => {
+    console.log({ i, param, value });
     let newKvs = [...displayKvs];
     const newRow = { ...newKvs[i] } as any;
-    newRow[param] = e.target.value;
+    newRow[param] = value;
     newKvs[i] = newRow;
     newKvs = newKvs.filter((el) => !isRowEmpty(el));
 
     setKvs(newKvs);
   };
+
+  const setKey = (i: number, key: string) => onChangeRow(i, 'key', key);
+  const setValue = (i: number, value: string) => onChangeRow(i, 'value', value);
 
   const onDeleteRow = (i: number) => {
     let newKvs = [...displayKvs];
@@ -50,37 +50,17 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
   return (
     <div className={styles.container}>
       {displayKvs.map(({ key, value }, i) => (
-        <div key={`${name}-${i}`} className={styles.row}>
-          <input
-            className={`${styles.input} ${styles['input--left']} ${
-              styles[`input--${colorMode}`]
-            }`}
-            onChange={(e) => onChangeRow(i, 'key', e)}
-            placeholder="Key"
-            value={key}
-            readOnly={readOnly}
-          />
-          <input
-            className={`${styles.input} ${styles['input--right']} ${
-              styles[`input--${colorMode}`]
-            }`}
-            onChange={(e) => onChangeRow(i, 'value', e)}
-            placeholder="Value"
-            value={value}
-            readOnly={readOnly}
-          />
-          {readOnly ? null : (
-            <IconButton
-              aria-label="delete-row"
-              isRound
-              variant="ghost"
-              disabled={i === displayKvs.length - 1}
-              onClick={() => onDeleteRow(i)}
-              colorScheme="red"
-              icon={<DeleteIcon />}
-            />
-          )}
-        </div>
+        <KVEditorRow
+          i={i}
+          name={name}
+          key={key}
+          value={value}
+          deleteDisabled={i === displayKvs.length - 1}
+          setKey={setKey}
+          setValue={setValue}
+          readOnly={readOnly}
+          onDeleteRow={onDeleteRow}
+        />
       ))}
     </div>
   );

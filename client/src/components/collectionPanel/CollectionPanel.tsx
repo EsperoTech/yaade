@@ -9,7 +9,7 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import { CurrentCollection } from '../../model/Collection';
@@ -31,12 +31,16 @@ interface CollectionPanelProps {
   currentCollection: CurrentCollection;
   dispatchCurrentCollection: React.Dispatch<CurrentCollectionAction>;
   dispatchCollections: React.Dispatch<CollectionsAction>;
+  tabIndex: number;
+  setTabIndex: (index: number) => void;
 }
 
 export default function CollectionPanel({
   currentCollection,
   dispatchCurrentCollection,
   dispatchCollections,
+  tabIndex,
+  setTabIndex,
 }: CollectionPanelProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
@@ -131,6 +135,8 @@ export default function CollectionPanel({
         />
       </div>
       <Tabs
+        index={tabIndex}
+        onChange={(index) => setTabIndex(index)}
         colorScheme="green"
         mt="1"
         display="flex"
