@@ -230,6 +230,7 @@ function RequestPanel({
           setMethod={setMethod}
           handleSendButtonClick={handleSendButtonClick}
           isLoading={currentRequest.isLoading}
+          env={selectedEnv}
         />
         <IconButton
           aria-label="save-request-button"
@@ -268,10 +269,22 @@ function RequestPanel({
             />
           </TabPanel>
           <TabPanel>
-            <KVEditor name="params" kvs={params} setKvs={setUriFromParams} />
+            <KVEditor
+              name="params"
+              kvs={params}
+              setKvs={setUriFromParams}
+              hasEnvSupport={true}
+              env={selectedEnv}
+            />
           </TabPanel>
           <TabPanel>
-            <KVEditor name="headers" kvs={headers} setKvs={setHeaders} />
+            <KVEditor
+              name="headers"
+              kvs={headers}
+              setKvs={setHeaders}
+              hasEnvSupport={true}
+              env={selectedEnv}
+            />
           </TabPanel>
           <TabPanel h="100%">
             <BodyEditor

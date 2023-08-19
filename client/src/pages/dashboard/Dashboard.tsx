@@ -608,13 +608,13 @@ function Dashboard() {
         <br />
         Do you want to save the changes now?
       </BasicModal>
-      <CmdPalette
+      {/* <CmdPalette
         collections={collections}
         currentRequest={currentRequest}
         currentCollection={currentCollection}
         selectCollection={selectCollectionRef}
         setCollectionPanelTabIndex={setCollectionPanelTabIndex}
-      />
+      /> */}
     </div>
   );
 }

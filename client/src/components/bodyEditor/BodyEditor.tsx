@@ -2,20 +2,14 @@ import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, Select, useColorMode, useToast } from '@chakra-ui/react';
 import { html } from '@codemirror/lang-html';
 import { xml } from '@codemirror/lang-xml';
-import {
-  defaultHighlightStyle,
-  HighlightStyle,
-  syntaxHighlighting,
-} from '@codemirror/language';
-import { tags } from '@lezer/highlight';
-import CodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { useCodeMirror } from '@uiw/react-codemirror';
 import { useEffect, useRef, useState } from 'react';
-import React from 'react';
 
 import { beautifyBody, errorToast } from '../../utils';
+import { helpCursor } from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { json } from '../../utils/codemirror/lang-json';
-import { getSelectedEnv } from '../../utils/store';
 import styles from './BodyEditor.module.css';
 
 type BodyEditorProps = {
@@ -28,13 +22,6 @@ type BodyEditorState = {
   contentType: string;
 };
 
-const customHighlight = HighlightStyle.define([
-  {
-    tag: tags.moduleKeyword,
-    cursor: 'help',
-  },
-]);
-
 function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   const [state, setState] = useState<BodyEditorState>({
     contentType: 'application/json',
@@ -42,11 +29,7 @@ function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
 
-  const extensions = [
-    cursorTooltipBaseTheme,
-    wordHover(selectedEnv?.data),
-    syntaxHighlighting(customHighlight),
-  ];
+  const extensions = [cursorTooltipBaseTheme, wordHover(selectedEnv?.data), helpCursor];
   if (colorMode === 'light') {
     extensions.push(syntaxHighlighting(defaultHighlightStyle));
   }

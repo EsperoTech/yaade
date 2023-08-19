@@ -1,11 +1,17 @@
 import { Spinner, useColorMode } from '@chakra-ui/react';
-import { javascript } from '@codemirror/lang-javascript';
-import { createTheme } from '@uiw/codemirror-themes';
-import CodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
+import { useCodeMirror } from '@uiw/react-codemirror';
 import { FormEvent, useEffect, useRef } from 'react';
 
 import { cn } from '../../utils';
-import { baseTheme, cmTheme } from '../../utils/codemirror/themes';
+import { helpCursor, singleLine } from '../../utils/codemirror';
+import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
+import { yaade } from '../../utils/codemirror/lang-yaade';
+// import {
+//   baseThemeDark,
+//   baseThemeLight,
+//   cmThemeDark,
+//   cmThemeLight,
+// } from '../../utils/codemirror/themes';
 import styles from './UriBar.module.css';
 
 type UriBarProps = {
@@ -15,6 +21,7 @@ type UriBarProps = {
   setMethod: any;
   isLoading: boolean;
   handleSendButtonClick: () => void;
+  env: any;
 };
 
 type MethodOptionProps = {
@@ -28,22 +35,31 @@ function UriBar({
   setMethod,
   isLoading,
   handleSendButtonClick,
+  env,
 }: UriBarProps) {
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
+  console.log({ colorMode });
 
   const { setContainer } = useCodeMirror({
     container: ref.current,
     onChange: (value: string) => setUri(value),
-    extensions: [baseTheme],
-    theme: cmTheme,
+    extensions: [
+      yaade(),
+      // colorMode === 'light' ? baseThemeLight : baseThemeDark,
+      singleLine,
+      wordHover(env?.data),
+      helpCursor,
+      cursorTooltipBaseTheme,
+    ],
+    // theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: uri,
     style: { height: '100%' },
     placeholder: 'URL',
+    indentWithTab: false,
   });
 
   useEffect(() => {
-    console.log('ajdkfaslkdf');
     if (ref.current) {
       setContainer(ref.current);
     }
@@ -64,7 +80,7 @@ function UriBar({
   }
 
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: 'calc(100% - 40px)' }}>
       <form className={styles.container} onSubmit={handleSubmit}>
         <select
           className={cn(styles, 'select', [colorMode])}

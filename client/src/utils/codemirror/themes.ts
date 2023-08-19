@@ -1,32 +1,19 @@
 import { EditorView } from '@codemirror/view';
+import { tags as t } from '@lezer/highlight';
 import createTheme from '@uiw/codemirror-themes';
 
-let rawTheme = {
+const rawTheme = {
   '&': {
     color: '#000',
     boxSizing: 'border-box',
-    border: '1px solid var(--chakra-colors-gray-700)',
-    backgroundColor: '--var(--chakra-colors-gray-900)',
     fontFamily: 'Arial, sans-serif',
     fontSize: '16px',
-    height: 'auto', // Set height to auto
-    overflow: 'hidden', // Hide overflowed content
+    height: 'auto',
+    overflow: 'hidden',
   },
   '&.cm-focused': {
     outline: '1px solid #38A169 !important',
     outlineOffset: '-1px',
-  },
-  '.cm-activeLine': {
-    // minHeight: '100%',
-    // height: '100%',
-    // transparency: '100%',
-    // 'background-color': '#171923 !important',
-  },
-  '.cm-focused .cm-selectionBackground, ::selection': {
-    // backgroundColor: 'red !important',
-  },
-  '.cm-line::selection': {
-    // backgroundColor: 'red !important',
   },
   '.cm-cursor': {
     borderLeft: '1px solid #000',
@@ -46,11 +33,8 @@ let rawTheme = {
     height: '30px',
     padding: '0',
     boxSizing: 'border-box',
-    // backgroundColor: '#171923',
     margin: 'auto',
     verticalAlign: 'middle',
-    // caretColor: 'white !important',
-    // color: 'white',
   },
   '.cm-content, .cm-gutter': { minHeight: '30px' },
   '.cm-scrollbar': {
@@ -69,17 +53,30 @@ let rawTheme = {
     minHeight: '30px',
     height: '30px',
     boxSizing: 'border-box',
-    // backgroundColor: '#171923',
-    display: 'flex',
-    alignItems: 'start',
-    justifyContent: 'start',
-    lineHeight: '1.8', // Adjust line height for better vertical alignment
+    lineHeight: '1.8',
   },
 };
 
-let baseTheme = EditorView.theme(rawTheme);
+const rawThemeDark = {
+  ...rawTheme,
+  '&': {
+    ...rawTheme['&'],
+    border: '1px solid var(--chakra-colors-gray-700)',
+  },
+};
 
-const cmTheme = createTheme({
+const rawThemeLight = {
+  ...rawTheme,
+  '&': {
+    ...rawTheme['&'],
+    border: '1px solid white',
+  },
+};
+
+const baseThemeDark = EditorView.theme(rawThemeDark);
+const baseThemeLight = EditorView.theme(rawThemeLight);
+
+const cmThemeDark = createTheme({
   theme: 'dark',
   settings: {
     background: '#171923',
@@ -88,10 +85,31 @@ const cmTheme = createTheme({
     selection: '#5e7aa3',
     selectionMatch: '#036dd626',
     lineHighlight: '#171923',
+
     gutterBackground: '#fff',
     gutterForeground: '#8a919966',
   },
-  styles: [],
+  styles: [{ tag: t.moduleKeyword, color: '#c678dd' }],
 });
 
-export { baseTheme, cmTheme, rawTheme };
+const cmThemeLight = createTheme({
+  theme: 'light',
+  settings: {
+    background: '#fff',
+    foreground: 'black',
+    caret: 'black',
+    selection: '#b3d7fe',
+    selectionMatch: '#036dd626',
+  },
+  styles: [{ tag: t.moduleKeyword, color: '#c678dd' }],
+});
+
+export {
+  baseThemeDark,
+  baseThemeLight,
+  cmThemeDark,
+  cmThemeLight,
+  rawTheme,
+  rawThemeDark,
+  rawThemeLight,
+};

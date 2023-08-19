@@ -2,92 +2,39 @@ import { DeleteIcon } from '@chakra-ui/icons';
 import { IconButton, useColorMode } from '@chakra-ui/react';
 import { EditorView } from '@codemirror/view';
 import ReactCodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 
-import { cmTheme } from '../../utils/codemirror/themes';
-import editor from '../editor';
+import { helpCursor, singleLine } from '../../utils/codemirror';
+import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
+import { json } from '../../utils/codemirror/lang-json';
+import { yaade } from '../../utils/codemirror/lang-yaade';
+import { cmTheme, rawTheme } from '../../utils/codemirror/themes';
 import styles from './KVEditorRow.module.css';
 
-const rawTheme = {
-  '&': {
-    color: '#000',
-    boxSizing: 'border-box',
-    border: '1px solid var(--chakra-colors-gray-700)',
-    backgroundColor: '--var(--chakra-colors-gray-900)',
-    fontFamily: 'Arial, sans-serif',
-    fontSize: '16px',
-    height: 'auto', // Set height to auto
-    overflow: 'hidden', // Hide overflowed content
-  },
-  '&.cm-focused': {
-    outline: '1px solid #38A169 !important',
-    outlineOffset: '-1px',
-  },
-  '.cm-activeLine': {
-    // minHeight: '100%',
-    // height: '100%',
-    // transparency: '100%',
-    // 'background-color': '#171923 !important',
-  },
-  '.cm-focused .cm-selectionBackground, ::selection': {
-    // backgroundColor: 'red !important',
-  },
-  '.cm-line::selection': {
-    // backgroundColor: 'red !important',
-  },
-  '.cm-cursor': {
-    borderLeft: '1px solid #000',
-  },
+const kvRowRawTheme = {
+  ...rawTheme,
   '.cm-placeholder': {
+    ...rawTheme['.cm-placeholder'],
     color: '#4e5057',
     lineHeight: '38px',
   },
-  '.cm-gutters': {
-    display: 'none',
-  },
-  '.cm-linenumber': {
-    display: 'none',
-  },
   '.cm-content': {
+    ...rawTheme['.cm-content'],
     minHeight: '38px',
     height: '38px',
-    padding: '0',
-    boxSizing: 'border-box',
-    // backgroundColor: '#171923',
-    margin: 'auto',
-    verticalAlign: 'middle',
-    // caretColor: 'white !important',
-    // color: 'white',
-  },
-  '.cm-content, .cm-gutter': { minHeight: '30px' },
-  '.cm-scrollbar': {
-    display: 'none',
-  },
-  '.cm-scroller': {
-    overflow: 'hidden',
-    fontFamily: 'Arial, sans-serif',
-  },
-  '.cm-activeLineGutter': {
-    display: 'none',
   },
   '.cm-line': {
+    ...rawTheme['.cm-line'],
+    lineHeight: '2.4',
     paddingLeft: '1rem',
     paddingRight: '1rem',
-    minHeight: '30px',
-    height: '30px',
-    boxSizing: 'border-box',
-    // backgroundColor: '#171923',
-    display: 'flex',
-    alignItems: 'start',
-    justifyContent: 'start',
-    lineHeight: '2.27', // Adjust line height for better vertical alignment
   },
 };
 
 const rawLeft = {
-  ...rawTheme,
+  ...kvRowRawTheme,
   '&': {
-    ...rawTheme['&'],
+    ...kvRowRawTheme['&'],
     width: '100%',
     minWidth: '100%',
     borderRadius: '20px 0 0 20px',
@@ -96,9 +43,9 @@ const rawLeft = {
 };
 
 const rawRight = {
-  ...rawTheme,
+  ...kvRowRawTheme,
   '&': {
-    ...rawTheme['&'],
+    ...kvRowRawTheme['&'],
     width: '100%',
     minWidth: '100%',
     borderRadius: '0 20px 20px 0',
@@ -114,11 +61,12 @@ type KVEditorRowProps = {
   name: string;
   kKey: string;
   value: string;
-  setKey: (i: number, key: string) => void;
-  setValue: (i: number, value: string) => void;
-  onDeleteRow: (i: number) => void;
+  onChangeRow: React.MutableRefObject<(i: number, param: string, value: string) => void>;
+  onDeleteRow: React.MutableRefObject<(i: number) => void>;
   isDeleteDisabled?: boolean;
   readOnly?: boolean;
+  hasEnvSupport: boolean;
+  env?: any;
 };
 
 function KVEditorRow({
@@ -126,34 +74,46 @@ function KVEditorRow({
   name,
   kKey,
   value,
-  setKey,
-  setValue,
+  onChangeRow,
   onDeleteRow,
   isDeleteDisabled,
   readOnly,
+  hasEnvSupport,
+  env,
 }: KVEditorRowProps) {
   const { colorMode } = useColorMode();
 
   const leftref = useRef<HTMLDivElement>(null);
   const rightref = useRef<HTMLDivElement>(null);
 
+  const extensions = [singleLine];
+
+  if (hasEnvSupport) {
+    extensions.push(yaade());
+    extensions.push(wordHover(env?.data));
+    extensions.push(helpCursor);
+    extensions.push(cursorTooltipBaseTheme);
+  }
+
   const { setContainer: setLeftContainer } = useCodeMirror({
     container: leftref.current,
-    onChange: (key: string) => setKey(i, key),
-    extensions: [kvThemeLeft],
+    onChange: (key: string) => onChangeRow.current(i, 'key', key),
+    extensions: [kvThemeLeft, ...extensions],
     theme: cmTheme,
     value: kKey,
     style: { height: '100%' },
     placeholder: 'Key',
+    indentWithTab: false,
   });
   const { setContainer: setRightContainer } = useCodeMirror({
     container: rightref.current,
-    onChange: (value: string) => setValue(i, value),
-    extensions: [kvThemeRight],
+    onChange: (value: string) => onChangeRow.current(i, 'value', value),
+    extensions: [kvThemeRight, ...extensions],
     theme: cmTheme,
     value,
     style: { height: '100%' },
     placeholder: 'Value',
+    indentWithTab: false,
   });
 
   useEffect(() => {
@@ -181,7 +141,7 @@ function KVEditorRow({
             isRound
             variant="ghost"
             disabled={isDeleteDisabled}
-            onClick={() => onDeleteRow(i)}
+            onClick={() => onDeleteRow.current(i)}
             colorScheme="red"
             icon={<DeleteIcon />}
           />
@@ -211,30 +171,31 @@ function KVEditorRow({
   );
 }
 
-export default React.memo(KVEditorRow, (prevProps, nextProps) => {
-  console.log(
-    'prevProps.kKey === nextProps.kKey',
-    prevProps.kKey === nextProps.kKey,
-    'prevProps.value === nextProps.value',
-    prevProps.value === nextProps.value,
-    'prevProps.setKey === nextProps.setKey',
-    prevProps.setKey === nextProps.setKey,
-    'prevProps.setValue === nextProps.setValue',
-    prevProps.setValue === nextProps.setValue,
-    'prevProps.onDeleteRow === nextProps.onDeleteRow',
-    prevProps.onDeleteRow === nextProps.onDeleteRow,
-    'prevProps.isDeleteDisabled === nextProps.isDeleteDisabled',
-    prevProps.isDeleteDisabled === nextProps.isDeleteDisabled,
-    'prevProps.readOnly === nextProps.readOnly',
-    prevProps.readOnly === nextProps.readOnly,
-  );
-  return (
-    prevProps.kKey === nextProps.kKey &&
-    prevProps.value === nextProps.value &&
-    prevProps.setKey === nextProps.setKey &&
-    prevProps.setValue === nextProps.setValue &&
-    prevProps.onDeleteRow === nextProps.onDeleteRow &&
-    prevProps.isDeleteDisabled === nextProps.isDeleteDisabled &&
-    prevProps.readOnly === nextProps.readOnly
-  );
-});
+export default React.memo(KVEditorRow);
+// export default React.memo(KVEditorRow, (prevProps, nextProps) => {
+//   console.log(
+//     'prevProps.kKey === nextProps.kKey',
+//     prevProps.kKey === nextProps.kKey,
+//     'prevProps.value === nextProps.value',
+//     prevProps.value === nextProps.value,
+//     'prevProps.setKey === nextProps.setKey',
+//     prevProps.setKey === nextProps.setKey,
+//     'prevProps.setValue === nextProps.setValue',
+//     prevProps.setValue === nextProps.setValue,
+//     'prevProps.onDeleteRow === nextProps.onDeleteRow',
+//     prevProps.onDeleteRow === nextProps.onDeleteRow,
+//     'prevProps.isDeleteDisabled === nextProps.isDeleteDisabled',
+//     prevProps.isDeleteDisabled === nextProps.isDeleteDisabled,
+//     'prevProps.readOnly === nextProps.readOnly',
+//     prevProps.readOnly === nextProps.readOnly,
+//   );
+//   return (
+//     prevProps.kKey === nextProps.kKey &&
+//     prevProps.value === nextProps.value &&
+//     prevProps.setKey === nextProps.setKey &&
+//     prevProps.setValue === nextProps.setValue &&
+//     prevProps.onDeleteRow === nextProps.onDeleteRow &&
+//     prevProps.isDeleteDisabled === nextProps.isDeleteDisabled &&
+//     prevProps.readOnly === nextProps.readOnly
+//   );
+// });

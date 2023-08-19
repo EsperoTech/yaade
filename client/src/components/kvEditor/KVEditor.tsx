@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import KVRow from '../../model/KVRow';
 import styles from './KVEditor.module.css';
@@ -9,12 +9,14 @@ type KVEditorProps = {
   setKvs?: any;
   name: string;
   readOnly?: boolean;
+  hasEnvSupport: boolean;
+  env?: any;
 };
 
 const EMPTY_ROW = { key: '', value: '' };
 const isRowEmpty = (row: KVRow) => row.key === '' && row.value === '';
 
-function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
+function KVEditor({ name, kvs, setKvs, readOnly, hasEnvSupport, env }: KVEditorProps) {
   // we copy the data so we can append an empty last row without
   // mutating the original data
   const displayKvs = useMemo(() => {
@@ -25,8 +27,13 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
     return result;
   }, [kvs, readOnly]);
 
-  const onChangeRow = useCallback(
-    (i: number, param: string, value: string) => {
+  const onChangeRowRef = useRef<(i: number, param: string, value: string) => void>(
+    (i: number, param: string, value: string) => {},
+  );
+  const onDeleteRowRef = useRef<(i: number) => void>((i: number) => {});
+
+  useEffect(() => {
+    onChangeRowRef.current = (i: number, param: string, value: string) => {
       let newKvs = [...displayKvs];
       const newRow = { ...newKvs[i] } as any;
       newRow[param] = value;
@@ -34,28 +41,17 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
       newKvs = newKvs.filter((el) => !isRowEmpty(el));
 
       setKvs(newKvs);
-    },
-    [displayKvs, setKvs],
-  );
+    };
+  }, [displayKvs, setKvs]);
 
-  const setKey = useCallback(
-    (i: number, key: string) => onChangeRow(i, 'key', key),
-    [onChangeRow],
-  );
-  const setValue = useCallback(
-    (i: number, value: string) => onChangeRow(i, 'value', value),
-    [onChangeRow],
-  );
-
-  const onDeleteRow = useCallback(
-    (i: number) => {
+  useEffect(() => {
+    onDeleteRowRef.current = (i: number) => {
       let newKvs = [...displayKvs];
       newKvs.splice(i, 1);
       newKvs = newKvs.filter((el) => !isRowEmpty(el));
       setKvs(newKvs);
-    },
-    [displayKvs, setKvs],
-  );
+    };
+  }, [displayKvs, setKvs]);
 
   return (
     <div className={styles.container}>
@@ -66,11 +62,12 @@ function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
           i={i}
           kKey={key}
           value={value}
-          setKey={setKey}
-          setValue={setValue}
-          onDeleteRow={onDeleteRow}
+          onChangeRow={onChangeRowRef}
+          onDeleteRow={onDeleteRowRef}
           isDeleteDisabled={readOnly}
           readOnly={readOnly}
+          hasEnvSupport={hasEnvSupport}
+          env={env}
         />
       ))}
     </div>
