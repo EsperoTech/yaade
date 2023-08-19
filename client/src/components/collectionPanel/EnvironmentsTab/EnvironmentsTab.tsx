@@ -581,6 +581,8 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
             name="env"
             kvs={state.selectedEnvKVs ?? []}
             setKvs={(kvs: KVRow[]) => setSelectedEnvData(kvs)}
+            hasEnvSupport={'VALUE_ONLY'}
+            env={selectedEnv}
           />
           {selectedEnv?.proxy === 'server' ? (
             <>

@@ -8,14 +8,18 @@ import { helpCursor, singleLine } from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { json } from '../../utils/codemirror/lang-json';
 import { yaade } from '../../utils/codemirror/lang-yaade';
-import { cmTheme, rawTheme } from '../../utils/codemirror/themes';
+import {
+  cmThemeDark,
+  cmThemeLight,
+  rawTheme,
+  rawThemeDark,
+} from '../../utils/codemirror/themes';
 import styles from './KVEditorRow.module.css';
 
 const kvRowRawTheme = {
-  ...rawTheme,
+  ...rawThemeDark,
   '.cm-placeholder': {
     ...rawTheme['.cm-placeholder'],
-    color: '#4e5057',
     lineHeight: '38px',
   },
   '.cm-content': {
@@ -38,7 +42,26 @@ const rawLeft = {
     width: '100%',
     minWidth: '100%',
     borderRadius: '20px 0 0 20px',
+  },
+};
+
+const rawLeftDark = {
+  ...rawLeft,
+  '&': {
+    ...rawLeft['&'],
+    border: '1px solid var(--chakra-colors-gray-700)',
     borderRight: '1px solid #2D3748',
+  },
+};
+
+const rawLeftLight = {
+  ...rawLeft,
+  '&': {
+    ...rawLeft['&'],
+    border: '1px solid #EDF2F7',
+  },
+  '.cm-activeLine': {
+    backgroundColor: 'white',
   },
 };
 
@@ -49,12 +72,33 @@ const rawRight = {
     width: '100%',
     minWidth: '100%',
     borderRadius: '0 20px 20px 0',
+  },
+};
+
+const rawRightDark = {
+  ...rawRight,
+  '&': {
+    ...rawRight['&'],
+    border: '1px solid var(--chakra-colors-gray-700)',
     borderLeft: '1px solid #2D3748',
   },
 };
 
-const kvThemeLeft = EditorView.theme(rawLeft);
-const kvThemeRight = EditorView.theme(rawRight);
+const rawRightLight = {
+  ...rawRight,
+  '&': {
+    ...rawRight['&'],
+    border: '1px solid #EDF2F7',
+  },
+  '.cm-activeLine': {
+    backgroundColor: 'white',
+  },
+};
+
+const kvThemeLeftLight = EditorView.theme(rawLeftLight);
+const kvThemeLeftDark = EditorView.theme(rawLeftDark);
+const kvThemeRightLight = EditorView.theme(rawRightLight);
+const kvThemeRightDark = EditorView.theme(rawRightDark);
 
 type KVEditorRowProps = {
   i: number;
@@ -65,7 +109,7 @@ type KVEditorRowProps = {
   onDeleteRow: React.MutableRefObject<(i: number) => void>;
   isDeleteDisabled?: boolean;
   readOnly?: boolean;
-  hasEnvSupport: boolean;
+  hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
 };
 
@@ -86,20 +130,31 @@ function KVEditorRow({
   const leftref = useRef<HTMLDivElement>(null);
   const rightref = useRef<HTMLDivElement>(null);
 
-  const extensions = [singleLine];
+  const extensionKeys = [singleLine];
+  const extensionsValue = [singleLine];
 
-  if (hasEnvSupport) {
-    extensions.push(yaade());
-    extensions.push(wordHover(env?.data));
-    extensions.push(helpCursor);
-    extensions.push(cursorTooltipBaseTheme);
+  if (hasEnvSupport !== 'NONE') {
+    const envExtensions = [];
+    envExtensions.push(yaade());
+    envExtensions.push(wordHover(env?.data));
+    envExtensions.push(helpCursor);
+    envExtensions.push(cursorTooltipBaseTheme);
+    if (hasEnvSupport === 'BOTH') {
+      extensionKeys.push(...envExtensions);
+      extensionsValue.push(...envExtensions);
+    } else if (hasEnvSupport === 'VALUE_ONLY') {
+      extensionsValue.push(...envExtensions);
+    }
   }
 
   const { setContainer: setLeftContainer } = useCodeMirror({
     container: leftref.current,
     onChange: (key: string) => onChangeRow.current(i, 'key', key),
-    extensions: [kvThemeLeft, ...extensions],
-    theme: cmTheme,
+    extensions: [
+      colorMode === 'light' ? kvThemeLeftLight : kvThemeLeftDark,
+      ...extensionKeys,
+    ],
+    theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: kKey,
     style: { height: '100%' },
     placeholder: 'Key',
@@ -108,8 +163,11 @@ function KVEditorRow({
   const { setContainer: setRightContainer } = useCodeMirror({
     container: rightref.current,
     onChange: (value: string) => onChangeRow.current(i, 'value', value),
-    extensions: [kvThemeRight, ...extensions],
-    theme: cmTheme,
+    extensions: [
+      colorMode === 'light' ? kvThemeRightLight : kvThemeRightDark,
+      ...extensionsValue,
+    ],
+    theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value,
     style: { height: '100%' },
     placeholder: 'Value',

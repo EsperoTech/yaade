@@ -20,6 +20,7 @@ import {
   CurrentCollectionActionType,
 } from '../../state/currentCollection';
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
+import { getSelectedEnv } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import Editor from '../editor';
 import KVEditor from '../kvEditor';
@@ -44,6 +45,7 @@ export default function CollectionPanel({
 }: CollectionPanelProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
+  const selectedEnv = currentCollection ? getSelectedEnv(currentCollection) : null;
 
   const headers =
     currentCollection.data?.headers && currentCollection.data.headers.length !== 0
@@ -168,7 +170,13 @@ export default function CollectionPanel({
             />
           </TabPanel>
           <TabPanel>
-            <KVEditor name="headers" kvs={headers} setKvs={setHeaders} />
+            <KVEditor
+              name="headers"
+              kvs={headers}
+              setKvs={setHeaders}
+              hasEnvSupport={'BOTH'}
+              env={selectedEnv}
+            />
           </TabPanel>
           <TabPanel h="100%">
             <Editor

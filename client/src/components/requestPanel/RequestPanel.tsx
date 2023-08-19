@@ -273,7 +273,7 @@ function RequestPanel({
               name="params"
               kvs={params}
               setKvs={setUriFromParams}
-              hasEnvSupport={true}
+              hasEnvSupport={'BOTH'}
               env={selectedEnv}
             />
           </TabPanel>
@@ -282,7 +282,7 @@ function RequestPanel({
               name="headers"
               kvs={headers}
               setKvs={setHeaders}
-              hasEnvSupport={true}
+              hasEnvSupport={'BOTH'}
               env={selectedEnv}
             />
           </TabPanel>

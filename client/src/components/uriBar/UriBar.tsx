@@ -6,12 +6,12 @@ import { cn } from '../../utils';
 import { helpCursor, singleLine } from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { yaade } from '../../utils/codemirror/lang-yaade';
-// import {
-//   baseThemeDark,
-//   baseThemeLight,
-//   cmThemeDark,
-//   cmThemeLight,
-// } from '../../utils/codemirror/themes';
+import {
+  baseThemeDark,
+  baseThemeLight,
+  cmThemeDark,
+  cmThemeLight,
+} from '../../utils/codemirror/themes';
 import styles from './UriBar.module.css';
 
 type UriBarProps = {
@@ -46,13 +46,13 @@ function UriBar({
     onChange: (value: string) => setUri(value),
     extensions: [
       yaade(),
-      // colorMode === 'light' ? baseThemeLight : baseThemeDark,
+      colorMode === 'light' ? baseThemeLight : baseThemeDark,
       singleLine,
       wordHover(env?.data),
       helpCursor,
       cursorTooltipBaseTheme,
     ],
-    // theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
+    theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: uri,
     style: { height: '100%' },
     placeholder: 'URL',

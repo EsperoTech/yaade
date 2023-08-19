@@ -1,10 +1,10 @@
-import Collection from '../model/Collection';
+import Collection, { CurrentCollection } from '../model/Collection';
 
 function getSelectedEnvs(): Record<number, string> {
   return JSON.parse(localStorage.getItem('selectedEnvs') ?? '{}');
 }
 
-function getSelectedEnv(collection: Collection): any {
+function getSelectedEnv(collection: Collection | CurrentCollection): any {
   const selectedEnvName = getSelectedEnvs()[collection.id];
 
   if (!selectedEnvName) return {};

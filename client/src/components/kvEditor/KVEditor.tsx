@@ -9,7 +9,7 @@ type KVEditorProps = {
   setKvs?: any;
   name: string;
   readOnly?: boolean;
-  hasEnvSupport: boolean;
+  hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
 };
 
