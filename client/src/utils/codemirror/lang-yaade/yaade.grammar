@@ -1,0 +1,23 @@
+@top Value { value* }
+
+value { templateEscape | templateContent | TemplateExpr }
+
+TemplateExpr[@name=Interpolation] { InterpolationStart interpolationContent* InterpolationEnd }
+
+@local tokens {
+  InterpolationStart[closedBy=InterpolationEnd] { "${" }
+  templateEscape[@name=Escape] { "\\" esc }
+  @else templateContent
+}
+
+InterpolationEnd[openedBy=InterpolationStart] { "}" }
+
+@tokens {
+  esc  { $["\\\/bfnrt] | "u" hex hex hex hex }
+  hex  { $[0-9a-fA-F] }
+  interpolationContent { $[\u{21}-\u{7a} \n\r\t] }
+}
+
+@external propSource yaadeHighlighting from "./highlight"
+
+@detectDelim
