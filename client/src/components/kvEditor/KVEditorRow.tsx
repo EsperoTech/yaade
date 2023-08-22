@@ -1,5 +1,5 @@
 import { DeleteIcon } from '@chakra-ui/icons';
-import { IconButton, useColorMode } from '@chakra-ui/react';
+import { color, IconButton, useColorMode } from '@chakra-ui/react';
 import { EditorView } from '@codemirror/view';
 import ReactCodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -135,7 +135,7 @@ function KVEditorRow({
 
   if (hasEnvSupport !== 'NONE') {
     const envExtensions = [];
-    envExtensions.push(yaade());
+    envExtensions.push(yaade(colorMode));
     envExtensions.push(wordHover(env?.data));
     envExtensions.push(helpCursor);
     envExtensions.push(cursorTooltipBaseTheme);

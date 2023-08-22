@@ -44,7 +44,7 @@ function UriBar({
     container: ref.current,
     onChange: (value: string) => setUri(value),
     extensions: [
-      yaade(),
+      yaade(colorMode),
       colorMode === 'light' ? baseThemeLight : baseThemeDark,
       singleLine,
       wordHover(env?.data),

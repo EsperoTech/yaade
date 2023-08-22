@@ -13,13 +13,13 @@ const yaadeLanguage = LRLanguage.define({
 /**
 Yaade language support.
 */
-function yaade() {
+function yaade(colorMode) {
   // NOTE: we need to add the support extension to overwrite the default transpaent selection color
   const themeOptions = {};
   themeOptions[
     '.cm-line::selection, .cm-line > span::selection, .cm-line > span > span::selection'
   ] = {
-    backgroundColor: '#5e7aa3' + ' !important',
+    backgroundColor: colorMode === 'dark' ? '#5e7aa3 !important' : '#b3d7fe !important',
   };
   const themeExtension = EditorView.theme(themeOptions);
   return new LanguageSupport(yaadeLanguage, [themeExtension]);

@@ -185,7 +185,7 @@ function RequestSender({
       ...request,
       data: {
         ...request.data,
-        headers: [...collectionHeaders, ...request.data.headers],
+        headers: [...collectionHeaders, ...(request.data.headers ?? [])],
       },
     };
 

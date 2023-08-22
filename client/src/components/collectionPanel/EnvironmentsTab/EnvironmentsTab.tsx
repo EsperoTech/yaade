@@ -15,7 +15,14 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import { FunctionComponent, useEffect, useRef, useState } from 'react';
+import {
+  FunctionComponent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import KVRow from '../../../model/KVRow';
 import { BASE_PATH, errorToast, kvRowsToMap, successToast } from '../../../utils';
@@ -45,7 +52,6 @@ type EnvironmentTabState = {
   modalState: 'create' | 'copy' | 'default';
   newEnvName: string;
   envNameToCopy?: string;
-  selectedEnvName?: string;
   // we need duplicate state here because leaving variables as
   // a map would lead to weird input behavior on duplicate keys
   selectedEnvKVs?: KVRow[];
@@ -75,23 +81,89 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
     selectedEnvKVs: [],
     selectedEnvSecrets: [],
   });
+  const [selectedEnvName, setSelectedEnvName] = useState<string>();
   const { colorMode } = useColorMode();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
+  const envsRef = useRef(envs);
+  const envNames = Object.keys(envs ?? {});
+  const [localSelectedEnvs, setLocalSelectedEnvs] = useState(getSelectedEnvs());
+
+  console.log('state', envs, state, selectedEnvName);
+
+  useEffect(() => {
+    envsRef.current = envs;
+  }, [envs]);
+
+  const getEnvOrDefault = (name?: string): Environment => {
+    if (!name) return DEFAULT_ENV;
+    return envsRef.current[name] ?? DEFAULT_ENV;
+  };
+
+  const envSelected = useCallback(
+    (name: string) => {
+      const selectedEnv = getEnvOrDefault(name);
+      const secretsKeys = selectedEnv?.secretKeys ?? [];
+      const selectedEnvKVs = mapEnvDataToKVRows(selectedEnv.data ?? {});
+      const selectedEnvSecrets: Secret[] = secretsKeys.map((key: any) => {
+        return {
+          key,
+          value: DEFAULT_SECRET_VALUE,
+          isChanged: false,
+        };
+      });
+      setState((state) => {
+        return {
+          ...state,
+          selectedEnvKVs,
+          selectedEnvSecrets,
+        };
+      });
+      saveSelectedEnv(collectionId, name);
+    },
+    [collectionId],
+  );
+
+  useEffect(() => {
+    const selectedEnvName = getSelectedEnvs()[collectionId];
+    if (selectedEnvName) {
+      setSelectedEnvName(selectedEnvName);
+    } else {
+      let defaultEnvName = envNames.find((el) => el === localSelectedEnvs[collectionId]);
+      if (!defaultEnvName && envNames.length !== 0) {
+        defaultEnvName = envNames[0];
+      }
+      if (defaultEnvName) {
+        envSelected(defaultEnvName);
+      }
+    }
+  }, [collectionId, envNames, envSelected, envsRef, localSelectedEnvs]);
+
+  useEffect(() => {
+    if (!selectedEnvName) return;
+    const selectedEnv = envsRef.current[selectedEnvName];
+    if (!selectedEnv) return;
+    setState((state) => {
+      return {
+        ...state,
+        selectedEnvName: getSelectedEnvs()[collectionId],
+        selectedEnvKVs: mapEnvDataToKVRows(selectedEnv.data),
+        selectedEnvSecrets: selectedEnv.secretKeys.map((key: any) => {
+          return {
+            key,
+            value: DEFAULT_SECRET_VALUE,
+            isChanged: false,
+          };
+        }),
+      };
+    });
+  }, [collectionId, selectedEnvName]);
 
   useEffect(() => {
     if (['create', 'copy'].includes(state.modalState)) {
       inputRef.current?.focus();
     }
   }, [state.modalState]);
-
-  useEffect(() => {
-    setDefaultEnv();
-  }, [collectionId]);
-
-  const envNames = Object.keys(envs ?? {});
-  const selectedEnvs = getSelectedEnvs();
-  const selectedEnv = getEnvOrDefault(state.selectedEnvName);
 
   function mapEnvDataToKVRows(data: Record<string, string>): KVRow[] {
     if (Object.keys(data).length === 0) {
@@ -103,74 +175,14 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
     }));
   }
 
-  function getEnvOrDefault(name?: string): Environment {
-    if (!name) return DEFAULT_ENV;
-    return envs[name] ?? DEFAULT_ENV;
-  }
-
-  function envSelected(name: string) {
-    const selectedEnv = getEnvOrDefault(name);
-    const secretsKeys = selectedEnv?.secretKeys ?? [];
-    const selectedEnvKVs = mapEnvDataToKVRows(selectedEnv.data ?? {});
-    const selectedEnvSecrets: Secret[] = secretsKeys.map((key: any) => {
-      return {
-        key,
-        value: DEFAULT_SECRET_VALUE,
-        isChanged: false,
-      };
-    });
-    setState({
-      ...state,
-      selectedEnvName: name,
-      selectedEnvKVs,
-      selectedEnvSecrets,
-    });
-    saveSelectedEnv(collectionId, name);
-  }
-
-  function setDefaultEnv() {
-    let defaultEnvName = envNames.find((el) => el === selectedEnvs[collectionId]);
-    if (!defaultEnvName && envNames.length !== 0) {
-      defaultEnvName = envNames[0];
-    }
-    if (defaultEnvName) {
-      envSelected(defaultEnvName);
-    }
-  }
-
-  if (!state.selectedEnvName) {
-    setDefaultEnv();
-  }
-
-  // NOTE: use this to rerender in case of response script env change
-  // useEffect(() => {
-  //   if (!state.selectedEnvName) return;
-  //   const env = envs[state.selectedEnvName];
-  //   const data = Object.entries(env?.data ?? {}).map(([key, value]) => ({
-  //     key,
-  //     value: value as string,
-  //   }));
-
-  //   if (data.length === 0) {
-  //     data.push({ key: '', value: '' });
-  //   }
-
-  //   setState((s) => {
-  //     return {
-  //       ...s,
-  //       selectedEnvData: data,
-  //     };
-  //   });
-  // }, [collection, state.selectedEnvName, setState]);
-
   async function handleCreateEnvClicked() {
     // TODO: created envs need to be directly written to global state
     try {
       let options: any = {
         method: 'POST',
       };
-      const envToCopy = getEnvOrDefault(state.envNameToCopy);
-      const copiedData = JSON.parse(JSON.stringify(envToCopy));
+      const envToCopy = getEnvOrDefault(state.envNameToCopy) ?? {};
+      const copiedData = JSON.parse(JSON.stringify(envToCopy.data ?? {}));
       const proxy = envToCopy.proxy;
 
       if (state.modalState === 'copy') {
@@ -199,10 +211,11 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
         ...state,
         newEnvName: '',
         modalState: 'default',
-        selectedEnvName: state.newEnvName,
         selectedEnvSecrets: [],
         envNameToCopy: undefined,
       });
+      setSelectedEnvName(state.newEnvName);
+      setLocalSelectedEnvs({ ...localSelectedEnvs, [collectionId]: state.newEnvName });
       successToast('Environment created.', toast);
     } catch (e) {
       errorToast('Could not create environment', toast);
@@ -211,9 +224,9 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
 
   async function handleDeleteEnvClicked() {
     try {
-      if (!state.selectedEnvName || envNames.length <= 1) throw Error();
+      if (!selectedEnvName || envNames.length <= 1) throw Error();
       const res = await fetch(
-        BASE_PATH + `api/collection/${collectionId}/envs/${state.selectedEnvName}`,
+        BASE_PATH + `api/collection/${collectionId}/envs/${selectedEnvName}`,
         {
           method: 'DELETE',
         },
@@ -221,17 +234,17 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
       if (res.status !== 200) throw Error();
 
       const newEnvs = envs ?? {};
-      delete newEnvs[state.selectedEnvName];
+      delete newEnvs[selectedEnvName];
 
       setEnvs(newEnvs);
       setState({
         ...state,
         newEnvName: '',
         modalState: 'default',
-        selectedEnvName: undefined,
         selectedEnvSecrets: [],
         envNameToCopy: undefined,
       });
+      setSelectedEnvName(undefined);
       successToast('Environment deleted.', toast);
     } catch (e) {
       errorToast('Could not delete environment', toast);
@@ -239,16 +252,16 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   function setSelectedEnvData(selectedEnvData: KVRow[]) {
-    if (!state.selectedEnvName) return;
+    if (!selectedEnvName) return;
     setState({
       ...state,
       selectedEnvKVs: selectedEnvData,
     });
     const data = kvRowsToMap(selectedEnvData);
-    const selectedEnv = getEnvOrDefault(state.selectedEnvName);
+    const selectedEnv = getEnvOrDefault(selectedEnvName);
     setEnvs({
       ...envs,
-      [state.selectedEnvName]: {
+      [selectedEnvName]: {
         ...selectedEnv,
         data,
       },
@@ -256,62 +269,17 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   function setProxy(proxy: string) {
-    if (!state.selectedEnvName) return;
-    const selectedEnv = getEnvOrDefault(state.selectedEnvName);
+    console.log('setProxy', proxy, selectedEnvName);
+    if (!selectedEnvName) return;
+    const selectedEnv = getEnvOrDefault(selectedEnvName);
     setEnvs({
       ...envs,
-      [state.selectedEnvName]: {
+      [selectedEnvName]: {
         ...selectedEnv,
         proxy,
       },
     });
   }
-
-  // async function handleSaveClicked() {
-  //   try {
-  //     if (!state.selectedEnvName) {
-  //       return;
-  //     }
-
-  //     const data = kvRowsToMap(state.selectedEnvData ?? []);
-  //     const proxy = state.selectedEnvProxy ?? 'ext';
-
-  //     const body = { data, proxy };
-
-  //     const res = await fetch(
-  //       BASE_PATH + `api/collection/${collectionId}/envs/${state.selectedEnvName}`,
-  //       {
-  //         method: 'PUT',
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //         },
-  //         body: JSON.stringify(body),
-  //       },
-  //     );
-  //     if (res.status !== 200) throw Error('Could not save environment');
-
-  //     const oldEnvs = collection.data?.envs ?? {};
-  //     const oldEnv = oldEnvs[state.selectedEnvName] ?? {};
-
-  //     // saveCollection({
-  //     //   ...collection,
-  //     //   data: {
-  //     //     ...collection.data,
-  //     //     envs: {
-  //     //       ...oldEnvs,
-  //     //       [state.selectedEnvName]: {
-  //     //         ...oldEnv,
-  //     //         data,
-  //     //         proxy,
-  //     //       },
-  //     //     },
-  //     //   },
-  //     // });
-  //     successToast('Environment saved.', toast);
-  //   } catch (e) {
-  //     errorToast('Could not save environment', toast);
-  //   }
-  // }
 
   function isCreateDisabled() {
     return (
@@ -326,7 +294,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
     try {
       const res = await fetch(
         BASE_PATH +
-          `api/collection/${collectionId}/envs/${state.selectedEnvName}/secrets/${state.newSecretKey}`,
+          `api/collection/${collectionId}/envs/${selectedEnvName}/secrets/${state.newSecretKey}`,
         {
           method: 'PUT',
           headers: {
@@ -355,7 +323,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
       const secret = { ...state.selectedEnvSecrets[i] };
       const res = await fetch(
         BASE_PATH +
-          `api/collection/${collectionId}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
+          `api/collection/${collectionId}/envs/${selectedEnvName}/secrets/${secret.key}`,
         {
           method: 'PUT',
           headers: {
@@ -383,7 +351,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
       const secret = { ...state.selectedEnvSecrets[i] };
       const res = await fetch(
         BASE_PATH +
-          `api/collection/${collectionId}/envs/${state.selectedEnvName}/secrets/${secret.key}`,
+          `api/collection/${collectionId}/envs/${selectedEnvName}/secrets/${secret.key}`,
         {
           method: 'DELETE',
         },
@@ -398,13 +366,13 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   function addSecret(key: string) {
-    if (!state.selectedEnvSecrets || !state.selectedEnvName) return;
+    if (!state.selectedEnvSecrets || !selectedEnvName) return;
     const newSecret: Secret = {
       key,
       value: DEFAULT_SECRET_VALUE,
       isChanged: false,
     };
-    const selectedEnv = getEnvOrDefault(state.selectedEnvName);
+    const selectedEnv = getEnvOrDefault(selectedEnvName);
     const newSecrets = [...state.selectedEnvSecrets, newSecret];
     const newSecretKeys = newSecrets.map((el) => el.key);
     setState({
@@ -415,7 +383,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
     });
     setEnvs({
       ...envs,
-      [state.selectedEnvName]: {
+      [selectedEnvName]: {
         ...selectedEnv,
         secretKeys: newSecretKeys,
       },
@@ -430,15 +398,15 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   function deleteSecret(i: number) {
-    if (!state.selectedEnvSecrets || !state.selectedEnvName) return;
-    const selectedEnv = getEnvOrDefault(state.selectedEnvName);
+    if (!state.selectedEnvSecrets || !selectedEnvName) return;
+    const selectedEnv = getEnvOrDefault(selectedEnvName);
     const newSecrets = [...state.selectedEnvSecrets];
     newSecrets.splice(i, 1);
     setState({ ...state, selectedEnvSecrets: newSecrets });
     const newSecretKeys = newSecrets.map((el) => el.key);
     setEnvs({
       ...envs,
-      [state.selectedEnvName]: {
+      [selectedEnvName]: {
         ...selectedEnv,
         secretKeys: newSecretKeys,
       },
@@ -505,7 +473,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
           />
           <IconButton
             icon={<CloseIcon />}
-            disabled={!state.selectedEnvName}
+            disabled={!selectedEnvName}
             variant="ghost"
             colorScheme="red"
             aria-label="Close form to create new environment"
@@ -519,7 +487,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
             borderRadius={20}
             colorScheme="green"
             onChange={(e) => envSelected(e.target.value)}
-            value={state.selectedEnvName}
+            value={selectedEnvName}
           >
             {envNames.map((env: any) => (
               <option key={`${collectionId}-${env}`}>{env}</option>
@@ -540,18 +508,18 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
               setState({
                 ...state,
                 modalState: 'copy',
-                envNameToCopy: state.selectedEnvName,
-                newEnvName: `${state.selectedEnvName}-copy`,
+                envNameToCopy: selectedEnvName,
+                newEnvName: `${selectedEnvName}-copy`,
               })
             }
-            disabled={!state.selectedEnvName}
+            disabled={!selectedEnvName}
             marginInlineStart="0"
           />
           <IconButton
             icon={<DeleteIcon />}
             variant="ghost"
             colorScheme="red"
-            disabled={!state.selectedEnvName || envNames.length <= 1}
+            disabled={!selectedEnvName || envNames.length <= 1}
             aria-label="Open form to create new environment"
             onClick={handleDeleteEnvClicked}
             marginInlineStart="0"
@@ -559,7 +527,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
         </HStack>
       )}
 
-      {state.selectedEnvName ? (
+      {selectedEnvName ? (
         <div style={{ overflow: 'auto' }}>
           <Heading as="h6" size="xs" my="4">
             Proxy
@@ -569,7 +537,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
             borderRadius={20}
             colorScheme="green"
             onChange={(e) => setProxy(e.target.value)}
-            value={selectedEnv?.proxy ?? 'ext'}
+            value={envs[selectedEnvName]?.proxy ?? 'ext'}
           >
             <option value="ext">Extension</option>
             <option value="server">Server</option>
@@ -582,9 +550,8 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
             kvs={state.selectedEnvKVs ?? []}
             setKvs={(kvs: KVRow[]) => setSelectedEnvData(kvs)}
             hasEnvSupport={'NONE'}
-            env={selectedEnv}
           />
-          {selectedEnv?.proxy === 'server' ? (
+          {envs[selectedEnvName]?.proxy === 'server' ? (
             <>
               <HStack>
                 <Heading as="h6" size="xs" my="4">

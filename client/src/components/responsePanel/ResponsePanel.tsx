@@ -100,16 +100,21 @@ function ResponsePanel({ response }: ResponsePanelProps) {
           </div>
           <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }}>
             <TabPanel>
-              {/* <CodeMirror
+              <CodeMirror
                 height="100%"
                 extensions={extensions}
                 theme={colorMode}
                 value={response.body}
                 editable={false}
-              /> */}
+              />
             </TabPanel>
             <TabPanel>
-              <KVEditor name="response-headers" kvs={response.headers} readOnly />
+              <KVEditor
+                name="response-headers"
+                kvs={response.headers}
+                readOnly
+                hasEnvSupport="NONE"
+              />
             </TabPanel>
           </TabPanels>
         </Tabs>

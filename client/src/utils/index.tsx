@@ -106,6 +106,7 @@ function groupsStrToArray(groups: string): Array<string> {
 
 function kvRowsToMap(rows: KVRow[]): Record<string, string> {
   const res: Record<string, string> = {};
+  if (!rows) return res;
   rows.forEach((row) => {
     if (row.key === '') return;
     if (res[row.key]) return;
