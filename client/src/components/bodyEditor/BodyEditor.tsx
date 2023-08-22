@@ -2,20 +2,14 @@ import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, Select, useColorMode, useToast } from '@chakra-ui/react';
 import { html } from '@codemirror/lang-html';
 import { xml } from '@codemirror/lang-xml';
-import {
-  defaultHighlightStyle,
-  HighlightStyle,
-  syntaxHighlighting,
-} from '@codemirror/language';
-import { tags } from '@lezer/highlight';
-import CodeMirror from '@uiw/react-codemirror';
-import { useState } from 'react';
-import React from 'react';
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { useCodeMirror } from '@uiw/react-codemirror';
+import { useEffect, useRef, useState } from 'react';
 
 import { beautifyBody, errorToast } from '../../utils';
+import { helpCursor } from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { json } from '../../utils/codemirror/lang-json';
-import { getSelectedEnv } from '../../utils/store';
 import styles from './BodyEditor.module.css';
 
 type BodyEditorProps = {
@@ -34,18 +28,8 @@ function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   });
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const customHighlight = HighlightStyle.define([
-    {
-      tag: tags.moduleKeyword,
-      cursor: 'help',
-    },
-  ]);
 
-  const extensions = [
-    cursorTooltipBaseTheme,
-    wordHover(selectedEnv?.data),
-    syntaxHighlighting(customHighlight),
-  ];
+  const extensions = [cursorTooltipBaseTheme, wordHover(selectedEnv?.data), helpCursor];
   if (colorMode === 'light') {
     extensions.push(syntaxHighlighting(defaultHighlightStyle));
   }
@@ -56,6 +40,23 @@ function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
   } else if (state.contentType === 'text/html') {
     extensions.push(html());
   }
+
+  const ref = useRef<HTMLDivElement>(null);
+
+  const { setContainer } = useCodeMirror({
+    container: ref.current,
+    onChange: (value: string) => setContent(value),
+    extensions: [extensions],
+    theme: colorMode,
+    value: content,
+    style: { height: '100%' },
+  });
+
+  useEffect(() => {
+    if (ref.current) {
+      setContainer(ref.current);
+    }
+  }, [ref, setContainer]);
 
   function handleBeautifyClick() {
     try {
@@ -107,15 +108,7 @@ function BodyEditor({ content, setContent, selectedEnv }: BodyEditorProps) {
           />
         </div>
       </div>
-      <div className={styles.container}>
-        <CodeMirror
-          onChange={setContent}
-          extensions={extensions}
-          theme={colorMode}
-          value={content}
-          style={{ height: '100%' }}
-        />
-      </div>
+      <div className={styles.container} ref={ref} />
     </>
   );
 }

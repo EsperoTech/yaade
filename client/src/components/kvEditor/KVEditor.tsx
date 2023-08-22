@@ -1,86 +1,74 @@
-import { DeleteIcon } from '@chakra-ui/icons';
-import { IconButton } from '@chakra-ui/react';
-import { useColorMode } from '@chakra-ui/react';
-import React from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import KVRow from '../../model/KVRow';
 import styles from './KVEditor.module.css';
+import KVEditorRow from './KVEditorRow';
 
 type KVEditorProps = {
   kvs: Array<KVRow>;
   setKvs?: any;
   name: string;
   readOnly?: boolean;
+  hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
+  env?: any;
 };
 
 const EMPTY_ROW = { key: '', value: '' };
 const isRowEmpty = (row: KVRow) => row.key === '' && row.value === '';
 
-function KVEditor({ name, kvs, setKvs, readOnly }: KVEditorProps) {
-  const { colorMode } = useColorMode();
-
+function KVEditor({ name, kvs, setKvs, readOnly, hasEnvSupport, env }: KVEditorProps) {
   // we copy the data so we can append an empty last row without
   // mutating the original data
-  const displayKvs = kvs ? [...kvs] : [];
+  const displayKvs = useMemo(() => {
+    const result = kvs ? [...kvs] : [];
+    if (!readOnly && (result.length === 0 || !isRowEmpty(result[result.length - 1]))) {
+      result.push({ ...EMPTY_ROW });
+    }
+    return result;
+  }, [kvs, readOnly]);
 
-  if (
-    !readOnly &&
-    (displayKvs.length === 0 || !isRowEmpty(displayKvs[displayKvs.length - 1]))
-  ) {
-    displayKvs.push({ ...EMPTY_ROW });
-  }
+  const onChangeRowRef = useRef<(i: number, param: string, value: string) => void>(
+    (i: number, param: string, value: string) => {},
+  );
+  const onDeleteRowRef = useRef<(i: number) => void>((i: number) => {});
 
-  const onChangeRow = (i: number, param: string, e: any) => {
-    let newKvs = [...displayKvs];
-    const newRow = { ...newKvs[i] } as any;
-    newRow[param] = e.target.value;
-    newKvs[i] = newRow;
-    newKvs = newKvs.filter((el) => !isRowEmpty(el));
+  useEffect(() => {
+    onChangeRowRef.current = (i: number, param: string, value: string) => {
+      let newKvs = [...displayKvs];
+      const newRow = { ...newKvs[i] } as any;
+      newRow[param] = value;
+      newKvs[i] = newRow;
+      newKvs = newKvs.filter((el) => !isRowEmpty(el));
 
-    setKvs(newKvs);
-  };
+      setKvs(newKvs);
+    };
+  }, [displayKvs, setKvs]);
 
-  const onDeleteRow = (i: number) => {
-    let newKvs = [...displayKvs];
-    newKvs.splice(i, 1);
-    newKvs = newKvs.filter((el) => !isRowEmpty(el));
-    setKvs(newKvs);
-  };
+  useEffect(() => {
+    onDeleteRowRef.current = (i: number) => {
+      let newKvs = [...displayKvs];
+      newKvs.splice(i, 1);
+      newKvs = newKvs.filter((el) => !isRowEmpty(el));
+      setKvs(newKvs);
+    };
+  }, [displayKvs, setKvs]);
 
   return (
     <div className={styles.container}>
       {displayKvs.map(({ key, value }, i) => (
-        <div key={`${name}-${i}`} className={styles.row}>
-          <input
-            className={`${styles.input} ${styles['input--left']} ${
-              styles[`input--${colorMode}`]
-            }`}
-            onChange={(e) => onChangeRow(i, 'key', e)}
-            placeholder="Key"
-            value={key}
-            readOnly={readOnly}
-          />
-          <input
-            className={`${styles.input} ${styles['input--right']} ${
-              styles[`input--${colorMode}`]
-            }`}
-            onChange={(e) => onChangeRow(i, 'value', e)}
-            placeholder="Value"
-            value={value}
-            readOnly={readOnly}
-          />
-          {readOnly ? null : (
-            <IconButton
-              aria-label="delete-row"
-              isRound
-              variant="ghost"
-              disabled={i === displayKvs.length - 1}
-              onClick={() => onDeleteRow(i)}
-              colorScheme="red"
-              icon={<DeleteIcon />}
-            />
-          )}
-        </div>
+        <KVEditorRow
+          key={`${name}-${i}`}
+          name={`${name}-${i}`}
+          i={i}
+          kKey={key}
+          value={value}
+          onChangeRow={onChangeRowRef}
+          onDeleteRow={onDeleteRowRef}
+          isDeleteDisabled={readOnly}
+          readOnly={readOnly}
+          hasEnvSupport={hasEnvSupport}
+          env={env}
+        />
       ))}
     </div>
   );

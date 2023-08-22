@@ -27,6 +27,7 @@ import { useEventListener } from 'usehooks-ts';
 
 import api from '../../api';
 import BasicModal from '../../components/basicModal';
+import CmdPalette from '../../components/cmdPalette';
 import CollectionPanel from '../../components/collectionPanel';
 import Header from '../../components/header';
 import RequestSender from '../../components/requestPanel/RequestSender';
@@ -90,6 +91,8 @@ function Dashboard() {
     onClose: onSaveCollectionClose,
   } = useDisclosure();
   const { user } = useContext(UserContext);
+  const [collectionPanelTabIndex, setCollectionPanelTabIndex] = useState(0);
+  const [requestPanelTabIndex, setRequestPanelTabIndex] = useState(0);
 
   const toast = useToast();
   const sidebarCollections: SidebarCollection[] = useMemo(() => {
@@ -429,6 +432,8 @@ function Dashboard() {
         currentCollection={currentCollection}
         dispatchCurrentCollection={dispatchCurrentCollection}
         dispatchCollections={dispatchCollections}
+        tabIndex={collectionPanelTabIndex}
+        setTabIndex={setCollectionPanelTabIndex}
       />
     );
   }
@@ -603,6 +608,13 @@ function Dashboard() {
         <br />
         Do you want to save the changes now?
       </BasicModal>
+      {/* <CmdPalette
+        collections={collections}
+        currentRequest={currentRequest}
+        currentCollection={currentCollection}
+        selectCollection={selectCollectionRef}
+        setCollectionPanelTabIndex={setCollectionPanelTabIndex}
+      /> */}
     </div>
   );
 }

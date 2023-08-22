@@ -1,8 +1,13 @@
 import { useEffect } from 'react';
 
-export function useKeyPress(callback: () => void, key: string, ctrl?: boolean): void {
+export function useKeyPress(
+  callback: () => void,
+  key: string,
+  ctrl?: boolean,
+  shift?: boolean,
+): void {
   const handler = (e: KeyboardEvent) => {
-    if (key === e.key && (!ctrl || e.ctrlKey)) {
+    if (key === e.key && (!ctrl || e.ctrlKey) && (!shift || e.shiftKey)) {
       e.preventDefault();
       callback();
     }

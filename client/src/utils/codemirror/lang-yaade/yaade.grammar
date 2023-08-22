@@ -1,0 +1,26 @@
+@top Value { value* }
+
+value { templateEscape | templateContent | TemplateExpr }
+
+jsObject { jsOpen (interpolationContent | jsObject)* jsClose }
+TemplateExpr[@name=Interpolation] { InterpolationStart (interpolationContent | jsObject)* InterpolationEnd }
+
+@local tokens {
+  InterpolationStart[closedBy=InterpolationEnd] { "${" }
+  templateEscape[@name=Escape] { "\\" esc }
+  @else templateContent
+}
+
+InterpolationEnd[openedBy=InterpolationStart] { "}" }
+
+@tokens {
+  esc  { $["\\\/bfnrt] | "u" hex hex hex hex }
+  hex  { $[0-9a-fA-F] }
+  interpolationContent { $[\u{21}-\u{7a} \n\r\t] }
+  jsClose { "}" }
+  jsOpen { "{" }
+}
+
+@external propSource yaadeHighlighting from "./highlight"
+
+@detectDelim

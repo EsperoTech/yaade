@@ -37,7 +37,7 @@ function Settings() {
 
   return (
     <div className={styles.container}>
-      <Tabs colorScheme="green" orientation="vertical" size="lg" tabIndex={-1}>
+      <Tabs isLazy colorScheme="green" orientation="vertical" size="lg" tabIndex={-1}>
         <div className={styles.tabListWrapper}>
           <TabList className={styles.tabs} sx={{ borderLeft: '0px' }} tabIndex={-1}>
             <Tab sx={sx} _selected={selected} tabIndex={-1}>

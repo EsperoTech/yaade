@@ -171,6 +171,7 @@ function Sidebar({
         buttonColor="green"
       >
         <Tabs
+          isLazy
           colorScheme="green"
           display="flex"
           flexDirection="column"
