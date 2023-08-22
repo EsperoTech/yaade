@@ -230,30 +230,3 @@ function KVEditorRow({
 }
 
 export default React.memo(KVEditorRow);
-// export default React.memo(KVEditorRow, (prevProps, nextProps) => {
-//   console.log(
-//     'prevProps.kKey === nextProps.kKey',
-//     prevProps.kKey === nextProps.kKey,
-//     'prevProps.value === nextProps.value',
-//     prevProps.value === nextProps.value,
-//     'prevProps.setKey === nextProps.setKey',
-//     prevProps.setKey === nextProps.setKey,
-//     'prevProps.setValue === nextProps.setValue',
-//     prevProps.setValue === nextProps.setValue,
-//     'prevProps.onDeleteRow === nextProps.onDeleteRow',
-//     prevProps.onDeleteRow === nextProps.onDeleteRow,
-//     'prevProps.isDeleteDisabled === nextProps.isDeleteDisabled',
-//     prevProps.isDeleteDisabled === nextProps.isDeleteDisabled,
-//     'prevProps.readOnly === nextProps.readOnly',
-//     prevProps.readOnly === nextProps.readOnly,
-//   );
-//   return (
-//     prevProps.kKey === nextProps.kKey &&
-//     prevProps.value === nextProps.value &&
-//     prevProps.setKey === nextProps.setKey &&
-//     prevProps.setValue === nextProps.setValue &&
-//     prevProps.onDeleteRow === nextProps.onDeleteRow &&
-//     prevProps.isDeleteDisabled === nextProps.isDeleteDisabled &&
-//     prevProps.readOnly === nextProps.readOnly
-//   );
-// });

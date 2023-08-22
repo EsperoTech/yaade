@@ -39,7 +39,6 @@ function UriBar({
 }: UriBarProps) {
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
-  console.log({ colorMode });
 
   const { setContainer } = useCodeMirror({
     container: ref.current,
