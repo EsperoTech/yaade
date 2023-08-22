@@ -33,7 +33,7 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:1.7.30")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.1")
-    implementation("com.password4j:password4j:1.5.4")
+    implementation("com.password4j:password4j:1.7.1")
     implementation("net.lingala.zip4j:zip4j:2.9.1")
     implementation("io.swagger.parser.v3:swagger-parser:2.0.31")
 

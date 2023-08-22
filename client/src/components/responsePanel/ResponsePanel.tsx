@@ -62,6 +62,7 @@ function ResponsePanel({ response }: ResponsePanelProps) {
     <Box className={styles.container} bg="panelBg" h="100%">
       {response ? (
         <Tabs
+          isLazy
           colorScheme="green"
           mt="1"
           display="flex"
@@ -108,7 +109,12 @@ function ResponsePanel({ response }: ResponsePanelProps) {
               />
             </TabPanel>
             <TabPanel>
-              <KVEditor name="response-headers" kvs={response.headers} readOnly />
+              <KVEditor
+                name="response-headers"
+                kvs={response.headers}
+                readOnly
+                hasEnvSupport="NONE"
+              />
             </TabPanel>
           </TabPanels>
         </Tabs>

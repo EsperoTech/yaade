@@ -94,13 +94,13 @@ const ExternalProviderTab: FunctionComponent = () => {
 
   return (
     <VStack alignItems="flex-start" w="100%">
-      <CodeMirror
+      {/* <CodeMirror
         value={cmValue.current}
         onChange={onChangeCodeMirror}
         extensions={[json()]}
         theme={colorMode}
         style={{ height: '350px', width: '100%' }}
-      />
+      /> */}
       <HStack>
         <Button onClick={handleSaveAuthConfigClicked}>Save</Button>
       </HStack>

@@ -9,7 +9,7 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import { CurrentCollection } from '../../model/Collection';
@@ -20,6 +20,7 @@ import {
   CurrentCollectionActionType,
 } from '../../state/currentCollection';
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
+import { getSelectedEnv } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import Editor from '../editor';
 import KVEditor from '../kvEditor';
@@ -31,15 +32,20 @@ interface CollectionPanelProps {
   currentCollection: CurrentCollection;
   dispatchCurrentCollection: React.Dispatch<CurrentCollectionAction>;
   dispatchCollections: React.Dispatch<CollectionsAction>;
+  tabIndex: number;
+  setTabIndex: (index: number) => void;
 }
 
 export default function CollectionPanel({
   currentCollection,
   dispatchCurrentCollection,
   dispatchCollections,
+  tabIndex,
+  setTabIndex,
 }: CollectionPanelProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
+  const selectedEnv = currentCollection ? getSelectedEnv(currentCollection) : null;
 
   const headers =
     currentCollection.data?.headers && currentCollection.data.headers.length !== 0
@@ -131,6 +137,9 @@ export default function CollectionPanel({
         />
       </div>
       <Tabs
+        isLazy
+        index={tabIndex}
+        onChange={(index) => setTabIndex(index)}
         colorScheme="green"
         mt="1"
         display="flex"
@@ -161,7 +170,13 @@ export default function CollectionPanel({
             />
           </TabPanel>
           <TabPanel>
-            <KVEditor name="headers" kvs={headers} setKvs={setHeaders} />
+            <KVEditor
+              name="headers"
+              kvs={headers}
+              setKvs={setHeaders}
+              hasEnvSupport={'BOTH'}
+              env={selectedEnv}
+            />
           </TabPanel>
           <TabPanel h="100%">
             <Editor

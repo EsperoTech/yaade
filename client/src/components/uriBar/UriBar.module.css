@@ -11,6 +11,7 @@
   max-width: 120px;
   text-align: center;
   border-radius: 20px 0 0 20px;
+  appearance: none;
   -moz-appearance: none;
   -webkit-appearance: none;
   font-weight: 700;
@@ -84,4 +85,11 @@
 
 .button--dark:hover {
   background-color: var(--chakra-colors-green-400);
+}
+
+.cm {
+  width: calc(100% - 240px);
+  max-width: calc(100% - 240px);
+  overflow: hidden;
+  height: 100%;
 }

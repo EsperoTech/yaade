@@ -68,6 +68,7 @@ const UserSettings: FunctionComponent = () => {
   return (
     <SettingsTab name="Users">
       <Tabs
+        isLazy
         colorScheme="green"
         mt="1"
         display="flex"
