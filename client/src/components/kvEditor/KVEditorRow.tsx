@@ -1,6 +1,7 @@
 import { DeleteIcon } from '@chakra-ui/icons';
 import { color, IconButton, useColorMode } from '@chakra-ui/react';
 import { EditorView } from '@codemirror/view';
+import { drawSelection } from '@codemirror/view';
 import ReactCodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 
@@ -153,12 +154,14 @@ function KVEditorRow({
     extensions: [
       colorMode === 'light' ? kvThemeLeftLight : kvThemeLeftDark,
       ...extensionKeys,
+      drawSelection(),
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: kKey,
     style: { height: '100%' },
     placeholder: 'Key',
     indentWithTab: false,
+    basicSetup: false,
   });
   const { setContainer: setRightContainer } = useCodeMirror({
     container: rightref.current,
@@ -166,12 +169,14 @@ function KVEditorRow({
     extensions: [
       colorMode === 'light' ? kvThemeRightLight : kvThemeRightDark,
       ...extensionsValue,
+      drawSelection(),
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value,
     style: { height: '100%' },
     placeholder: 'Value',
     indentWithTab: false,
+    basicSetup: false,
   });
 
   useEffect(() => {

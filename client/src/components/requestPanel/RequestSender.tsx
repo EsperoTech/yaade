@@ -185,6 +185,7 @@ function RequestSender({
       ...request,
       data: {
         ...request.data,
+        // NOTE: this order is important because we want request headers to take precedence
         headers: [...collectionHeaders, ...(request.data.headers ?? [])],
       },
     };
