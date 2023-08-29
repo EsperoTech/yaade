@@ -49,7 +49,7 @@ export default function OverviewTab({ description, setDescription }: OverviewTab
 
   return (
     <div className={styles.root}>
-      {/* {state.isEditDescription ? (
+      {state.isEditDescription ? (
         <CodeMirror
           onChange={setRawDescription}
           extensions={extensions}
@@ -61,7 +61,7 @@ export default function OverviewTab({ description, setDescription }: OverviewTab
         <ReactMarkdown className={`markdown-body--${theme}`} remarkPlugins={[remarkGfm]}>
           {description}
         </ReactMarkdown>
-      )} */}
+      )}
       {state.isEditDescription ? (
         <span className={styles.btn}>
           <IconButton

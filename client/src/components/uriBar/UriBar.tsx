@@ -1,4 +1,5 @@
 import { Spinner, useColorMode } from '@chakra-ui/react';
+import { drawSelection } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import { FormEvent, useEffect, useRef } from 'react';
 
@@ -50,12 +51,14 @@ function UriBar({
       wordHover(env?.data),
       helpCursor,
       cursorTooltipBaseTheme,
+      drawSelection(),
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: uri,
     style: { height: '100%' },
     placeholder: 'URL',
     indentWithTab: false,
+    basicSetup: false,
   });
 
   useEffect(() => {

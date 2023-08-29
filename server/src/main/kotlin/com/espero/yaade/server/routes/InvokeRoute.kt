@@ -68,10 +68,11 @@ class InvokeRoute(vertx: Vertx, private val daoManager: DaoManager) {
                 httpRequest.sendBuffer(Buffer.buffer(body.toByteArray())).await()
             else
                 httpRequest.send().await()
-            result.put("body", res.bodyAsString())
+            result.put("body", res.bodyAsString() ?: "")
             result.put("status", res.statusCode())
             result.put("headers", jsonHeaders(res.headers()))
-            result.put("size", res.bodyAsString().toByteArray().size)
+            val size = if (res.bodyAsString().isNullOrEmpty()) 0 else res.bodyAsString().toByteArray().size
+            result.put("size", size)
         } catch (e: Exception) {
             result.put("error", e.message)
         }
