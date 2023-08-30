@@ -89,8 +89,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   const envNames = Object.keys(envs ?? {});
   const [localSelectedEnvs, setLocalSelectedEnvs] = useState(getSelectedEnvs());
 
-  console.log('state', envs, state, selectedEnvName);
-
   useEffect(() => {
     envsRef.current = envs;
   }, [envs]);
@@ -269,7 +267,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   }
 
   function setProxy(proxy: string) {
-    console.log('setProxy', proxy, selectedEnvName);
     if (!selectedEnvName) return;
     const selectedEnv = getEnvOrDefault(selectedEnvName);
     setEnvs({

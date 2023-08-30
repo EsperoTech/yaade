@@ -393,8 +393,6 @@ function RequestSender({
   async function saveOnSend(request: Request) {
     if (request.id === -1) return;
 
-    console.log('save on send', request);
-
     let response = await api.updateRequest(request);
     if (response.status !== 200) {
       throw new Error(`Failed to save request [Status: ${response.status}]]`);

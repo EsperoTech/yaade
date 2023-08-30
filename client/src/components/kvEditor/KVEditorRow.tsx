@@ -180,14 +180,12 @@ function KVEditorRow({
   });
 
   useEffect(() => {
-    console.log('leftref.current', leftref.current, name, i);
     if (leftref.current) {
       setLeftContainer(leftref.current);
     }
   }, [i, leftref, name, setLeftContainer]);
 
   useEffect(() => {
-    console.log('rightref.current', rightref.current, name, i);
     if (rightref.current) {
       setRightContainer(rightref.current);
     }

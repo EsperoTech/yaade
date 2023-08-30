@@ -124,9 +124,6 @@ function MoveableRequest({
 
 // NOTE: the unnecessary rerender of all requests caused a lot of performance issues.
 export default React.memo(MoveableRequest, (prevProps, nextProps) => {
-  if (prevProps.request.method !== nextProps.request.method) {
-    console.log('MEETHOD', prevProps.request.method, nextProps.request.method);
-  }
   return (
     prevProps.selected === nextProps.selected &&
     prevProps.request.id === nextProps.request.id &&
