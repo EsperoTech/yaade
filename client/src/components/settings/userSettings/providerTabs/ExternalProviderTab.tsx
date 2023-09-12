@@ -1,27 +1,7 @@
-import { AddIcon, CheckIcon, CloseIcon, DeleteIcon } from '@chakra-ui/icons';
-import {
-  Button,
-  Center,
-  Divider,
-  Heading,
-  HStack,
-  IconButton,
-  Input,
-  Select,
-  useColorMode,
-  useToast,
-  VStack,
-} from '@chakra-ui/react';
+import { Button, HStack, useColorMode, useToast, VStack } from '@chakra-ui/react';
 import CodeMirror from '@uiw/react-codemirror';
 import beautify from 'beautify';
-import {
-  FunctionComponent,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { FunctionComponent, useCallback, useContext, useEffect, useState } from 'react';
 
 import { UserContext } from '../../../../context';
 import { BASE_PATH, errorToast, successToast } from '../../../../utils';
@@ -41,10 +21,7 @@ interface AuthConfig {
 const ExternalProviderTab: FunctionComponent = () => {
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const cmValue = useRef<string>('');
-  const [originalConfig, setOriginalConfig] = useState<AuthConfig>({
-    providers: [],
-  });
+  const [config, setConfig] = useState<string>('');
   const { setUser } = useContext(UserContext);
 
   useEffect(() => {
@@ -52,20 +29,19 @@ const ExternalProviderTab: FunctionComponent = () => {
       try {
         const res = await fetch(BASE_PATH + 'api/config/auth_config');
         const authConfig = await res.json();
-        setOriginalConfig(authConfig);
-        cmValue.current = beautifiedConfig(authConfig);
+        setConfig(beautifiedConfig(authConfig));
       } catch (e) {
         errorToast('Auth providers could not be fetched.', toast);
       }
     };
     getProviders();
-  }, []);
+  }, [toast]);
 
   const onChangeCodeMirror = useCallback((value) => {
-    cmValue.current = value;
+    setConfig(value);
   }, []);
 
-  function beautifiedConfig(config: AuthConfig) {
+  function beautifiedConfig(config: AuthConfig): string {
     return beautify(JSON.stringify(config), { format: 'json' });
   }
 
@@ -76,7 +52,7 @@ const ExternalProviderTab: FunctionComponent = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: cmValue.current,
+        body: config,
       });
       if (res.status !== 200) {
         const error = await res.json();
@@ -95,7 +71,7 @@ const ExternalProviderTab: FunctionComponent = () => {
   return (
     <VStack alignItems="flex-start" w="100%">
       <CodeMirror
-        value={cmValue.current}
+        value={config}
         onChange={onChangeCodeMirror}
         extensions={[json()]}
         theme={colorMode}
