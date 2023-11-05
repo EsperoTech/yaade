@@ -1,0 +1,27 @@
+{
+  "name": "Yaade Extension",
+  "description": "An extension to enhance Yaade functionality",
+  "version": "1.7",
+  "manifest_version": 3,
+  "host_permissions": ["<all_urls>"],
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "/popup/popup.html"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "run_at": "document_idle",
+      "js": ["contentScript.js"]
+    }
+  ],
+  "icons": {
+    "36": "icons/android-icon-36x36.png",
+    "48": "icons/android-icon-48x48.png",
+    "72": "icons/android-icon-72x72.png",
+    "192": "icons/android-icon-192x192.png"
+  }
+}
