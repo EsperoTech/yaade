@@ -23,5 +23,11 @@
     "48": "icons/android-icon-48x48.png",
     "72": "icons/android-icon-72x72.png",
     "192": "icons/android-icon-192x192.png"
-  }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "addon@yaade.io",
+      "strict_min_version": "109.0"
+    }
+  }  
 }
