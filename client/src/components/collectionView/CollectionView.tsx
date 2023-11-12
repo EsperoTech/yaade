@@ -1,4 +1,10 @@
-import { AddIcon, ChevronRightIcon, DeleteIcon, LinkIcon } from '@chakra-ui/icons';
+import {
+  AddIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  DeleteIcon,
+  LinkIcon,
+} from '@chakra-ui/icons';
 import {
   Heading,
   IconButton,
@@ -37,6 +43,7 @@ type CollectionProps = {
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
   duplicateRequest: (id: number, newName: string) => void;
+  duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
 };
 
@@ -55,6 +62,7 @@ function CollectionView({
   renameRequest,
   deleteRequest,
   duplicateRequest,
+  duplicateCollection,
   dispatchCollections,
 }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
@@ -68,6 +76,7 @@ function CollectionView({
   const headerVariants = currentCollectionId === collection.id ? ['selected'] : [];
   const iconVariants = collection.open ? ['open'] : [];
   const { isOpen, onOpen, onClose } = useDisclosure();
+
   const toast = useToast();
   const { onCopy } = useClipboard(`${window.location.origin}/#/${collection.id}`);
 
@@ -153,6 +162,31 @@ function CollectionView({
                   colorScheme="green"
                   value={state.newRequestName}
                   onChange={(e) => setState({ ...state, newRequestName: e.target.value })}
+                  ref={initialRef}
+                />
+              </BasicModal>
+            );
+          case 'duplicate':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                onClose={onCloseClear}
+                heading={`Duplicate "${collection.name}"`}
+                onClick={() => {
+                  duplicateCollection(collection.id, state.name);
+                  onCloseClear();
+                }}
+                buttonText="Duplicate"
+                buttonColor="green"
+                isButtonDisabled={false}
+              >
+                <Input
+                  placeholder="Name"
+                  w="100%"
+                  borderRadius={20}
+                  colorScheme="green"
+                  value={state.name}
+                  onChange={(e) => setState({ ...state, name: e.target.value })}
                   ref={initialRef}
                 />
               </BasicModal>
@@ -330,6 +364,22 @@ function CollectionView({
                     >
                       Copy Link
                     </MenuItem>
+                    <MenuItem
+                      icon={<CopyIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setState({
+                          ...state,
+                          currentModal: 'duplicate',
+                          name: `${collection.name} (copy)`,
+                        });
+
+                        onOpen();
+                      }}
+                    >
+                      Duplicate
+                    </MenuItem>
+
                     <MenuItem
                       icon={<DeleteIcon />}
                       onClick={(e) => {
