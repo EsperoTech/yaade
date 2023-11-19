@@ -98,16 +98,17 @@ function Dashboard() {
   const sidebarCollections: SidebarCollection[] = useMemo(() => {
     return collections.map((c) => ({
       id: c.id,
-      name: c.data.name,
+      name: c.data.name ?? '',
       open: c.open,
       selected: false,
       groups: c.data.groups,
-      requests: c.requests?.map((r) => ({
-        id: r.id,
-        collectionId: r.collectionId,
-        name: r.data.name,
-        method: r.data.method,
-      })),
+      requests:
+        c.requests?.map((r) => ({
+          id: r.id,
+          collectionId: r.collectionId,
+          name: r.data.name ?? '',
+          method: r.data.method ?? '',
+        })) ?? [],
     }));
   }, [collections]);
 

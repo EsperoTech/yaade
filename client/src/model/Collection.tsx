@@ -1,14 +1,31 @@
+import KVRow from './KVRow';
 import Request, { SidebarRequest } from './Request';
 
 interface Collection {
   id: number;
   data: {
-    [key: string]: any;
+    name?: string;
+    groups?: string[];
+    envs?: {
+      [key: string]: Environment;
+    };
+    rank?: number;
+    headers?: Array<KVRow>;
+    requestScript?: string;
+    responseScript?: string;
   };
   open: boolean;
   ownerId: number;
   version: string;
   requests: Array<Request>;
+}
+
+interface Environment {
+  data: {
+    [key: string]: string;
+  };
+  proxy: string;
+  secretKeys: string[];
 }
 
 interface SidebarCollection {
