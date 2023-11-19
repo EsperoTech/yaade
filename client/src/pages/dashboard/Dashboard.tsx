@@ -424,6 +424,31 @@ function Dashboard() {
     [collections, toast],
   );
 
+  const duplicateCollection = useCallback(
+    async (id: number, newName: string) => {
+      try {
+        const request = collections.find((r) => r.id === id);
+        if (!request) return;
+        // This creates an empty collection.
+        // Either the created collection has to be additionally patched
+        // or do the backend needs to accept an optional data object.
+        const res = await api.createCollection(newName, []);
+        if (res.status !== 200) throw new Error();
+        const newCollectionData = await res.json();
+        dispatchCollections({
+          type: CollectionsActionType.ADD_COLLECTION,
+          collection: newCollectionData,
+        });
+        selectCollectionRef.current(newCollectionData.id);
+        successToast('Collection was duplicated.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not duplicate collection', toast);
+      }
+    },
+    [collections, toast],
+  );
+
   useEventListener('message', handlePongMessage);
 
   let panel = <div>Select a Request or Collection</div>;
@@ -476,6 +501,7 @@ function Dashboard() {
               renameRequest={renameRequest}
               deleteRequest={deleteRequest}
               duplicateRequest={duplicateRequest}
+              duplicateCollection={duplicateCollection}
               dispatchCollections={dispatchCollections}
             />
           </div>
