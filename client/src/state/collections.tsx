@@ -101,17 +101,7 @@ function set(collections: Collection[]): Collection[] {
   return collections;
 }
 
-function addCollection(
-  state: Collection[],
-  collection: Collection,
-  rank?: number,
-): Collection[] {
-  if (rank !== undefined) {
-    const newState = [...state];
-    newState.splice(rank, 0, collection);
-    return newState;
-  }
-
+function addCollection(state: Collection[], collection: Collection): Collection[] {
   return [...state, collection];
 }
 
