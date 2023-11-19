@@ -367,7 +367,7 @@ function RequestSender({
 
       const url = appendHttpIfNoProtocol(interpolatedRequest.data.uri);
 
-      const headers = kvRowsToMap(interpolatedRequest.data.headers);
+      const headers = kvRowsToMap(interpolatedRequest.data.headers ?? []);
 
       const options: any = { headers, method: interpolatedRequest.data.method };
       if (interpolatedRequest.data.body) {

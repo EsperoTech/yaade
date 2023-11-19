@@ -69,7 +69,7 @@ function RequestPanel({
   const { user } = useContext(UserContext);
 
   const params = useMemo(
-    () => getParamsFromUri(currentRequest.data.uri),
+    () => getParamsFromUri(currentRequest.data.uri ?? ''),
     [currentRequest.data.uri],
   );
 
@@ -147,7 +147,7 @@ function RequestPanel({
   const setUriFromParams = useCallback(
     (params: Array<KVRow>) => {
       try {
-        let uri = currentRequest.data.uri;
+        let uri = currentRequest.data.uri ?? '';
         if (!uri.includes('?')) {
           uri += '?';
         }
@@ -198,7 +198,7 @@ function RequestPanel({
         data: { response },
       });
 
-      const newRequest = {
+      const newRequest: Request = {
         ...currentRequest,
         data: { ...currentRequest.data, response: response },
       };

@@ -1,18 +1,12 @@
+import KVRow from './KVRow';
+import Response from './Response';
+
 interface Request {
   id: number;
   collectionId: number;
   type: string;
   version: string;
-  data: {
-    [key: string]: any;
-  };
-}
-
-interface SidebarRequest {
-  id: number;
-  collectionId: number;
-  name: string;
-  method: string;
+  data: RequestData;
 }
 
 interface CurrentRequest {
@@ -20,11 +14,28 @@ interface CurrentRequest {
   collectionId: number;
   type: string;
   version: string;
-  data: {
-    [key: string]: any;
-  };
+  data: RequestData;
   isChanged: boolean;
   isLoading: boolean;
+}
+
+interface RequestData {
+  name?: string;
+  description?: string;
+  uri?: string;
+  method?: string;
+  headers?: Array<KVRow>;
+  body?: string;
+  requestScript?: string;
+  responseScript?: string;
+  response?: Response;
+}
+
+interface SidebarRequest {
+  id: number;
+  collectionId: number;
+  name: string;
+  method: string;
 }
 
 export type { CurrentRequest, SidebarRequest };
