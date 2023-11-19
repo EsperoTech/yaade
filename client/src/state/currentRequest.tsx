@@ -9,12 +9,6 @@ const defaultCurrentRequest: CurrentRequest | undefined = {
     name: '',
     uri: '',
     method: 'GET',
-    params: [
-      {
-        key: '',
-        value: '',
-      },
-    ],
     headers: [
       {
         key: '',

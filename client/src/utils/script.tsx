@@ -64,7 +64,7 @@ async function executeRequestScript(
     uri: request.data.uri,
     body: request.data.body,
     method: request.data.method,
-    headers: kvRowsToMap(request.data.headers),
+    headers: kvRowsToMap(request.data.headers ?? []),
   };
   args.jp = jpath;
   args.DateTime = DateTime;

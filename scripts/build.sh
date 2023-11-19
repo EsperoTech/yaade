@@ -15,5 +15,5 @@ cd server
 ./gradlew clean assemble
 
 # build the docker container
-docker buildx build --platform linux/arm64/v8,linux/amd64 --tag esperotech/yaade:nightly .
+docker buildx build --push --platform linux/arm64/v8,linux/amd64 --tag esperotech/yaade:nightly .
 
