@@ -100,6 +100,30 @@ paths:
           description: Success
       operationId: moveCollection
       summary: Move collection
+  /api/collection/{id}/duplicate:
+    post:
+      tags:
+        - Collections
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveCollectionRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+          description: Success
+      operationId: duplicateCollection
+      summary: Duplicate a collection
   /api/collection/importOpenApi:
     post:
       tags:
@@ -694,3 +718,9 @@ components:
           format: int64
           type: integer
           description: The new rank of the collection.
+    DuplicateCollectionRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the new collection.

@@ -18,6 +18,7 @@ type MoveableCollectionProps = {
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
   duplicateRequest: (id: number, newName: string) => void;
+  duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
 };
 
@@ -32,6 +33,7 @@ function MoveableCollection({
   renameRequest,
   deleteRequest,
   duplicateRequest,
+  duplicateCollection,
   dispatchCollections,
 }: MoveableCollectionProps) {
   const id = collection.id;
@@ -98,6 +100,7 @@ function MoveableCollection({
         renameRequest={renameRequest}
         deleteRequest={deleteRequest}
         duplicateRequest={duplicateRequest}
+        duplicateCollection={duplicateCollection}
         dispatchCollections={dispatchCollections}
       />
     </div>

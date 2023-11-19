@@ -38,6 +38,15 @@ const createCollection = (name: string, groups: string[]): Promise<Response> =>
     }),
   });
 
+const duplicateCollection = (id: number, name: string): Promise<Response> =>
+  fetch(BASE_PATH + `api/collection/${id}/duplicate`, {
+    method: 'POST',
+    headers: DEFAULT_HEADERS,
+    body: JSON.stringify({
+      name: name,
+    }),
+  });
+
 const moveCollection = (id: number, newRank: number): Promise<Response> =>
   fetch(BASE_PATH + `api/collection/${id}/move`, {
     method: 'POST',
@@ -116,6 +125,7 @@ const updateCollection = (
 export default {
   changeRequestCollection,
   createCollection,
+  duplicateCollection,
   createRequest,
   deleteRequest,
   deleteCollection,

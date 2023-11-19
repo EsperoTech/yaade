@@ -103,6 +103,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
       const selectedEnv = getEnvOrDefault(name);
       const secretsKeys = selectedEnv?.secretKeys ?? [];
       const selectedEnvKVs = mapEnvDataToKVRows(selectedEnv.data ?? {});
+      console.log({ secretsKeys });
       const selectedEnvSecrets: Secret[] = secretsKeys.map((key: any) => {
         return {
           key,
@@ -140,13 +141,14 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   useEffect(() => {
     if (!selectedEnvName) return;
     const selectedEnv = envsRef.current[selectedEnvName];
+    const secrets = selectedEnv?.secretKeys ?? [];
     if (!selectedEnv) return;
     setState((state) => {
       return {
         ...state,
         selectedEnvName: getSelectedEnvs()[collectionId],
         selectedEnvKVs: mapEnvDataToKVRows(selectedEnv.data),
-        selectedEnvSecrets: selectedEnv.secretKeys.map((key: any) => {
+        selectedEnvSecrets: secrets.map((key: any) => {
           return {
             key,
             value: DEFAULT_SECRET_VALUE,
