@@ -55,6 +55,38 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         ctx.end(result).await()
     }
 
+    suspend fun duplicateCollection(ctx: RoutingContext) {
+        val collectionId = ctx.pathParam("id")?.toLong() ?: throw RuntimeException("Collection id not found")
+        val userId = ctx.user().principal().getLong("id")
+        val user = daoManager.userDao.getById(userId) ?: throw RuntimeException("User not found")
+        val collection = daoManager.collectionDao.getById(collectionId)
+
+        if (collection == null || !collection.canRead(user)) {
+            throw ServerError(HttpStatus.SC_NOT_FOUND, "Collection not found")
+        }
+
+        val requests = daoManager.requestDao.getAllInCollection(collectionId)
+
+        val body = ctx.body().asJsonObject()
+        val name = body.getString("name")
+        collection.patchData(JsonObject().put("name", name))
+
+        TransactionManager.callInTransaction(daoManager.connectionSource) {
+            daoManager.collectionDao.create(collection)
+            collection.hideSecrets()
+
+            requests.forEach {
+                it.collectionId = collection.id
+                daoManager.requestDao.create(it)
+            }
+        }
+
+        val requestsJson = requests.map(RequestDb::toJson)
+        val result = collection.toJson().put("requests", requestsJson).encode()
+
+        ctx.end(result).await()
+    }
+
     suspend fun putCollection(ctx: RoutingContext) {
         val body = ctx.body().asJsonObject()
         val newCollection = CollectionDb.fromUpdateRequest(body)

@@ -89,6 +89,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .userCoroutineHandler(this, collectionRoute::getAllCollections)
             routerBuilder.operation("postCollection")
                 .userCoroutineHandler(this, collectionRoute::postCollection)
+            routerBuilder.operation("duplicateCollection")
+                .userCoroutineHandler(this, collectionRoute::duplicateCollection)
             routerBuilder.operation("putCollection")
                 .userCoroutineHandler(this, collectionRoute::putCollection)
             routerBuilder.operation("moveCollection")

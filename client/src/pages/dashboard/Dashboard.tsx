@@ -427,12 +427,7 @@ function Dashboard() {
   const duplicateCollection = useCallback(
     async (id: number, newName: string) => {
       try {
-        const request = collections.find((r) => r.id === id);
-        if (!request) return;
-        // This creates an empty collection.
-        // Either the created collection has to be additionally patched
-        // or do the backend needs to accept an optional data object.
-        const res = await api.createCollection(newName, []);
+        const res = await api.duplicateCollection(id, newName);
         if (res.status !== 200) throw new Error();
         const newCollectionData = await res.json();
         dispatchCollections({
@@ -446,7 +441,7 @@ function Dashboard() {
         errorToast('Could not duplicate collection', toast);
       }
     },
-    [collections, toast],
+    [toast],
   );
 
   useEventListener('message', handlePongMessage);
