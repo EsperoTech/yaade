@@ -103,7 +103,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
       const selectedEnv = getEnvOrDefault(name);
       const secretsKeys = selectedEnv?.secretKeys ?? [];
       const selectedEnvKVs = mapEnvDataToKVRows(selectedEnv.data ?? {});
-      console.log({ secretsKeys });
       const selectedEnvSecrets: Secret[] = secretsKeys.map((key: any) => {
         return {
           key,
