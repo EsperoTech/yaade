@@ -1,6 +1,6 @@
-import { CheckIcon } from '@chakra-ui/icons';
 import { IconButton } from '@chakra-ui/react';
 import { useState } from 'react';
+import { VscSave } from 'react-icons/vsc';
 
 import GroupsInput from '../../groupsInput';
 
@@ -21,8 +21,7 @@ export default function CollectionSettingsTab({
     rawGroups: [...groups],
   });
 
-  const handleSaveGroupsClicked = () => {
-    console.log(state.rawGroups);
+  const handleSaveCollectionSettingsClicked = () => {
     setGroups(state.rawGroups);
   };
 
@@ -34,11 +33,11 @@ export default function CollectionSettingsTab({
         isRounded
       />
       <IconButton
-        icon={<CheckIcon />}
+        icon={<VscSave />}
         variant="ghost"
         colorScheme="green"
-        aria-label="Save description"
-        onClick={handleSaveGroupsClicked}
+        aria-label="Save settings"
+        onClick={handleSaveCollectionSettingsClicked}
       />
     </div>
   );

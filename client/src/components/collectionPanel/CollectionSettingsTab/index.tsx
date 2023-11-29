@@ -1,3 +1,3 @@
-import EnvironmentsTab from './EnvironmentsTab';
+import CollectionSettingsTab from './CollectionSettingsTab';
 
-export default EnvironmentsTab;
+export default CollectionSettingsTab;
