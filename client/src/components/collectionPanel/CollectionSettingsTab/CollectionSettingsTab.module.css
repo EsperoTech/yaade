@@ -1,0 +1,19 @@
+.settingsTable td {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.settingsTable tr > :nth-child(2) {
+  width: 100%;
+  padding-left: 80px;
+}
+
+.groupsLabel {
+  vertical-align: top;
+}
+
+.groupsLabel > div {
+  display: flex;
+  align-items: center;
+  height: 50px;
+}
