@@ -25,6 +25,7 @@ import { useKeyPress } from '../../utils/useKeyPress';
 import Editor from '../editor';
 import KVEditor from '../kvEditor';
 import styles from './CollectionPanel.module.css';
+import CollectionSettingsTab from './CollectionSettingsTab/CollectionSettingsTab';
 import EnvironmentsTab from './EnvironmentsTab';
 import OverviewTab from './OverviewTab';
 
@@ -114,6 +115,12 @@ export default function CollectionPanel({
       data: { responseScript },
     });
 
+  const setGroups = (groups: string[]) =>
+    dispatchCurrentCollection({
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { groups },
+    });
+
   useKeyPress(handleSaveCollection, 's', true);
 
   return (
@@ -154,6 +161,7 @@ export default function CollectionPanel({
           <Tab>Headers</Tab>
           <Tab>Request Script</Tab>
           <Tab>Response Script</Tab>
+          <Tab>Settings</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
           <TabPanel h="100%">
@@ -188,6 +196,12 @@ export default function CollectionPanel({
             <Editor
               content={currentCollection.data.responseScript ?? ''}
               setContent={setResponseScript}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <CollectionSettingsTab
+              groups={currentCollection.data.groups ?? []}
+              setGroups={setGroups}
             />
           </TabPanel>
         </TabPanels>
