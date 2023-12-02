@@ -2,15 +2,5 @@
   display: grid;
   grid-template-columns: 1fr 5fr;
   grid-gap: 20px 50px;
-  align-items: center;
-}
-
-.groupsLabel {
-  align-self: start;
-}
-
-.groupsLabel > div {
-  display: flex;
-  align-items: center;
-  height: 50px;
+  align-items: start;
 }

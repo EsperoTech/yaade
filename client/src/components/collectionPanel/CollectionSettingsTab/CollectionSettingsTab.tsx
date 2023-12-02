@@ -12,9 +12,7 @@ export default function CollectionSettingsTab({
 }: CollectionSettingsTabProps) {
   return (
     <div className={styles.grid}>
-      <div className={styles.groupsLabel}>
-        <div>Groups</div>
-      </div>
+      <div>Groups</div>
       <GroupsInput groups={groups} setGroups={setGroups} isRounded />
     </div>
   );
