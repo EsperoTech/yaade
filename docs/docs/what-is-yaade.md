@@ -13,4 +13,6 @@ I was looking for a self-hosted Postman alternative so that API collections can 
 3. Persistent: even across container or server restarts
 4. Easy single-file data import / export
 5. Requests are executed on your machine so you can call localhost as well as remote servers
-6. Most importantly: dark mode default
+6. Request description (documentation) with Markdown
+7. Request/Reqponse scripts
+8. Most importantly: dark mode default
