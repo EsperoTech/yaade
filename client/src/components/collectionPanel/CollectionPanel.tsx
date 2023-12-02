@@ -165,7 +165,7 @@ export default function CollectionPanel({
           <TabPanel>
             <EnvironmentsTab
               collectionId={currentCollection.id}
-              envs={currentCollection.data.envs}
+              envs={currentCollection.data.envs ?? {}}
               setEnvs={setEnvs}
             />
           </TabPanel>
