@@ -24,7 +24,7 @@ I was looking for a self-hosted Postman alternative so that API collections can 
 4. Easy single-file data import / export
 5. Requests are executed on your machine so you can call localhost as well as remote servers
 6. Collection and Request description (documentation) with Markdown
-7. Request/Reqponse scripts (for both collections and requests)
+7. Request/Response scripts (for both collections and requests)
 8. Most importantly: dark mode default
 
 ## ⚡ Install
