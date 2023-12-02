@@ -11,17 +11,11 @@ export default function CollectionSettingsTab({
   setGroups,
 }: CollectionSettingsTabProps) {
   return (
-    <div>
-      <table className={styles.settingsTable}>
-        <tr>
-          <td className={styles.groupsLabel}>
-            <div>Groups</div>
-          </td>
-          <td>
-            <GroupsInput groups={groups} setGroups={setGroups} isRounded />
-          </td>
-        </tr>
-      </table>
+    <div className={styles.grid}>
+      <div className={styles.groupsLabel}>
+        <div>Groups</div>
+      </div>
+      <GroupsInput groups={groups} setGroups={setGroups} isRounded />
     </div>
   );
 }
