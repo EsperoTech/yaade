@@ -1,19 +1,22 @@
 import KVRow from './KVRow';
 import Request, { SidebarRequest } from './Request';
 
+interface CollectionData {
+  name?: string;
+  description?: string;
+  groups?: string[];
+  envs?: {
+    [key: string]: Environment;
+  };
+  rank?: number;
+  headers?: Array<KVRow>;
+  requestScript?: string;
+  responseScript?: string;
+}
+
 interface Collection {
   id: number;
-  data: {
-    name?: string;
-    groups?: string[];
-    envs?: {
-      [key: string]: Environment;
-    };
-    rank?: number;
-    headers?: Array<KVRow>;
-    requestScript?: string;
-    responseScript?: string;
-  };
+  data: CollectionData;
   open: boolean;
   ownerId: number;
   version: string;
@@ -39,9 +42,7 @@ interface SidebarCollection {
 
 interface CurrentCollection {
   id: number;
-  data: {
-    [key: string]: any;
-  };
+  data: CollectionData;
   ownerId: number;
   version: string;
   isChanged: boolean;

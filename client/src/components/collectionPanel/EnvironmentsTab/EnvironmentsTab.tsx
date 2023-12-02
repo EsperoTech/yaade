@@ -85,18 +85,31 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   const { colorMode } = useColorMode();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
-  const envsRef = useRef(envs);
-  const envNames = Object.keys(envs ?? {});
+  const envsRef = useRef<Record<string, Environment>>({});
+  const [envNames, setEnvNames] = useState<string[]>(Object.keys(envs ?? {}));
   const [localSelectedEnvs, setLocalSelectedEnvs] = useState(getSelectedEnvs());
 
   useEffect(() => {
     envsRef.current = envs;
+    setEnvNames(Object.keys(envs ?? {}));
   }, [envs]);
 
   const getEnvOrDefault = (name?: string): Environment => {
     if (!name) return DEFAULT_ENV;
     return envsRef.current[name] ?? DEFAULT_ENV;
   };
+
+  const noEnvSelected = useCallback(() => {
+    console.log('noEnvSelected');
+    setSelectedEnvName(undefined);
+    setState((state) => {
+      return {
+        ...state,
+        selectedEnvKVs: undefined,
+        selectedEnvSecrets: [],
+      };
+    });
+  }, []);
 
   const envSelected = useCallback(
     (name: string) => {
@@ -124,18 +137,22 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
 
   useEffect(() => {
     const selectedEnvName = getSelectedEnvs()[collectionId];
-    if (selectedEnvName) {
+    if (selectedEnvName && envNames.includes(selectedEnvName)) {
       setSelectedEnvName(selectedEnvName);
-    } else {
-      let defaultEnvName = envNames.find((el) => el === localSelectedEnvs[collectionId]);
-      if (!defaultEnvName && envNames.length !== 0) {
-        defaultEnvName = envNames[0];
-      }
-      if (defaultEnvName) {
-        envSelected(defaultEnvName);
-      }
+      return;
     }
-  }, [collectionId, envNames, envSelected, envsRef, localSelectedEnvs]);
+
+    let defaultEnvName = envNames.find((el) => el === localSelectedEnvs[collectionId]);
+    if (!defaultEnvName && envNames.length !== 0) {
+      defaultEnvName = envNames[0];
+    }
+    if (defaultEnvName) {
+      envSelected(defaultEnvName);
+      return;
+    }
+
+    noEnvSelected();
+  }, [collectionId, envNames, envSelected, envsRef, localSelectedEnvs, noEnvSelected]);
 
   useEffect(() => {
     if (!selectedEnvName) return;
@@ -471,7 +488,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
           />
           <IconButton
             icon={<CloseIcon />}
-            disabled={!selectedEnvName}
             variant="ghost"
             colorScheme="red"
             aria-label="Close form to create new environment"
