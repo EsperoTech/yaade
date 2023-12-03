@@ -53,6 +53,7 @@ function getParamsFromUri(uri: string): Array<KVRow> {
 type RequestPanelProps = {
   currentRequest: CurrentRequest;
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
+  saveRequest: (request: Request) => Promise<void>;
   sendRequest(request: Request, envName?: string, n?: number): Promise<Response>;
   saveOnSend: (request: Request) => Promise<void>;
   selectedEnv: Record<string, string>;
@@ -61,6 +62,7 @@ type RequestPanelProps = {
 function RequestPanel({
   currentRequest,
   dispatchCurrentRequest,
+  saveRequest,
   sendRequest,
   saveOnSend,
   selectedEnv,
@@ -217,7 +219,7 @@ function RequestPanel({
   }
 
   function handleSaveButtonClick() {
-    // TODO: implement
+    saveRequest(currentRequest);
   }
 
   return (
