@@ -444,6 +444,7 @@ function RequestSender({
         <RequestPanel
           currentRequest={currentRequest}
           dispatchCurrentRequest={dispatchCurrentRequest}
+          handleSaveRequestClick={handleSaveRequestClick}
           sendRequest={sendRequest}
           saveOnSend={saveOnSend}
           selectedEnv={selectedEnv}

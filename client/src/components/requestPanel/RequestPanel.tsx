@@ -55,6 +55,7 @@ type RequestPanelProps = {
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
   sendRequest(request: Request, envName?: string, n?: number): Promise<Response>;
   saveOnSend: (request: Request) => Promise<void>;
+  handleSaveRequestClick: () => void;
   selectedEnv: Record<string, string>;
 };
 
@@ -63,6 +64,7 @@ function RequestPanel({
   dispatchCurrentRequest,
   sendRequest,
   saveOnSend,
+  handleSaveRequestClick,
   selectedEnv,
 }: RequestPanelProps) {
   const toast = useToast();
@@ -216,10 +218,6 @@ function RequestPanel({
     });
   }
 
-  function handleSaveButtonClick() {
-    // TODO: implement
-  }
-
   return (
     <Box className={styles.box} bg="panelBg" h="100%">
       <div style={{ display: 'flex' }}>
@@ -238,7 +236,7 @@ function RequestPanel({
           variant="ghost"
           size="sm"
           ml="2"
-          onClick={handleSaveButtonClick}
+          onClick={handleSaveRequestClick}
           disabled={!currentRequest.isChanged}
         />
       </div>
