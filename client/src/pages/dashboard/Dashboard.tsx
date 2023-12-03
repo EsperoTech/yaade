@@ -344,28 +344,6 @@ function Dashboard() {
     selectCollectionRef.current = selectCollection;
   }, [selectCollection]);
 
-  const saveRequest = useCallback(
-    async (request: Request) => {
-      try {
-        await api.updateRequest(request);
-        dispatchCollections({
-          type: CollectionsActionType.PATCH_REQUEST_DATA,
-          id: request.id,
-          data: request.data,
-        });
-        dispatchCurrentCollection({
-          type: CurrentCollectionActionType.SET_IS_CHANGED,
-          isChanged: false,
-        });
-        successToast('Request was deleted.', toast);
-      } catch (e) {
-        console.error(e);
-        errorToast('Could not delete request', toast);
-      }
-    },
-    [toast],
-  );
-
   const renameRequest = useCallback(
     async (id: number, name: string) => {
       try {
@@ -395,7 +373,6 @@ function Dashboard() {
     },
     [collections, currentRequest?.id, toast],
   );
-
   const deleteRequest = useCallback(
     async (id: number) => {
       try {
@@ -493,7 +470,6 @@ function Dashboard() {
             isExtInitialized={isExtInitialized}
             extVersion={extVersion}
             openExtModal={onOpen}
-            saveRequest={saveRequest}
           />
         </div>
         <div className={styles.responsePanel}>

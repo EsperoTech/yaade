@@ -53,18 +53,18 @@ function getParamsFromUri(uri: string): Array<KVRow> {
 type RequestPanelProps = {
   currentRequest: CurrentRequest;
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
-  saveRequest: (request: Request) => Promise<void>;
   sendRequest(request: Request, envName?: string, n?: number): Promise<Response>;
   saveOnSend: (request: Request) => Promise<void>;
+  handleSaveRequestClick: () => void;
   selectedEnv: Record<string, string>;
 };
 
 function RequestPanel({
   currentRequest,
   dispatchCurrentRequest,
-  saveRequest,
   sendRequest,
   saveOnSend,
+  handleSaveRequestClick,
   selectedEnv,
 }: RequestPanelProps) {
   const toast = useToast();
@@ -218,10 +218,6 @@ function RequestPanel({
     });
   }
 
-  function handleSaveButtonClick() {
-    saveRequest(currentRequest);
-  }
-
   return (
     <Box className={styles.box} bg="panelBg" h="100%">
       <div style={{ display: 'flex' }}>
@@ -240,7 +236,7 @@ function RequestPanel({
           variant="ghost"
           size="sm"
           ml="2"
-          onClick={handleSaveButtonClick}
+          onClick={handleSaveRequestClick}
           disabled={!currentRequest.isChanged}
         />
       </div>

@@ -38,7 +38,6 @@ type RequestSenderProps = {
   dispatchCollections: Dispatch<CollectionsAction>;
   isExtInitialized: MutableRefObject<boolean>;
   extVersion: MutableRefObject<string | undefined>;
-  saveRequest: (request: Request) => Promise<void>;
   openExtModal: () => void;
 };
 
@@ -50,7 +49,6 @@ function RequestSender({
   isExtInitialized,
   extVersion,
   openExtModal,
-  saveRequest,
 }: RequestSenderProps) {
   const [newReqForm, setNewReqForm] = useState<NewReqFormState>({
     collectionId: -1,
@@ -446,7 +444,7 @@ function RequestSender({
         <RequestPanel
           currentRequest={currentRequest}
           dispatchCurrentRequest={dispatchCurrentRequest}
-          saveRequest={saveRequest}
+          handleSaveRequestClick={handleSaveRequestClick}
           sendRequest={sendRequest}
           saveOnSend={saveOnSend}
           selectedEnv={selectedEnv}
