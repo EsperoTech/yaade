@@ -4,13 +4,18 @@
   border-bottom: 1px solid;
   display: flex;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .searchContainer--light {
+  background-color: var(--chakra-colors-white);
   border-color: var(--chakra-colors-gray-300);
 }
 
 .searchContainer--dark {
+  background-color: var(--chakra-colors-gray-900);
   border-color: var(--chakra-colors-gray-700);
 }
 
@@ -19,6 +24,7 @@
   border-radius: 20px;
   height: 32px;
   padding-left: 16px;
+  padding-right: 30px;
   margin-right: 1rem;
 }
 
@@ -38,10 +44,26 @@
   border: 1px solid var(--chakra-colors-gray-700);
 }
 
+.searchWithClear {
+  display: inline-block;
+  position: relative;
+}
+
+.clearSearch {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
 .box {
   width: 100%;
   height: 100%;
   overflow: auto;
+  position: relative;
 }
 
 .fileInput {
