@@ -184,7 +184,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
           />
         </div>
       </HStack>
-      <TableContainer>
+      <TableContainer height="330px" overflowY="scroll">
         <Table size="sm" whiteSpace="normal">
           <Thead>
             <Tr>
