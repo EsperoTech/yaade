@@ -100,7 +100,6 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   };
 
   const noEnvSelected = useCallback(() => {
-    console.log('noEnvSelected');
     setSelectedEnvName(undefined);
     setState((state) => {
       return {
@@ -130,6 +129,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
           selectedEnvSecrets,
         };
       });
+      setSelectedEnvName(name);
       saveSelectedEnv(collectionId, name);
     },
     [collectionId],
@@ -162,6 +162,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
     setState((state) => {
       return {
         ...state,
+        modalState: 'default',
         selectedEnvName: getSelectedEnvs()[collectionId],
         selectedEnvKVs: mapEnvDataToKVRows(selectedEnv.data),
         selectedEnvSecrets: secrets.map((key: any) => {
@@ -251,17 +252,12 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
 
       const newEnvs = envs ?? {};
       delete newEnvs[selectedEnvName];
+      const newEnvNames = Object.keys(newEnvs);
 
       setEnvs(newEnvs);
-      setState({
-        ...state,
-        newEnvName: '',
-        modalState: 'default',
-        selectedEnvSecrets: [],
-        envNameToCopy: undefined,
-      });
-      setSelectedEnvName(undefined);
-      successToast('Environment deleted.', toast);
+      setEnvNames(newEnvNames);
+      envSelected(newEnvNames[0]);
+      successToast('Environment deleted', toast);
     } catch (e) {
       errorToast('Could not delete environment', toast);
     }
