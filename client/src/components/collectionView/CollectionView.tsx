@@ -6,6 +6,7 @@ import {
   LinkIcon,
 } from '@chakra-ui/icons';
 import {
+  EditableTextarea,
   Heading,
   IconButton,
   Input,
@@ -13,6 +14,13 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  Select,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Textarea,
   useClipboard,
   useColorMode,
   useDisclosure,
@@ -29,6 +37,7 @@ import Request, { SidebarRequest } from '../../model/Request';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import { errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
+import { parseCurlCommand } from '../../utils/curl';
 import { DragTypes } from '../../utils/dnd';
 import BasicModal from '../basicModal';
 import styles from './CollectionView.module.css';
@@ -50,6 +59,7 @@ type CollectionProps = {
 type CollectionState = {
   name: string;
   newRequestName: string;
+  importData: string;
   currentModal: string;
 };
 
@@ -69,6 +79,7 @@ function CollectionView({
     name: collection.name,
     newRequestName: '',
     currentModal: '',
+    importData: '',
   });
   const initialRef = useRef(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -88,10 +99,26 @@ function CollectionView({
 
   async function handleCreateRequestClick() {
     try {
-      const response = await api.createRequest(collection.id, {
-        name: state.newRequestName,
-        method: 'GET',
-      });
+      let data = {};
+      if (state.importData) {
+        const request = parseCurlCommand(state.importData);
+        data = {
+          name: state.newRequestName,
+          method: request.method,
+          uri: request.url,
+          headers: Object.entries(request.header).map(([key, value]) => ({
+            key,
+            value,
+          })),
+          body: request.body,
+        };
+      } else {
+        data = {
+          name: state.newRequestName,
+          method: 'GET',
+        };
+      }
+      const response = await api.createRequest(collection.id, data);
       const newRequest = (await response.json()) as Request;
 
       dispatchCollections({
@@ -133,7 +160,7 @@ function CollectionView({
   }
 
   function onCloseClear() {
-    setState({ ...state, newRequestName: '' });
+    setState({ ...state, newRequestName: '', importData: '' });
     onClose();
   }
 
@@ -155,15 +182,58 @@ function CollectionView({
                 buttonText="Create"
                 buttonColor="green"
               >
-                <Input
-                  placeholder="Name"
-                  w="100%"
-                  borderRadius={20}
+                <Tabs
+                  isLazy
                   colorScheme="green"
-                  value={state.newRequestName}
-                  onChange={(e) => setState({ ...state, newRequestName: e.target.value })}
-                  ref={initialRef}
-                />
+                  display="flex"
+                  flexDirection="column"
+                  maxHeight="100%"
+                  h="100%"
+                >
+                  <TabList>
+                    <Tab>Basic</Tab>
+                    <Tab>Import</Tab>
+                  </TabList>
+                  <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
+                    <TabPanel>
+                      <Input
+                        placeholder="Name"
+                        w="100%"
+                        borderRadius={20}
+                        colorScheme="green"
+                        value={state.newRequestName}
+                        onChange={(e) =>
+                          setState({ ...state, newRequestName: e.target.value })
+                        }
+                        ref={initialRef}
+                      />
+                    </TabPanel>
+                    <TabPanel>
+                      <Select size="xs" value="curl">
+                        <option value="curl">cURL</option>
+                      </Select>
+                      <Input
+                        placeholder="Name"
+                        w="100%"
+                        borderRadius={20}
+                        colorScheme="green"
+                        value={state.newRequestName}
+                        onChange={(e) =>
+                          setState({ ...state, newRequestName: e.target.value })
+                        }
+                      />
+                      <Textarea
+                        placeholder="cURL"
+                        value={state.importData}
+                        onChange={(e) =>
+                          setState({ ...state, importData: e.target.value })
+                        }
+                        height="300px"
+                        resize="none"
+                      />
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
               </BasicModal>
             );
           case 'duplicate':
