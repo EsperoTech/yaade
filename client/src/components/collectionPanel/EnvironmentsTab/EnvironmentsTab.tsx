@@ -25,7 +25,7 @@ import {
 } from 'react';
 
 import KVRow from '../../../model/KVRow';
-import { BASE_PATH, errorToast, kvRowsToMap, successToast } from '../../../utils';
+import { BASE_PATH, cn, errorToast, kvRowsToMap, successToast } from '../../../utils';
 import { getSelectedEnvs, saveSelectedEnv } from '../../../utils/store';
 import KVEditor from '../../kvEditor';
 import styles from './EnvironmentsTab.module.css';
@@ -467,6 +467,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
             w="100%"
             borderRadius={20}
             colorScheme="green"
+            backgroundColor={colorMode === 'light' ? 'white' : undefined}
             value={state.newEnvName}
             ref={inputRef}
             onChange={(e) => setState({ ...state, newEnvName: e.target.value })}
@@ -496,6 +497,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
             w="100%"
             borderRadius={20}
             colorScheme="green"
+            backgroundColor={colorMode === 'light' ? 'white' : undefined}
             onChange={(e) => envSelected(e.target.value)}
             value={selectedEnvName}
           >
@@ -546,6 +548,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
             w="100%"
             borderRadius={20}
             colorScheme="green"
+            backgroundColor={colorMode === 'light' ? 'white' : undefined}
             onChange={(e) => setProxy(e.target.value)}
             value={envs[selectedEnvName]?.proxy ?? 'ext'}
           >

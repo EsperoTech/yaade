@@ -1,4 +1,12 @@
-import { Input, Tag, TagCloseButton, TagLabel, VStack, Wrap } from '@chakra-ui/react';
+import {
+  Input,
+  Tag,
+  TagCloseButton,
+  TagLabel,
+  VStack,
+  Wrap,
+  useColorMode,
+} from '@chakra-ui/react';
 import { FunctionComponent, useState } from 'react';
 
 type GroupsInputProps = {
@@ -13,6 +21,8 @@ const GroupsInput: FunctionComponent<GroupsInputProps> = ({
   isRounded,
 }) => {
   const [newGroup, setNewGroup] = useState('');
+
+  const { colorMode } = useColorMode();
 
   function setNewGroupInput(value: string) {
     if (value.endsWith(' ')) {
@@ -39,6 +49,7 @@ const GroupsInput: FunctionComponent<GroupsInputProps> = ({
         placeholder="Groups"
         value={newGroup}
         onChange={(e) => setNewGroupInput(e.target.value)}
+        backgroundColor={colorMode === 'light' ? 'white' : undefined}
       />
       <Wrap>
         {groups.map((group) => (

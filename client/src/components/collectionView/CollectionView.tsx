@@ -160,6 +160,7 @@ function CollectionView({
                   w="100%"
                   borderRadius={20}
                   colorScheme="green"
+                  backgroundColor={colorMode === 'light' ? 'white' : undefined}
                   value={state.newRequestName}
                   onChange={(e) => setState({ ...state, newRequestName: e.target.value })}
                   ref={initialRef}
@@ -185,6 +186,7 @@ function CollectionView({
                   w="100%"
                   borderRadius={20}
                   colorScheme="green"
+                  backgroundColor={colorMode === 'light' ? 'white' : undefined}
                   value={state.name}
                   onChange={(e) => setState({ ...state, name: e.target.value })}
                   ref={initialRef}

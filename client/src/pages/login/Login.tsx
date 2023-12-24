@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react';
 
 import { UserContext } from '../../context';
 import User from '../../model/User';
-import { BASE_PATH, errorToast, successToast } from '../../utils';
+import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
 import styles from './Login.module.css';
 
 type State = {
@@ -169,6 +169,7 @@ function Login() {
                   type="text"
                   name="providerid"
                   value={provider.id}
+                  className={cn(styles, 'search', [colorMode])}
                 />
                 <HStack w="100%">
                   <Button

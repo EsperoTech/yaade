@@ -1,4 +1,4 @@
-import { Input, Select, useDisclosure, useToast } from '@chakra-ui/react';
+import { Input, Select, useColorMode, useDisclosure, useToast } from '@chakra-ui/react';
 import { Dispatch, MutableRefObject, useRef, useState } from 'react';
 
 import api from '../../api';
@@ -57,6 +57,7 @@ function RequestSender({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef(null);
   const toast = useToast();
+  const { colorMode } = useColorMode();
 
   function getEnv(collectionId: number, envName?: string) {
     if (!envName) return;
@@ -465,6 +466,7 @@ function RequestSender({
           w="100%"
           borderRadius={20}
           colorScheme="green"
+          backgroundColor={colorMode === 'light' ? 'white' : undefined}
           value={newReqForm.name}
           onChange={(e) => setNewReqForm({ ...newReqForm, name: e.target.value })}
           ref={initialRef}

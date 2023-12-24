@@ -164,6 +164,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
           width="130px"
           value={newUserForm.username}
           onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value })}
+          backgroundColor={colorMode === 'light' ? 'white' : undefined}
         />
         <VStack alignItems="start" width="320px">
           <GroupsInput
