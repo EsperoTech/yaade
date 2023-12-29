@@ -112,6 +112,7 @@ type KVEditorRowProps = {
   readOnly?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
+  active: boolean;
 };
 
 function KVEditorRow({
@@ -125,6 +126,7 @@ function KVEditorRow({
   readOnly,
   hasEnvSupport,
   env,
+  active,
 }: KVEditorRowProps) {
   const { colorMode } = useColorMode();
 
@@ -195,6 +197,11 @@ function KVEditorRow({
     <div key={`${name}-${i}`} className={styles.row}>
       {!readOnly ? (
         <>
+          <input
+            type="checkbox"
+            className={`${styles.checkbox} ${styles[`checkbox--${colorMode}`]}`}
+            onClick={() => onChangeRow.current(i, 'active', true)}
+          />
           <div className={styles.cm} ref={leftref} />
           <div className={styles.cm} ref={rightref} />
           <IconButton
