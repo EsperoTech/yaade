@@ -280,6 +280,7 @@ function RequestPanel({
               name="headers"
               kvs={headers}
               setKvs={setHeaders}
+              canDisableRows={true}
               hasEnvSupport={'BOTH'}
               env={selectedEnv}
             />

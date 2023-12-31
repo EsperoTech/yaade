@@ -106,13 +106,16 @@ type KVEditorRowProps = {
   name: string;
   kKey: string;
   value: string;
-  onChangeRow: React.MutableRefObject<(i: number, param: string, value: string) => void>;
+  isEnabled?: boolean;
+  canDisableRow?: boolean;
+  onChangeRow: React.MutableRefObject<
+    (i: number, param: string, value: string | boolean | undefined) => void
+  >;
   onDeleteRow: React.MutableRefObject<(i: number) => void>;
   isDeleteDisabled?: boolean;
   readOnly?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
-  active: boolean;
 };
 
 function KVEditorRow({
@@ -120,13 +123,14 @@ function KVEditorRow({
   name,
   kKey,
   value,
+  isEnabled,
+  canDisableRow,
   onChangeRow,
   onDeleteRow,
   isDeleteDisabled,
   readOnly,
   hasEnvSupport,
   env,
-  active,
 }: KVEditorRowProps) {
   const { colorMode } = useColorMode();
 
@@ -197,11 +201,16 @@ function KVEditorRow({
     <div key={`${name}-${i}`} className={styles.row}>
       {!readOnly ? (
         <>
-          <input
-            type="checkbox"
-            className={`${styles.checkbox} ${styles[`checkbox--${colorMode}`]}`}
-            onClick={() => onChangeRow.current(i, 'active', true)}
-          />
+          {canDisableRow === true && (
+            <input
+              type="checkbox"
+              className={`${styles.checkbox} ${styles[`checkbox--${colorMode}`]}`}
+              checked={isEnabled ?? true}
+              onChange={(event) =>
+                onChangeRow.current(i, 'isEnabled', event.target.checked)
+              }
+            />
+          )}
           <div className={styles.cm} ref={leftref} />
           <div className={styles.cm} ref={rightref} />
           <IconButton

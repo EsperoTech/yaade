@@ -9,6 +9,7 @@ type KVEditorProps = {
   setKvs?: any;
   name: string;
   readOnly?: boolean;
+  canDisableRows?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
 };
@@ -16,7 +17,15 @@ type KVEditorProps = {
 const EMPTY_ROW = { key: '', value: '' };
 const isRowEmpty = (row: KVRow) => row.key === '' && row.value === '';
 
-function KVEditor({ name, kvs, setKvs, readOnly, hasEnvSupport, env }: KVEditorProps) {
+function KVEditor({
+  name,
+  kvs,
+  setKvs,
+  readOnly,
+  canDisableRows,
+  hasEnvSupport,
+  env,
+}: KVEditorProps) {
   // we copy the data so we can append an empty last row without
   // mutating the original data
   const displayKvs = useMemo(() => {
@@ -27,13 +36,17 @@ function KVEditor({ name, kvs, setKvs, readOnly, hasEnvSupport, env }: KVEditorP
     return result;
   }, [kvs, readOnly]);
 
-  const onChangeRowRef = useRef<(i: number, param: string, value: string) => void>(
-    (i: number, param: string, value: string) => {},
-  );
+  const onChangeRowRef = useRef<
+    (i: number, param: string, value: string | boolean | undefined) => void
+  >((i: number, param: string, value: string | boolean | undefined) => {});
   const onDeleteRowRef = useRef<(i: number) => void>((i: number) => {});
 
   useEffect(() => {
-    onChangeRowRef.current = (i: number, param: string, value: string) => {
+    onChangeRowRef.current = (
+      i: number,
+      param: string,
+      value: string | boolean | undefined,
+    ) => {
       let newKvs = [...displayKvs];
       const newRow = { ...newKvs[i] } as any;
       newRow[param] = value;
@@ -55,14 +68,16 @@ function KVEditor({ name, kvs, setKvs, readOnly, hasEnvSupport, env }: KVEditorP
 
   return (
     <div className={styles.container}>
-      {displayKvs.map(({ key, value }, i) => (
+      {displayKvs.map(({ key, value, isEnabled }, i) => (
         <KVEditorRow
           key={`${name}-${i}`}
           name={`${name}-${i}`}
           i={i}
           kKey={key}
           value={value}
+          isEnabled={isEnabled}
           onChangeRow={onChangeRowRef}
+          canDisableRow={canDisableRows}
           onDeleteRow={onDeleteRowRef}
           isDeleteDisabled={readOnly}
           readOnly={readOnly}
