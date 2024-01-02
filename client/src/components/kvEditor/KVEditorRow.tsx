@@ -201,7 +201,7 @@ function KVEditorRow({
     <div key={`${name}-${i}`} className={styles.row}>
       {!readOnly ? (
         <>
-          {canDisableRow === true && (
+          {canDisableRow && (
             <input
               type="checkbox"
               className={cn(styles, 'checkbox', [colorMode])}
