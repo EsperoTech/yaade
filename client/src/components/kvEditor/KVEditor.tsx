@@ -22,7 +22,7 @@ function KVEditor({
   kvs,
   setKvs,
   readOnly,
-  canDisableRows,
+  canDisableRows = false,
   hasEnvSupport,
   env,
 }: KVEditorProps) {
@@ -37,16 +37,12 @@ function KVEditor({
   }, [kvs, readOnly]);
 
   const onChangeRowRef = useRef<
-    (i: number, param: string, value: string | boolean | undefined) => void
-  >((i: number, param: string, value: string | boolean | undefined) => {});
+    (i: number, param: string, value: string | boolean) => void
+  >((i: number, param: string, value: string | boolean) => {});
   const onDeleteRowRef = useRef<(i: number) => void>((i: number) => {});
 
   useEffect(() => {
-    onChangeRowRef.current = (
-      i: number,
-      param: string,
-      value: string | boolean | undefined,
-    ) => {
+    onChangeRowRef.current = (i: number, param: string, value: string | boolean) => {
       let newKvs = [...displayKvs];
       const newRow = { ...newKvs[i] } as any;
       newRow[param] = value;

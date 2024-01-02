@@ -16,6 +16,7 @@ import {
   rawThemeDark,
 } from '../../utils/codemirror/themes';
 import styles from './KVEditorRow.module.css';
+import { cn } from '../../utils';
 
 const kvRowRawTheme = {
   ...rawThemeDark,
@@ -107,9 +108,9 @@ type KVEditorRowProps = {
   kKey: string;
   value: string;
   isEnabled?: boolean;
-  canDisableRow?: boolean;
+  canDisableRow: boolean;
   onChangeRow: React.MutableRefObject<
-    (i: number, param: string, value: string | boolean | undefined) => void
+    (i: number, param: string, value: string | boolean) => void
   >;
   onDeleteRow: React.MutableRefObject<(i: number) => void>;
   isDeleteDisabled?: boolean;
@@ -123,8 +124,8 @@ function KVEditorRow({
   name,
   kKey,
   value,
-  isEnabled,
-  canDisableRow,
+  isEnabled = true,
+  canDisableRow = false,
   onChangeRow,
   onDeleteRow,
   isDeleteDisabled,
