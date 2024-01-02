@@ -204,8 +204,8 @@ function KVEditorRow({
           {canDisableRow === true && (
             <input
               type="checkbox"
-              className={`${styles.checkbox} ${styles[`checkbox--${colorMode}`]}`}
-              checked={isEnabled ?? true}
+              className={cn(styles, 'checkbox', [colorMode])}
+              checked={isEnabled}
               onChange={(event) =>
                 onChangeRow.current(i, 'isEnabled', event.target.checked)
               }
