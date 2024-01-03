@@ -3,6 +3,7 @@
   box-sizing: border-box;
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
+  align-items: center;
 }
 
 .cm {
@@ -59,16 +60,9 @@
 }
 
 .checkbox {
-  width: 40px;
-  height: 40px;
-  transition: all 0.3s ease;
-  padding: 10px;
-  margin-right: 10px;
-}
-.checkbox:checked {
-  filter: hue-rotate(240deg);
+  margin-left: 10px;
 }
 
-.checkbox--dark {
-  filter: brightness(0.3);
+.checkbox--light {
+  background-color: white;
 }

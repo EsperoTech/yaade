@@ -1,5 +1,5 @@
 import { DeleteIcon } from '@chakra-ui/icons';
-import { color, IconButton, useColorMode } from '@chakra-ui/react';
+import { color, IconButton, useColorMode, Checkbox } from '@chakra-ui/react';
 import { EditorView } from '@codemirror/view';
 import { drawSelection } from '@codemirror/view';
 import ReactCodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
@@ -202,18 +202,16 @@ function KVEditorRow({
     <div key={`${name}-${i}`} className={styles.row}>
       {!readOnly ? (
         <>
-          {canDisableRow && (
-            <input
-              type="checkbox"
-              className={cn(styles, 'checkbox', [colorMode])}
-              checked={isEnabled}
-              onChange={(event) =>
-                onChangeRow.current(i, 'isEnabled', event.target.checked)
-              }
-            />
-          )}
           <div className={styles.cm} ref={leftref} />
           <div className={styles.cm} ref={rightref} />
+          {canDisableRow && (
+            <Checkbox
+              className={cn(styles, 'checkbox', [colorMode])}
+              isChecked={isEnabled}
+              onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
+            />
+          )}
+
           <IconButton
             aria-label="delete-row"
             isRound
