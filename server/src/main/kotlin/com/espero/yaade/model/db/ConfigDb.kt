@@ -29,7 +29,8 @@ class ConfigDb {
     }
 
     companion object {
-        val AUTH_CONFIG = "auth_config"
+        const val AUTH_CONFIG = "auth_config"
+        const val HTTP_CLIENT_CONFIG = "http_client_config"
 
         fun createEmptyAuthConfig(): ConfigDb {
             val defaultConfig = JsonObject().put("providers", JsonArray()).encode().toByteArray()
