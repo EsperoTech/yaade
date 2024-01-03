@@ -183,12 +183,12 @@ function RequestSender({
 
     const enabledCollectionHeaders = collection?.data?.headers
       ? collection.data.headers.filter((h) => {
-          return h.isEnabled;
+          return h.isEnabled !== false;
         })
       : [];
     const enabledRequestHeaders = request.data.headers
       ? request.data.headers.filter((h) => {
-          return h.isEnabled;
+          return h.isEnabled !== false;
         })
       : [];
     const injectedReq: Request = {
