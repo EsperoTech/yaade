@@ -182,6 +182,7 @@ export default function CollectionPanel({
               name="headers"
               kvs={headers}
               setKvs={setHeaders}
+              canDisableRows={true}
               hasEnvSupport={'BOTH'}
               env={selectedEnv}
             />
