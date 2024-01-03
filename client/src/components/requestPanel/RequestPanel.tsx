@@ -79,7 +79,7 @@ function RequestPanel({
     () =>
       currentRequest.data.headers && currentRequest.data.headers.length !== 0
         ? currentRequest.data.headers
-        : [{ key: '', value: '' }],
+        : [{ key: '', value: '', isEnabled: true }],
     [currentRequest.data.headers],
   );
 

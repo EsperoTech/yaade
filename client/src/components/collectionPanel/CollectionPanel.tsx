@@ -51,7 +51,7 @@ export default function CollectionPanel({
   const headers =
     currentCollection.data?.headers && currentCollection.data.headers.length !== 0
       ? currentCollection.data.headers
-      : [{ key: '', value: '' }];
+      : [{ key: '', value: '', isEnabled: true }];
 
   const handleSaveCollection = async () => {
     try {
