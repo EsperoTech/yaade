@@ -114,6 +114,7 @@ type KVEditorRowProps = {
   >;
   onDeleteRow: React.MutableRefObject<(i: number) => void>;
   isDeleteDisabled?: boolean;
+  isEnableDisabled?: boolean;
   readOnly?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
@@ -129,6 +130,7 @@ function KVEditorRow({
   onChangeRow,
   onDeleteRow,
   isDeleteDisabled,
+  isEnableDisabled,
   readOnly,
   hasEnvSupport,
   env,
@@ -217,6 +219,7 @@ function KVEditorRow({
           {canDisableRow && (
             <Checkbox
               className={cn(styles, 'checkbox', [colorMode])}
+              disabled={isEnableDisabled}
               isChecked={isEnabled}
               onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
             />

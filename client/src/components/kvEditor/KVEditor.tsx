@@ -73,8 +73,9 @@ function KVEditor({
           value={value}
           isEnabled={isEnabled}
           onChangeRow={onChangeRowRef}
-          canDisableRow={!key && !value ? false : canDisableRows}
+          canDisableRow={canDisableRows}
           onDeleteRow={onDeleteRowRef}
+          isEnableDisabled={canDisableRows && !key && !value}
           isDeleteDisabled={!key && !value ? true : readOnly}
           readOnly={readOnly}
           hasEnvSupport={hasEnvSupport}
