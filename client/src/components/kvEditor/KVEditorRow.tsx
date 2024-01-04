@@ -202,8 +202,18 @@ function KVEditorRow({
     <div key={`${name}-${i}`} className={styles.row}>
       {!readOnly ? (
         <>
-          <div className={styles.cm} ref={leftref} />
-          <div className={styles.cm} ref={rightref} />
+          <div
+            className={`${styles.cm} ${
+              !isEnabled && cn(styles, 'input-disabled', [colorMode])
+            }`}
+            ref={leftref}
+          />
+          <div
+            className={`${styles.cm} ${
+              !isEnabled && cn(styles, 'input-disabled', [colorMode])
+            }`}
+            ref={rightref}
+          />
           {canDisableRow && (
             <Checkbox
               className={cn(styles, 'checkbox', [colorMode])}
@@ -211,7 +221,6 @@ function KVEditorRow({
               onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
             />
           )}
-
           <IconButton
             aria-label="delete-row"
             isRound
@@ -232,7 +241,6 @@ function KVEditorRow({
             value={kKey}
             readOnly={readOnly}
           />
-
           <input
             className={`${styles.input} ${styles['input--right']} ${
               styles[`input--${colorMode}`]
