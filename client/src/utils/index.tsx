@@ -9,8 +9,8 @@ import { parseResponse } from './parseResponseEvent';
 const BASE_PATH = import.meta.env.BASE_URL;
 
 function cn(styles: any, name: string, variants: Array<string>): string {
-  const variantCns = variants.map((v) => styles[`${name}--${v}`]).join(' ');
-  return `${styles[name] ? styles[name] + ' ' : ''}${variantCns}`;
+  const variantCns = variants.map((v) => styles[`${name}--${v}`] ?? '').join(' ');
+  return `${styles[name] ?? ''} ${variantCns}`;
 }
 
 function getMethodColor(method: string): any {
