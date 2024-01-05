@@ -67,10 +67,10 @@
   background-color: white;
 }
 
-.input-disabled--light * {
+.inputDisabled--light * {
   color: rgba(0, 0, 0, 0.25);
 }
 
-.input-disabled--dark * {
+.inputDisabled--dark * {
   color: rgba(255, 255, 255, 0.25);
 }

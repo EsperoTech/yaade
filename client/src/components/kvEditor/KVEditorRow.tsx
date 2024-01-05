@@ -206,13 +206,13 @@ function KVEditorRow({
         <>
           <div
             className={`${styles.cm} ${
-              !isEnabled && cn(styles, 'input-disabled', [colorMode])
+              !isEnabled ? cn(styles, 'inputDisabled', [colorMode]) : ''
             }`}
             ref={leftref}
           />
           <div
             className={`${styles.cm} ${
-              !isEnabled && cn(styles, 'input-disabled', [colorMode])
+              !isEnabled ? cn(styles, 'inputDisabled', [colorMode]) : ''
             }`}
             ref={rightref}
           />
@@ -222,6 +222,7 @@ function KVEditorRow({
               disabled={isEnableDisabled}
               isChecked={isEnabled}
               onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
+              colorScheme="green"
             />
           )}
           <IconButton
