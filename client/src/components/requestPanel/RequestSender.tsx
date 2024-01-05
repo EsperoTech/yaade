@@ -181,13 +181,18 @@ function RequestSender({
 
     const collection = collections.find((c) => c.id === request.collectionId);
 
-    const collectionHeaders = collection?.data?.headers ?? [];
+    const enabledCollectionHeaders = collection?.data?.headers
+      ? collection.data.headers.filter((h) => h.isEnabled !== false)
+      : [];
+    const enabledRequestHeaders = request.data.headers
+      ? request.data.headers.filter((h) => h.isEnabled !== false)
+      : [];
     const injectedReq: Request = {
       ...request,
       data: {
         ...request.data,
         // NOTE: this order is important because we want request headers to take precedence
-        headers: [...collectionHeaders, ...(request.data.headers ?? [])],
+        headers: [...enabledCollectionHeaders, ...enabledRequestHeaders],
       },
     };
 
