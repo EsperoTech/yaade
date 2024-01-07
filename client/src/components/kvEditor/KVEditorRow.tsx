@@ -1,13 +1,12 @@
 import { DeleteIcon } from '@chakra-ui/icons';
-import { color, IconButton, useColorMode, Checkbox } from '@chakra-ui/react';
-import { EditorView } from '@codemirror/view';
-import { drawSelection } from '@codemirror/view';
-import ReactCodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Checkbox, IconButton, useColorMode } from '@chakra-ui/react';
+import { drawSelection, EditorView } from '@codemirror/view';
+import { useCodeMirror } from '@uiw/react-codemirror';
+import React, { useEffect, useRef } from 'react';
 
+import { cn } from '../../utils';
 import { helpCursor, singleLine } from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
-import { json } from '../../utils/codemirror/lang-json';
 import { yaade } from '../../utils/codemirror/lang-yaade';
 import {
   cmThemeDark,
@@ -16,7 +15,6 @@ import {
   rawThemeDark,
 } from '../../utils/codemirror/themes';
 import styles from './KVEditorRow.module.css';
-import { cn } from '../../utils';
 
 const kvRowRawTheme = {
   ...rawThemeDark,
