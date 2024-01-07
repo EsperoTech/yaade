@@ -25,7 +25,7 @@ interface CollectionData {
 }
 
 interface CollectionSettings {
-  webClientOptions: Record<string, any>;
+  webClientOptions?: Record<string, any>;
 }
 
 interface Environment {
