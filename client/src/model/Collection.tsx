@@ -1,6 +1,15 @@
 import KVRow from './KVRow';
 import Request, { SidebarRequest } from './Request';
 
+interface Collection {
+  id: number;
+  data: CollectionData;
+  open: boolean;
+  ownerId: number;
+  version: string;
+  requests: Array<Request>;
+}
+
 interface CollectionData {
   name?: string;
   description?: string;
@@ -12,15 +21,11 @@ interface CollectionData {
   headers?: Array<KVRow>;
   requestScript?: string;
   responseScript?: string;
+  settings?: CollectionSettings;
 }
 
-interface Collection {
-  id: number;
-  data: CollectionData;
-  open: boolean;
-  ownerId: number;
-  version: string;
-  requests: Array<Request>;
+interface CollectionSettings {
+  webClientOptions: Record<string, any>;
 }
 
 interface Environment {
@@ -48,6 +53,6 @@ interface CurrentCollection {
   isChanged: boolean;
 }
 
-export type { CurrentCollection, SidebarCollection };
+export type { CollectionSettings, CurrentCollection, SidebarCollection };
 
 export default Collection;
