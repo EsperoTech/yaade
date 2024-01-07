@@ -29,6 +29,7 @@ interface RequestData {
   requestScript?: string;
   responseScript?: string;
   response?: Response;
+  params?: Array<KVRow>;
 }
 
 interface SidebarRequest {
