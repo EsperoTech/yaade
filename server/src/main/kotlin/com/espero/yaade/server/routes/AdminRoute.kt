@@ -8,17 +8,17 @@ import com.espero.yaade.model.db.ConfigDb
 import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.Server
 import com.espero.yaade.server.errors.ServerError
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpHeaders
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
-import io.vertx.kotlin.coroutines.await
 import io.vertx.kotlin.coroutines.awaitBlocking
+import io.vertx.kotlin.coroutines.coAwait
 import net.lingala.zip4j.ZipFile
-import org.apache.http.HttpStatus
 import org.h2.tools.DeleteDbFiles
-import java.util.UUID
+import java.util.*
 
 class AdminRoute(
     private val daoManager: DaoManager,
@@ -36,7 +36,7 @@ class AdminRoute(
         ctx.response()
             .putHeader("Content-Disposition", "attachment; filename=\"yaade-db.mv.db.zip\"")
             .putHeader(HttpHeaders.TRANSFER_ENCODING, "chunked")
-            .sendFile("/tmp/$fileUuid").await()
+            .sendFile("/tmp/$fileUuid").coAwait()
 
         vertx.fileSystem().delete("/tmp/$fileUuid")
     }
@@ -56,12 +56,12 @@ class AdminRoute(
         awaitBlocking {
             ZipFile(f.uploadedFileName()).extractAll("./app/data")
         }
-        vertx.fileSystem().delete(f.uploadedFileName()).await()
+        vertx.fileSystem().delete(f.uploadedFileName()).coAwait()
 
         daoManager.init(JDBC_URL, JDBC_USR, JDBC_PWD)
 
         val response = JsonObject().put(f.fileName(), f.size())
-        ctx.response().end(response.encode()).await()
+        ctx.response().end(response.encode()).coAwait()
         server.restartServer()
     }
 
@@ -71,68 +71,83 @@ class AdminRoute(
         val username = body.getString("username")
         val groups = body.getJsonArray("groups").map { it as String }
         if (daoManager.userDao.getByUsername(username) != null) {
-            throw ServerError(HttpStatus.SC_CONFLICT, "A user with the name $username already exists")
+            throw ServerError(
+                HttpResponseStatus.CONFLICT.code(),
+                "A user with the name $username already exists"
+            )
         }
 
         val result = daoManager.userDao.createUser(username, groups)
 
-        ctx.end(result.toJson().encode()).await()
+        ctx.end(result.toJson().encode()).coAwait()
     }
 
     suspend fun deleteUser(ctx: RoutingContext) {
         val userId = ctx.pathParam("userId").toLong()
         val user = daoManager.userDao.getById(userId)
         if (user == null || user.username == "admin") {
-            throw ServerError(HttpStatus.SC_BAD_REQUEST, "Cannot delete. User does not exist")
+            throw ServerError(
+                HttpResponseStatus.BAD_REQUEST.code(),
+                "Cannot delete. User does not exist"
+            )
         }
         daoManager.userDao.deleteUser(userId)
-        ctx.end().await()
+        ctx.end().coAwait()
     }
 
     suspend fun updateUser(ctx: RoutingContext) {
         val userId = ctx.pathParam("userId").toLong()
         if (userId <= 0)
-            throw ServerError(HttpStatus.SC_BAD_REQUEST, "userId is invalid: $userId")
+            throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "userId is invalid: $userId")
         val data =
             ctx.body().asJsonObject().getJsonObject("data")
-                ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No body provided")
+                ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No body provided")
         val result = daoManager.userDao.updateUser(userId, data)
 
-        ctx.end(result.toJson().encode()).await()
+        ctx.end(result.toJson().encode()).coAwait()
     }
 
     suspend fun getUsers(ctx: RoutingContext) {
         val result = JsonArray(daoManager.userDao.getUsers().map(UserDb::toJson))
-        ctx.end(result.encode()).await()
+        ctx.end(result.encode()).coAwait()
     }
 
     suspend fun resetUserPassword(ctx: RoutingContext) {
         val userId = ctx.pathParam("userId").toLong()
         daoManager.userDao.resetPassword(userId)
-        ctx.end().await()
+        ctx.end().coAwait()
     }
 
     suspend fun getConfig(ctx: RoutingContext) {
         val configName = ctx.pathParam("name") ?: throw RuntimeException("No config name provided")
         val config = daoManager.configDao.getByName(configName)
-            ?: throw ServerError(HttpStatus.SC_NOT_FOUND, "Config not found for name $configName")
-        ctx.end(config.config.decodeToString()).await()
+            ?: throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "Config not found for name $configName"
+            )
+        ctx.end(config.config.decodeToString()).coAwait()
     }
 
     suspend fun updateConfig(ctx: RoutingContext) {
         val configName = ctx.pathParam("name")
-            ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No config name provided")
+            ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No config name provided")
         val config: JsonObject
         try {
             config = ctx.body().asJsonObject()
         } catch (t: Throwable) {
-            throw ServerError(HttpStatus.SC_BAD_REQUEST, t.message ?: "Could not parse json")
+            throw ServerError(
+                HttpResponseStatus.BAD_REQUEST.code(),
+                t.message ?: "Could not parse json"
+            )
         }
         when (configName) {
             ConfigDb.AUTH_CONFIG -> updateAuthConfig(config)
-            else -> throw ServerError(HttpStatus.SC_BAD_REQUEST, "No config name provided")
+            else -> throw ServerError(
+                HttpResponseStatus.BAD_REQUEST.code(),
+                "No config name provided"
+            )
         }
-        ctx.end().await()
+        ctx.end().coAwait()
         server.restartServer()
     }
 

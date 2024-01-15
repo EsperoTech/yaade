@@ -3,15 +3,16 @@ package com.espero.yaade.server.routes
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.server.errors.ServerError
 import com.password4j.Password
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Vertx
 import io.vertx.ext.web.RoutingContext
-import io.vertx.kotlin.coroutines.await
-import org.apache.http.HttpStatus
+import io.vertx.kotlin.coroutines.coAwait
 
 class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
+
     suspend fun getCurrentUser(ctx: RoutingContext) {
         val user = ctx.user()
-        ctx.end(user.principal().encode()).await()
+        ctx.end(user.principal().encode()).coAwait()
     }
 
     fun logout(ctx: RoutingContext) {
@@ -27,7 +28,7 @@ class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         val user = daoManager.userDao.getById(userId)
 
         if (user == null || !Password.check(currentPassword, user.password).withArgon2()) {
-            throw ServerError(HttpStatus.SC_FORBIDDEN, "Wrong current password")
+            throw ServerError(HttpResponseStatus.FORBIDDEN.code(), "Wrong current password")
         }
 
         user.password = Password.hash(newPassword).addRandomSalt().withArgon2().result
@@ -35,18 +36,18 @@ class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         daoManager.userDao.update(user)
 
         ctx.session().destroy()
-        ctx.end().await()
+        ctx.end().coAwait()
     }
 
     suspend fun changeSetting(ctx: RoutingContext) {
         val userId = ctx.user().principal().getString("id").toLong()
         val user = daoManager.userDao.getById(userId)
-            ?: throw ServerError(HttpStatus.SC_FORBIDDEN, "User does not exist")
+            ?: throw ServerError(HttpResponseStatus.FORBIDDEN.code(), "User does not exist")
 
         val body = ctx.body().asJsonObject()
         user.changeSetting(body.getString("key"), body.getValue("value"))
         daoManager.userDao.update(user)
         ctx.user().principal().put("data", user.jsonData())
-        ctx.response().end().await()
+        ctx.response().end().coAwait()
     }
 }

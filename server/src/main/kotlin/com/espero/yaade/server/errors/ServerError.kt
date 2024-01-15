@@ -2,10 +2,11 @@ package com.espero.yaade.server.errors
 
 import com.espero.yaade.server.Server
 import io.vertx.core.http.HttpMethod
+import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.impl.Utils
-import org.slf4j.LoggerFactory
+
 import java.time.Clock
 import kotlin.math.min
 
@@ -43,7 +44,8 @@ fun handleFailure(ctx: RoutingContext) {
 
 fun logServerError(ctx: RoutingContext, code: Int, message: String, logWarn: Boolean) {
     val headers = ctx.request().headers()
-    val referrer: String = if (headers.contains("referrer")) headers.get("referrer") else headers.get("referer") ?: ""
+    val referrer: String =
+        if (headers.contains("referrer")) headers.get("referrer") else headers.get("referer") ?: ""
     val userAgent: String = headers.get("user-agent") ?: ""
     val logMsg = String.format(
         "[%s] \"%s %s %s\" %s %s \"%s\" \"%s\"",

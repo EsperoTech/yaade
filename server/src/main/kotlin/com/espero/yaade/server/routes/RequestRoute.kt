@@ -4,7 +4,7 @@ import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.RequestDb
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
-import io.vertx.kotlin.coroutines.await
+import io.vertx.kotlin.coroutines.coAwait
 
 class RequestRoute(private val daoManager: DaoManager) {
 
@@ -18,13 +18,13 @@ class RequestRoute(private val daoManager: DaoManager) {
 
         daoManager.requestDao.create(newRequest)
 
-        ctx.end(newRequest.toJson().encode()).await()
+        ctx.end(newRequest.toJson().encode()).coAwait()
     }
 
     suspend fun putRequest(ctx: RoutingContext) {
         val newRequest = RequestDb.fromUpdateRequest(ctx.body().asJsonObject())
         daoManager.requestDao.update(newRequest)
-        ctx.end().await()
+        ctx.end().coAwait()
     }
 
     suspend fun moveRequest(ctx: RoutingContext) {
@@ -71,12 +71,13 @@ class RequestRoute(private val daoManager: DaoManager) {
             daoManager.requestDao.update(requestDb)
         }
 
-        ctx.end().await()
+        ctx.end().coAwait()
     }
 
     suspend fun deleteRequest(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
-        val request = daoManager.requestDao.getById(id) ?: throw RuntimeException("Request not found")
+        val request =
+            daoManager.requestDao.getById(id) ?: throw RuntimeException("Request not found")
         val collectionId = request.collectionId
 
         val requests = daoManager.requestDao
@@ -97,6 +98,6 @@ class RequestRoute(private val daoManager: DaoManager) {
 
         daoManager.requestDao.delete(id)
 
-        ctx.end().await()
+        ctx.end().coAwait()
     }
 }
