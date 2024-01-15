@@ -1,6 +1,7 @@
 package com.espero.yaade.server.utils
 
 import com.espero.yaade.server.errors.ServerError
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Handler
 import io.vertx.ext.auth.User
 import io.vertx.ext.web.Route
@@ -8,9 +9,11 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.openapi.Operation
 import io.vertx.kotlin.coroutines.CoroutineVerticle
 import kotlinx.coroutines.launch
-import org.apache.http.HttpStatus
 
-fun Operation.coroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Handler<RoutingContext>) {
+fun Operation.coroutineHandler(
+    coroutineVerticle: CoroutineVerticle,
+    handler: Handler<RoutingContext>
+) {
     this.handler { ctx ->
         coroutineVerticle.launch {
             try {
@@ -38,11 +41,11 @@ fun Operation.authorizedCoroutineHandler(
 ) {
     this.handler { ctx ->
         if (ctx.user() == null) {
-            ctx.fail(ServerError(HttpStatus.SC_UNAUTHORIZED, "Not logged in"))
+            ctx.fail(ServerError(HttpResponseStatus.UNAUTHORIZED.code(), "Not logged in"))
             return@handler
         }
         if (isAdminHandler && !isUserAdmin(ctx.user())) {
-            ctx.fail(ServerError(HttpStatus.SC_UNAUTHORIZED, "User is not admin"))
+            ctx.fail(ServerError(HttpResponseStatus.UNAUTHORIZED.code(), "User is not admin"))
             return@handler
         }
         coroutineVerticle.launch {
