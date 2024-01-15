@@ -201,7 +201,7 @@ public class ExampleGenerator {
                     output.add(kv);
                 } else if (mediaType.startsWith(MIME_TYPE_XML)) {
                     // TODO
-                    LOGGER.warn("XML example value of (array/primitive) is not handled at the moment: %s".formatted(example));
+                    LOGGER.warn(String.format("XML example value of (array/primitive) is not handled at the moment: %s", example));
                 }
             }
         }
@@ -233,9 +233,9 @@ public class ExampleGenerator {
                 return res;
             }
         }
-        LOGGER.debug("Resolving example for property %s...".formatted(property));
+        LOGGER.debug(String.format("Resolving example for property %s...", property));
         if (property.getExample() != null) {
-            LOGGER.debug("Example set in openapi spec, returning example: '%s'".formatted(property.getExample().toString()));
+            LOGGER.debug(String.format("Example set in openapi spec, returning example: '%s'", property.getExample().toString()));
             return property.getExample();
         } else if (ModelUtils.isBooleanSchema(property)) {
             Object defaultValue = property.getDefault();
@@ -298,12 +298,12 @@ public class ExampleGenerator {
             LOGGER.debug("String property");
             String defaultValue = (String) property.getDefault();
             if (defaultValue != null && !defaultValue.isEmpty()) {
-                LOGGER.debug("Default value found: '%s'".formatted(defaultValue));
+                LOGGER.debug(String.format("Default value found: '%s'", defaultValue));
                 return defaultValue;
             }
             List<String> enumValues = property.getEnum();
             if (enumValues != null && !enumValues.isEmpty()) {
-                LOGGER.debug("Enum value found: '%s'".formatted(enumValues.get(0)));
+                LOGGER.debug(String.format("Enum value found: '%s'", enumValues.get(0)));
                 return enumValues.get(0);
             }
             String format = property.getFormat();
@@ -311,7 +311,7 @@ public class ExampleGenerator {
                 LOGGER.debug("URI or URL format, without default or enum, generating random one.");
                 return "http://example.com/aeiou";
             }
-            LOGGER.debug("No values found, using property name %s as example".formatted(propertyName));
+            LOGGER.debug(String.format("No values found, using property name %s as example", propertyName));
             return propertyName;
         } else if (!StringUtils.isEmpty(property.get$ref())) { // model
             String simpleName = ModelUtils.getSimpleRef(property.get$ref());
@@ -380,9 +380,9 @@ public class ExampleGenerator {
             }
         }
 
-        LOGGER.debug("Resolving model '%s' to example".formatted(name));
+        LOGGER.debug(String.format("Resolving model '%s' to example", name));
         if (schema.getExample() != null) {
-            LOGGER.debug("Using example from spec: %s".formatted(schema.getExample()));
+            LOGGER.debug(String.format("Using example from spec: %s", schema.getExample()));
             return schema.getExample();
         } else if (schema.getProperties() != null) {
             LOGGER.debug("Creating example from model values");
