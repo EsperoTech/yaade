@@ -38,18 +38,28 @@ export default function CollectionSettingsTab({
           <QuestionIcon />
         </Tooltip>
       </div>
-      <Switch
-        colorScheme="green"
-        size="md"
-        onChange={(e) => handleWebClientOptionsChanged('verifyHost', e.target.checked)}
-        isChecked={
-          settings?.webClientOptions?.verifyHost === undefined
-            ? true
-            : settings.webClientOptions.verifyHost
-        }
-      >
-        Verify Host
-      </Switch>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <Switch
+          colorScheme="green"
+          size="md"
+          onChange={(e) => handleWebClientOptionsChanged('verifyHost', e.target.checked)}
+          isChecked={
+            settings?.webClientOptions?.verifyHost === undefined
+              ? true
+              : settings.webClientOptions.verifyHost
+          }
+        >
+          Verify Host
+        </Switch>
+        <Switch
+          colorScheme="green"
+          size="md"
+          onChange={(e) => handleWebClientOptionsChanged('trustAll', e.target.checked)}
+          isChecked={!!settings?.webClientOptions?.trustAll}
+        >
+          Trust All
+        </Switch>
+      </div>
     </div>
   );
 }
