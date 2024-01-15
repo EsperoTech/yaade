@@ -13,21 +13,18 @@ import com.espero.yaade.server.utils.coroutineHandler
 import com.espero.yaade.server.utils.userCoroutineHandler
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServer
+import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
-import io.vertx.ext.web.handler.BodyHandler
-import io.vertx.ext.web.handler.LoggerFormat
-import io.vertx.ext.web.handler.LoggerHandler
-import io.vertx.ext.web.handler.SessionHandler
-import io.vertx.ext.web.handler.StaticHandler
+import io.vertx.ext.web.handler.*
 import io.vertx.ext.web.openapi.RouterBuilder
 import io.vertx.ext.web.sstore.LocalSessionStore
 import io.vertx.ext.web.sstore.SessionStore
 import io.vertx.kotlin.coroutines.CoroutineVerticle
-import io.vertx.kotlin.coroutines.await
-import org.slf4j.LoggerFactory
+import io.vertx.kotlin.coroutines.coAwait
 
 class Server(private val port: Int, private val daoManager: DaoManager) : CoroutineVerticle() {
+
     private val log = LoggerFactory.getLogger(Server::class.java)
     private val sessionTimeout: Long = 6 * 60 * 60 * 1000L
 
@@ -42,8 +39,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
         try {
             if (server != null) {
                 log.info("Stopping server...")
-                server!!.close().await()
-                sessionStore!!.clear().await()
+                server!!.close().coAwait()
+                sessionStore!!.clear().coAwait()
                 sessionStore!!.close()
             }
             sessionStore = LocalSessionStore.create(vertx)
@@ -55,15 +52,18 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val adminRoute = AdminRoute(daoManager, vertx, authHandler::testAuthConfig, this)
             val invokeRoute = InvokeRoute(vertx, daoManager)
 
-            val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").await()
+            val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
-            routerBuilder.rootHandler(SessionHandler.create(sessionStore).setSessionTimeout(sessionTimeout))
+            routerBuilder.rootHandler(
+                SessionHandler.create(sessionStore).setSessionTimeout(sessionTimeout)
+            )
             routerBuilder.rootHandler(BodyHandler.create().setUploadsDirectory("/tmp"))
             val loggerHandler = LoggerHandler.create(LoggerFormat.DEFAULT)
             // NOTE: customized loggerHandler to not log health or ping requests
             routerBuilder.rootHandler {
                 if (it.request().path().contains("/api/health") ||
-                    (it.request().path().contains("/api/user") && it.request().method() == HttpMethod.GET)
+                    (it.request().path().contains("/api/user") && it.request()
+                        .method() == HttpMethod.GET)
                 ) {
                     it.next()
                 } else {
@@ -185,7 +185,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             server = vertx.createHttpServer()
                 .requestHandler(mainRouter)
                 .listen(port)
-                .await()
+                .coAwait()
             log.info("Started server on port ${server!!.actualPort()}")
         } catch (t: Throwable) {
             log.error("Could not start server", t)
@@ -193,7 +193,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
     }
 
     public override suspend fun stop() {
-        server?.close()?.await()
+        server?.close()?.coAwait()
     }
 }
 

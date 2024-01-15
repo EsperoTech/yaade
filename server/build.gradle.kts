@@ -8,7 +8,7 @@ plugins {
 group = "com.espero"
 version = "1.0-SNAPSHOT"
 
-val vertxVersion = "4.3.1"
+val vertxVersion = "4.5.1"
 
 repositories {
     mavenCentral()
@@ -30,12 +30,13 @@ dependencies {
     implementation("com.j256.ormlite:ormlite-jdbc:4.48")
 
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.slf4j:slf4j-simple:1.7.30")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.1")
     implementation("com.password4j:password4j:1.7.1")
     implementation("net.lingala.zip4j:zip4j:2.9.1")
-    implementation("io.swagger.parser.v3:swagger-parser:2.0.31")
+
+    implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.19")
+
 
     implementation("org.apache.commons:commons-text:1.9")
 

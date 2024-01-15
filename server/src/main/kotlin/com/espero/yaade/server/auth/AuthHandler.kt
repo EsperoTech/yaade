@@ -4,6 +4,7 @@ import com.espero.yaade.BASE_PATH
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.errors.ServerError
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.json.JsonArray
@@ -11,24 +12,19 @@ import io.vertx.core.json.JsonObject
 import io.vertx.core.json.pointer.JsonPointer
 import io.vertx.ext.auth.oauth2.OAuth2Auth
 import io.vertx.ext.auth.oauth2.OAuth2Options
-import io.vertx.ext.auth.oauth2.providers.AmazonCognitoAuth
-import io.vertx.ext.auth.oauth2.providers.AzureADAuth
-import io.vertx.ext.auth.oauth2.providers.GithubAuth
-import io.vertx.ext.auth.oauth2.providers.KeycloakAuth
-import io.vertx.ext.auth.oauth2.providers.OpenIDConnectAuth
+import io.vertx.ext.auth.oauth2.providers.*
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.AuthenticationHandler
 import io.vertx.ext.web.handler.MultiTenantHandler
 import io.vertx.ext.web.handler.OAuth2AuthHandler
 import io.vertx.ext.web.handler.impl.MultiTenantHandlerImpl
-import io.vertx.kotlin.coroutines.await
-import org.apache.http.HttpStatus
+import io.vertx.kotlin.coroutines.coAwait
 import java.net.MalformedURLException
 import java.net.URL
 
-
-class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) : AuthenticationHandler {
+class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) :
+    AuthenticationHandler {
 
     private lateinit var router: Router
     private lateinit var delegate: MultiTenantHandler
@@ -81,27 +77,45 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
     }
 
     private fun validateFields(params: JsonObject) {
-        val fields = params.getJsonObject("fields") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"fields must not be null")
-        fields.getString("username") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"username-field must not be null")
+        val fields = params.getJsonObject("fields") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "fields must not be null"
+        )
+        fields.getString("username") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "username-field must not be null"
+        )
     }
 
     private fun addAuthProvider(auth: OAuth2Auth, config: JsonObject, isTest: Boolean) {
         val params: JsonObject =
-            config.getJsonObject("params") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "params must not be null")
+            config.getJsonObject("params") ?: throw ServerError(
+                HttpResponseStatus.BAD_REQUEST.code(),
+                "params must not be null"
+            )
         validateFields(params)
         val callbackUrl = params.getString("callbackUrl") ?: throw ServerError(
-            HttpStatus.SC_BAD_REQUEST,
+            HttpResponseStatus.BAD_REQUEST.code(),
             "callbackUrl must not be null"
         )
         val callbackPath: String
         try {
             callbackPath = URL(callbackUrl).path
         } catch (e: MalformedURLException) {
-            throw ServerError(HttpStatus.SC_BAD_REQUEST, "callbackUrl is not a valid URL.")
+            throw ServerError(
+                HttpResponseStatus.BAD_REQUEST.code(),
+                "callbackUrl is not a valid URL."
+            )
         }
-        if (callbackPath == "") throw ServerError(HttpStatus.SC_BAD_REQUEST, "callback path must not be empty")
+        if (callbackPath == "") throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "callback path must not be empty"
+        )
 
-        val id = config.getString("id") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "id must not be null")
+        val id = config.getString("id") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "id must not be null"
+        )
         var result = OAuth2AuthHandler.create(vertx, auth, callbackUrl)
 
         params.getJsonArray("scopes")?.forEach {
@@ -125,14 +139,26 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
     private suspend fun doCognito(c: JsonObject, isTest: Boolean) {
         val params: JsonObject = c.getJsonObject("params")
 
-        val userPoolId = params.getString("poolId") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"poolId must not be null")
+        val userPoolId = params.getString("poolId") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "poolId must not be null"
+        )
         val poolSplit = userPoolId.split("_")
         if (poolSplit.size != 2) {
-            throw ServerError(HttpStatus.SC_BAD_REQUEST, "Pool-id must be of form <region>_<id>. Got $userPoolId")
+            throw ServerError(
+                HttpResponseStatus.BAD_REQUEST.code(),
+                "Pool-id must be of form <region>_<id>. Got $userPoolId"
+            )
         }
         val region = poolSplit[0]
-        val clientId = params.getString("clientId") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientId must not be null")
-        val clientSecret = params.getString("clientSecret") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientSecret must not be null")
+        val clientId = params.getString("clientId") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "clientId must not be null"
+        )
+        val clientSecret = params.getString("clientSecret") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "clientSecret must not be null"
+        )
         val site = params.getString("site") ?: "https://cognito-idp.$region.amazonaws.com/{tenant}"
 
         val options = OAuth2Options()
@@ -141,7 +167,7 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
             .setTenant(userPoolId)
             .setSite(site)
 
-        val authProvider = AmazonCognitoAuth.discover(vertx, options).await()
+        val authProvider = AmazonCognitoAuth.discover(vertx, options).coAwait()
 
         addAuthProvider(authProvider, c, isTest)
     }
@@ -151,8 +177,14 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
         val options =
             HttpClientOptions()
 
-        val clientId = params.getString("clientId") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientId must not be null")
-        val clientSecret = params.getString("clientSecret") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientSecret must not be null")
+        val clientId = params.getString("clientId") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "clientId must not be null"
+        )
+        val clientSecret = params.getString("clientSecret") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "clientSecret must not be null"
+        )
 
         val authProvider =
             GithubAuth.create(vertx, clientId, clientSecret, options)
@@ -162,9 +194,18 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
 
     private suspend fun doAzureAD(c: JsonObject, isTest: Boolean) {
         val params: JsonObject = c.getJsonObject("params")
-        val clientId = params.getString("clientId") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientId must not be null")
-        val clientSecret = params.getString("clientSecret") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"clientSecret must not be null")
-        val tenant = params.getString("tenant") ?: throw ServerError(HttpStatus.SC_BAD_REQUEST,"guid must not be null")
+        val clientId = params.getString("clientId") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "clientId must not be null"
+        )
+        val clientSecret = params.getString("clientSecret") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "clientSecret must not be null"
+        )
+        val tenant = params.getString("tenant") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "guid must not be null"
+        )
 
         val options = OAuth2Options()
             .setClientId(clientId)
@@ -172,7 +213,7 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
             .setTenant(tenant)
             .setSite("https://login.microsoftonline.com/{tenant}/v2.0")
 
-        val authProvider = AzureADAuth.discover(vertx, options).await()
+        val authProvider = AzureADAuth.discover(vertx, options).coAwait()
 
         addAuthProvider(authProvider, c, isTest)
     }
@@ -180,7 +221,7 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
     private suspend fun doKeycloak(c: JsonObject, isTest: Boolean) {
         val params: JsonObject = c.getJsonObject("params")
         val options = OAuth2Options(params)
-        val authProvider = KeycloakAuth.discover(vertx, options).await()
+        val authProvider = KeycloakAuth.discover(vertx, options).coAwait()
 
         addAuthProvider(authProvider, c, isTest)
     }
@@ -188,22 +229,30 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
     private suspend fun addOauth2Tenant(c: JsonObject, isOidc: Boolean, isTest: Boolean) {
         val params: JsonObject = c.getJsonObject("params")
         val options = OAuth2Options(params)
+        val clientOptions = HttpClientOptions()
+            .setVerifyHost(false)
+            .setTrustAll(true)
+        options.setHttpClientOptions(clientOptions)
         val authProvider = if (isOidc)
             try {
-                OpenIDConnectAuth.discover(vertx, options).await()
+                OpenIDConnectAuth.discover(vertx, options).coAwait()
             } catch (t: Throwable) {
-                throw ServerError(HttpStatus.SC_BAD_REQUEST, "Discovery failed: " + t.message)
+                throw ServerError(
+                    HttpResponseStatus.BAD_REQUEST.code(),
+                    "Discovery failed: " + t.message
+                )
             }
-
         else
             OAuth2Auth.create(vertx, options)
 
         addAuthProvider(authProvider, c, isTest)
     }
 
-    private suspend fun doOidcDiscovery(config: JsonObject, isTest: Boolean) = addOauth2Tenant(config, true, isTest)
+    private suspend fun doOidcDiscovery(config: JsonObject, isTest: Boolean) =
+        addOauth2Tenant(config, true, isTest)
 
-    private suspend fun doOauth2(config: JsonObject, isTest: Boolean) = addOauth2Tenant(config, false, isTest)
+    private suspend fun doOauth2(config: JsonObject, isTest: Boolean) =
+        addOauth2Tenant(config, false, isTest)
 
     override fun handle(ctx: RoutingContext) {
         val user = ctx.user()
@@ -280,11 +329,13 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
             is JsonArray -> rawGroups
             else -> throw RuntimeException("Unexpected groups type: $rawGroups")
         }
-        val filterPattern = config.getJsonObject("params").getJsonObject("fields").getString("groupsFilter")
-            ?: ".*"
+        val filterPattern =
+            config.getJsonObject("params").getJsonObject("fields").getString("groupsFilter")
+                ?: ".*"
         val filteredGroups = filterGroups(groups, filterPattern)
         val defaultGroups =
-            config.getJsonObject("params").getJsonObject("fields").getJsonArray("defaultGroups") ?: JsonArray()
+            config.getJsonObject("params").getJsonObject("fields").getJsonArray("defaultGroups")
+                ?: JsonArray()
         val allGroups = filteredGroups + defaultGroups
         val externalUsername = UserDb.getExternalUsername(username, providerId)
         // NOTE: external user get their internal DB entry to be able to save settings

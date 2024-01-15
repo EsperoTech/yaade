@@ -4,6 +4,7 @@ import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.server.errors.ServerError
 import com.espero.yaade.services.SecretInterpolator
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.MultiMap
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -15,8 +16,7 @@ import io.vertx.ext.web.client.WebClient
 import io.vertx.ext.web.client.WebClientOptions
 import io.vertx.kotlin.core.json.json
 import io.vertx.kotlin.core.json.obj
-import io.vertx.kotlin.coroutines.await
-import org.apache.http.HttpStatus
+import io.vertx.kotlin.coroutines.coAwait
 
 class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) {
 
@@ -24,26 +24,26 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
 
     suspend fun invoke(ctx: RoutingContext) {
         val request = ctx.body().asJsonObject().getJsonObject("request")
-            ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No request provided")
+            ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No request provided")
         val collectionId = request.getLong("collectionId")
-            ?: throw ServerError(HttpStatus.SC_BAD_REQUEST, "No collectionId provided")
+            ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No collectionId provided")
         val collection = daoManager.collectionDao.getById(collectionId)
             ?: throw ServerError(
-                HttpStatus.SC_NOT_FOUND,
+                HttpResponseStatus.NOT_FOUND.code(),
                 "No collection found for ID: $collectionId"
             )
         val userId = ctx.user().principal().getLong("id")
         val user = daoManager.userDao.getById(userId)
-            ?: throw ServerError(HttpStatus.SC_FORBIDDEN, "User is not logged in")
+            ?: throw ServerError(HttpResponseStatus.FORBIDDEN.code(), "User is not logged in")
         if (!collection.canRead(user))
             throw ServerError(
-                HttpStatus.SC_FORBIDDEN,
+                HttpResponseStatus.FORBIDDEN.code(),
                 "User is not allowed to read this collection"
             )
         val envName: String? = ctx.body().asJsonObject().getString("envName")
 
         val result = send(request, collection, envName)
-        ctx.end(result.encode()).await()
+        ctx.end(result.encode()).coAwait()
     }
 
     private suspend fun send(
@@ -65,8 +65,15 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
         val clientOptions =
             collection.jsonData().getJsonObject("settings")?.getJsonObject("webClientOptions")
                 ?: JsonObject()
-        val webClientOptions = WebClientOptions(clientOptions)
-        val httpClient = WebClient.create(vertx, webClientOptions)
+        val options = WebClientOptions()
+            .setTrustAll(true)
+            .setVerifyHost(false)
+        options.removeEnabledSecureTransportProtocol("TLSv1");
+        options.removeEnabledSecureTransportProtocol("TLSv1.1");
+        options.removeEnabledSecureTransportProtocol("TLSv1.2");
+        options.addEnabledSecureTransportProtocol("TLSv1.3");
+
+        val httpClient = WebClient.create(vertx, options)
 
         val httpRequest = httpClient.requestAbs(method, url)
 
@@ -81,16 +88,16 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
         val t = System.currentTimeMillis()
         try {
             val res = if (!body.isNullOrEmpty())
-                httpRequest.sendBuffer(Buffer.buffer(body.toByteArray())).await()
+                httpRequest.sendBuffer(Buffer.buffer(body.toByteArray())).coAwait()
             else
-                httpRequest.send().await()
+                httpRequest.send().coAwait()
             result.put("body", res.bodyAsString() ?: "")
             result.put("status", res.statusCode())
             result.put("headers", jsonHeaders(res.headers()))
             val size =
                 if (res.bodyAsString().isNullOrEmpty()) 0 else res.bodyAsString().toByteArray().size
             result.put("size", size)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             result.put("error", e.message)
         }
         val duration = System.currentTimeMillis() - t
