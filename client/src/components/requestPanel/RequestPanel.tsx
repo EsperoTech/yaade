@@ -31,23 +31,67 @@ function shouldAppendNewRow(params: Array<KVRow>): boolean {
   return key !== '' || value !== '';
 }
 
-function getParamsFromUri(uri: string): Array<KVRow> {
-  try {
-    const paramString = uri.split('?')[1];
-    const params = paramString.split('&').map((kv) => {
-      const [k, ...v] = kv.split('=');
-      return {
-        key: k,
-        value: v.join('='),
-      };
-    });
-    if (shouldAppendNewRow(params)) {
-      params.push(defaultParam);
-    }
-    return params;
-  } catch (e) {
-    return [defaultParam];
+function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
+  const paramString = uri.split('?')[1];
+  if (!paramString) {
+    return params?.filter((param) => param.isEnabled === false) ?? [];
   }
+
+  const uriParams = paramString.split('&').map((kv) => {
+    const [k, ...v] = kv.split('='); // ...v with v.join('=') handle cases where the value contains '='
+    return {
+      key: k,
+      value: v.join('='),
+    };
+  });
+
+  if (!params) {
+    return uriParams;
+  }
+
+  const newParams: KVRow[] = [];
+
+  let indexEnabledParams = 0;
+  for (const [_, param] of params.entries()) {
+    if (param.isEnabled === false) {
+      newParams.push(param);
+    } else {
+      const uriParam = uriParams[indexEnabledParams];
+      if (!uriParam) {
+        console.error('params and URI params out of sync');
+        newParams.push({ key: '', value: '' });
+      } else {
+        newParams.push(uriParam);
+      }
+      indexEnabledParams++;
+    }
+  }
+
+  for (let i = indexEnabledParams; i < uriParams.length; i++) {
+    newParams.push(uriParams[i]);
+  }
+
+  return newParams;
+}
+
+function getUriFromParams(uri: string, params: Array<KVRow>): string {
+  let newUri = uri;
+  if (!newUri.includes('?')) {
+    newUri += '?';
+  }
+  const base = newUri.split('?')[0];
+  let searchParams = '';
+  for (let i = 0; i < params.length; i++) {
+    if (params[i].key === '' && params[i].value === '') {
+      continue;
+    }
+    if (i !== 0) searchParams += '&';
+    searchParams += `${params[i].key}=${params[i].value}`;
+  }
+  if (searchParams === '') {
+    return base;
+  }
+  return `${base}?${searchParams}`;
 }
 
 type RequestPanelProps = {
@@ -87,103 +131,27 @@ function RequestPanel({
     [dispatchCurrentRequest],
   );
 
-  const setParamsFromUri = useCallback(
-    (uri: string) => {
-      try {
-        let uriParams: KVRow[] = [];
-        const paramString = uri.split('?')[1];
-        if (paramString) {
-          uriParams = paramString.split('&').map((kv) => {
-            const [k, ...v] = kv.split('='); // ...v with v.join('=') handle cases where the value contains '='
-            return {
-              key: k,
-              value: v.join('='),
-            };
-          });
-        }
-
-        let params: KVRow[] = [];
-        if (!currentRequest.data.params) {
-          params = uriParams;
-        } else {
-          let indexEnabledParams = 0;
-          for (const [_, param] of currentRequest.data.params.entries()) {
-            if (param.isEnabled === false) {
-              params.push(param);
-            } else {
-              const uriParam = uriParams[indexEnabledParams];
-              if (!uriParam) {
-                throw Error('params and URI params out of sync');
-              }
-              params.push(uriParam);
-              indexEnabledParams++;
-            }
-          }
-          if (uriParams[indexEnabledParams]) {
-            throw Error('params and URI params out of sync');
-          }
-        }
-
-        dispatchCurrentRequest({
-          type: CurrentRequestActionType.PATCH_DATA,
-          data: { params },
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    },
-    [dispatchCurrentRequest, currentRequest.data.params],
-  );
-
   const setUri = useCallback(
     (uri: string) => {
-      setParamsFromUri(uri);
+      const params = getParamsFromUri(uri, currentRequest.data.params);
       dispatchCurrentRequest({
         type: CurrentRequestActionType.PATCH_DATA,
-        data: { uri },
+        data: { uri, params },
       });
     },
-    [dispatchCurrentRequest, setParamsFromUri],
-  );
-
-  const setUriFromParams = useCallback(
-    (params: Array<KVRow>) => {
-      try {
-        let uri = currentRequest.data.uri ?? '';
-        if (!uri.includes('?')) {
-          uri += '?';
-        }
-        const base = uri.split('?')[0];
-        let searchParams = '';
-        for (let i = 0; i < params.length; i++) {
-          if (params[i].key === '' && params[i].value === '') {
-            continue;
-          }
-          if (i !== 0) searchParams += '&';
-          searchParams += `${params[i].key}=${params[i].value}`;
-        }
-        if (searchParams === '') {
-          setUri(base);
-        } else {
-          setUri(`${base}?${searchParams}`);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    },
-    [currentRequest.data.uri, setUri],
+    [currentRequest.data.params, dispatchCurrentRequest],
   );
 
   const setParams = useCallback(
     (params: Array<KVRow>) => {
       const enabledParams = params.filter((param) => param.isEnabled !== false);
-      setUriFromParams(enabledParams);
+      const uri = getUriFromParams(currentRequest.data.uri ?? '', enabledParams);
       dispatchCurrentRequest({
         type: CurrentRequestActionType.PATCH_DATA,
-        data: { params },
+        data: { params, uri },
       });
     },
-    [dispatchCurrentRequest, setUriFromParams],
+    [currentRequest.data.uri, dispatchCurrentRequest],
   );
 
   const setHeaders = useCallback(
