@@ -20,17 +20,6 @@ import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
 
-const defaultParam = {
-  key: '',
-  value: '',
-};
-
-function shouldAppendNewRow(params: Array<KVRow>): boolean {
-  if (params.length === 0) return true;
-  const { key, value } = params[params.length - 1];
-  return key !== '' || value !== '';
-}
-
 function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
   const paramString = uri.split('?')[1];
   if (!paramString) {
