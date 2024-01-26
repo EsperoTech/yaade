@@ -57,6 +57,10 @@ function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
     if (uriParams[indexEnabledParams]) {
       console.error('params and URI params out of sync');
     }
+    // add remaining URI params to newParams in case they go out of sync
+    for (let i = indexEnabledParams; i < uriParams.length; i++) {
+      newParams.push(uriParams[i]);
+    }
   }
 
   for (let i = indexEnabledParams; i < uriParams.length; i++) {
