@@ -7,7 +7,7 @@ import com.espero.yaade.server.Server
 import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 
-val PORT = System.getenv("YAADE_PORT").toInt() ?: 9339
+val PORT = System.getenv("YAADE_PORT")?.toInt() ?: 9339
 val JDBC_URL = System.getenv("YAADE_JDBC_URL") ?: "jdbc:h2:file:./app/data/yaade-db"
 val JDBC_USR = System.getenv("YAADE_JDBC_USERNAME") ?: "sa"
 val JDBC_PWD = System.getenv("YAADE_JDBC_PASSWORD") ?: ""
