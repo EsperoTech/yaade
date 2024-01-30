@@ -12,6 +12,7 @@ fun String.envReplace(): String {
 }
 
 class PostmanParser(val collection: JsonObject) {
+
     fun parseCollection(userId: Long, groups: List<String>): CollectionDb {
         val name = collection.getJsonObject("info")?.getString("name") ?: "Postman"
         val data = JsonObject().put("name", name).put("groups", groups)
@@ -41,7 +42,8 @@ class PostmanParser(val collection: JsonObject) {
                 is String -> url = rawUrl
                 is JsonObject -> url = rawUrl.getString("raw") ?: ""
             }
-            val postmanHeaders = request.getJsonObject("request").getJsonArray("header") ?: JsonArray()
+            val postmanHeaders =
+                request.getJsonObject("request").getJsonArray("header") ?: JsonArray()
             val headers = JsonArray()
             postmanHeaders.forEach {
                 val header = it as JsonObject
@@ -55,7 +57,8 @@ class PostmanParser(val collection: JsonObject) {
                 collectionId = collectionId,
                 method = request.getJsonObject("request")?.getString("method") ?: "GET",
                 headers = headers,
-                body = request.getJsonObject("request")?.getJsonObject("body")?.getString("raw")?.envReplace()
+                body = request.getJsonObject("request")?.getJsonObject("body")?.getString("raw")
+                    ?.envReplace()
             )
             newRequests.add(newRequest)
         }

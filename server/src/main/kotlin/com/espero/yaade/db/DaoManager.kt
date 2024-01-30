@@ -6,6 +6,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 
 class DaoManager {
+
     lateinit var requestDao: RequestDao
     lateinit var collectionDao: CollectionDao
     lateinit var userDao: UserDao

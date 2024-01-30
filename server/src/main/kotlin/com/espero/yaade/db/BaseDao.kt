@@ -6,6 +6,7 @@ import com.j256.ormlite.support.ConnectionSource
 import com.j256.ormlite.table.TableUtils
 
 open class BaseDao<T : Any>(connectionSource: ConnectionSource, clazz: Class<T>) {
+
     protected val dao: Dao<T, Long> = DaoManager.createDao(connectionSource, clazz)
 
     init {

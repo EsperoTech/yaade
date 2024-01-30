@@ -3,12 +3,12 @@ package com.espero.yaade.model.db
 import com.j256.ormlite.field.DataType
 import com.j256.ormlite.field.DatabaseField
 import com.j256.ormlite.table.DatabaseTable
-import io.swagger.v3.oas.models.Operation
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 
 @DatabaseTable(tableName = "requests")
 class RequestDb {
+
     private constructor()
 
     @DatabaseField(generatedId = true)
@@ -80,6 +80,7 @@ class RequestDb {
     }
 
     companion object {
+
         fun fromUpdateRequest(request: JsonObject): RequestDb {
             return RequestDb(
                 id = request.getLong("id"),

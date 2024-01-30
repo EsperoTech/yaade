@@ -7,6 +7,7 @@ import io.vertx.core.json.JsonObject
 
 class CollectionDao(connectionSource: ConnectionSource) :
     BaseDao<CollectionDb>(connectionSource, CollectionDb::class.java) {
+
     fun getAll(): List<CollectionDb> {
         return dao.queryForAll()
     }

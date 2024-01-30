@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonObject
 
 @DatabaseTable(tableName = "config")
 class ConfigDb {
+
     private constructor()
 
     @DatabaseField(generatedId = true)
@@ -29,6 +30,7 @@ class ConfigDb {
     }
 
     companion object {
+
         val AUTH_CONFIG = "auth_config"
 
         fun createEmptyAuthConfig(): ConfigDb {
