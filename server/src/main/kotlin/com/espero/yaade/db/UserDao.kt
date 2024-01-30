@@ -4,10 +4,11 @@ import com.espero.yaade.ADMIN_USERNAME
 import com.espero.yaade.model.db.UserDb
 import com.j256.ormlite.support.ConnectionSource
 import com.password4j.Password
-import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 
-class UserDao(connectionSource: ConnectionSource) : BaseDao<UserDb>(connectionSource, UserDb::class.java) {
+class UserDao(connectionSource: ConnectionSource) :
+    BaseDao<UserDb>(connectionSource, UserDb::class.java) {
+
     private val defaultPassword = System.getenv(DEFAULT_PW_ENV) ?: DEFAULT_PW
 
     fun getByUsername(username: String): UserDb? {
@@ -62,6 +63,7 @@ class UserDao(connectionSource: ConnectionSource) : BaseDao<UserDb>(connectionSo
     }
 
     companion object {
+
         const val DEFAULT_PW_ENV = "YAADE_DEFAULT_PASSWORD"
         const val DEFAULT_PW = "password"
     }

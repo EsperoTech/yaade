@@ -13,6 +13,7 @@ val defaultSettings: JsonObject = JsonObject()
 
 @DatabaseTable(tableName = "users")
 class UserDb {
+
     private constructor()
 
     @DatabaseField(generatedId = true)
@@ -93,7 +94,12 @@ class UserDb {
     }
 
     companion object {
-        fun createWithDefaultSettings(username: String, hashedPassword: String, groups: List<String>): UserDb {
+
+        fun createWithDefaultSettings(
+            username: String,
+            hashedPassword: String,
+            groups: List<String>
+        ): UserDb {
             val data = JsonObject()
                 .put("settings", defaultSettings)
                 .put("groups", groups)

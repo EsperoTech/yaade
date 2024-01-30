@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonObject
 
 @DatabaseTable(tableName = "collections")
 class CollectionDb {
+
     private constructor()
 
     @DatabaseField(generatedId = true)
@@ -36,7 +37,8 @@ class CollectionDb {
     }
 
     fun canRead(user: UserDb): Boolean {
-        return user.isAdmin() || isOwner(user) || user.groups().intersect(this.groups()).isNotEmpty()
+        return user.isAdmin() || isOwner(user) || user.groups().intersect(this.groups())
+            .isNotEmpty()
     }
 
     fun groups(): Set<String> {
@@ -93,7 +95,7 @@ class CollectionDb {
     }
 
     private fun setSecretKeys(env: JsonObject) {
-        val secrets = env.getJsonObject("secrets")?: JsonObject()
+        val secrets = env.getJsonObject("secrets") ?: JsonObject()
         val keys = JsonArray()
         secrets.map.keys.forEach { keys.add(it) }
         env.put("secretKeys", keys)
@@ -142,14 +144,14 @@ class CollectionDb {
         }
         var data = env.getJsonObject("data")
         if (data == null) {
-           data = JsonObject()
-           env.put("data", JsonObject())
+            data = JsonObject()
+            env.put("data", JsonObject())
         }
         data.put(key, value)
         this.data = json.encode().toByteArray()
     }
 
-    fun setSecret(envName: String, key: String, value : String) {
+    fun setSecret(envName: String, key: String, value: String) {
         val json = jsonData()
         var envs = json.getJsonObject("envs")
         if (envs == null) {
@@ -218,8 +220,8 @@ class CollectionDb {
         this.data = json.encode().toByteArray()
     }
 
-
     companion object {
+
         fun fromUpdateRequest(request: JsonObject): CollectionDb {
             return CollectionDb(
                 id = request.getLong("id"),
