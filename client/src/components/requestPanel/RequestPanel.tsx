@@ -47,7 +47,7 @@ function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
     } else {
       const uriParam = uriParams[indexEnabledParams];
       if (!uriParam) {
-        console.warn('params and URI params out of sync (params > uriParams)');
+        console.warn('params and URI params out of sync (enabled params > URI params)');
         newParams.push({ key: '', value: '' });
       } else {
         newParams.push(uriParam);
@@ -56,8 +56,8 @@ function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
     }
   }
 
-  if (uriParams[indexEnabledParams]) {
-    console.warn('params and URI params out of sync (uriParams > params)');
+  if (uriParams.length > indexEnabledParams) {
+    console.warn('params and URI params out of sync (URI params > enabled params)');
   }
   // add remaining URI params to newParams in case they go out of sync
   for (let i = indexEnabledParams; i < uriParams.length; i++) {
