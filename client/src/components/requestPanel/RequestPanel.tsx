@@ -20,34 +20,71 @@ import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
 
-const defaultParam = {
-  key: '',
-  value: '',
-};
+function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
+  const paramString = uri.split('?')[1];
+  if (!paramString) {
+    return params?.filter((param) => param.isEnabled === false) ?? [];
+  }
 
-function shouldAppendNewRow(params: Array<KVRow>): boolean {
-  if (params.length === 0) return true;
-  const { key, value } = params[params.length - 1];
-  return key !== '' || value !== '';
+  const uriParams = paramString.split('&').map((kv) => {
+    const [k, ...v] = kv.split('='); // ...v with v.join('=') handle cases where the value contains '='
+    return {
+      key: k,
+      value: v.join('='),
+    };
+  });
+
+  if (!params) {
+    return uriParams;
+  }
+
+  const newParams: KVRow[] = [];
+
+  let indexEnabledParams = 0;
+  for (const [_, param] of params.entries()) {
+    if (param.isEnabled === false) {
+      newParams.push(param);
+    } else {
+      const uriParam = uriParams[indexEnabledParams];
+      if (!uriParam) {
+        console.warn('params and URI params out of sync (enabled params > URI params)');
+        newParams.push({ key: '', value: '' });
+      } else {
+        newParams.push(uriParam);
+      }
+      indexEnabledParams++;
+    }
+  }
+
+  if (uriParams.length > indexEnabledParams) {
+    console.warn('params and URI params out of sync (URI params > enabled params)');
+  }
+  // add remaining URI params to newParams in case they go out of sync
+  for (let i = indexEnabledParams; i < uriParams.length; i++) {
+    newParams.push(uriParams[i]);
+  }
+
+  return newParams;
 }
 
-function getParamsFromUri(uri: string): Array<KVRow> {
-  try {
-    const paramString = uri.split('?')[1];
-    const params = paramString.split('&').map((kv) => {
-      const [k, ...v] = kv.split('=');
-      return {
-        key: k,
-        value: v.join('='),
-      };
-    });
-    if (shouldAppendNewRow(params)) {
-      params.push(defaultParam);
-    }
-    return params;
-  } catch (e) {
-    return [defaultParam];
+function getUriFromParams(uri: string, params: Array<KVRow>): string {
+  let newUri = uri;
+  if (!newUri.includes('?')) {
+    newUri += '?';
   }
+  const base = newUri.split('?')[0];
+  let searchParams = '';
+  for (let i = 0; i < params.length; i++) {
+    if (params[i].key === '' && params[i].value === '') {
+      continue;
+    }
+    if (i !== 0) searchParams += '&';
+    searchParams += `${params[i].key}=${params[i].value}`;
+  }
+  if (searchParams === '') {
+    return base;
+  }
+  return `${base}?${searchParams}`;
 }
 
 type RequestPanelProps = {
@@ -70,11 +107,6 @@ function RequestPanel({
   const toast = useToast();
   const { user } = useContext(UserContext);
 
-  const params = useMemo(
-    () => getParamsFromUri(currentRequest.data.uri ?? ''),
-    [currentRequest.data.uri],
-  );
-
   const headers = useMemo(
     () =>
       currentRequest.data.headers && currentRequest.data.headers.length !== 0
@@ -93,12 +125,26 @@ function RequestPanel({
   );
 
   const setUri = useCallback(
-    (uri: string) =>
+    (uri: string) => {
+      const params = getParamsFromUri(uri, currentRequest.data.params);
       dispatchCurrentRequest({
         type: CurrentRequestActionType.PATCH_DATA,
-        data: { uri },
-      }),
-    [dispatchCurrentRequest],
+        data: { uri, params },
+      });
+    },
+    [currentRequest.data.params, dispatchCurrentRequest],
+  );
+
+  const setParams = useCallback(
+    (params: Array<KVRow>) => {
+      const enabledParams = params.filter((param) => param.isEnabled !== false);
+      const uri = getUriFromParams(currentRequest.data.uri ?? '', enabledParams);
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.PATCH_DATA,
+        data: { params, uri },
+      });
+    },
+    [currentRequest.data.uri, dispatchCurrentRequest],
   );
 
   const setHeaders = useCallback(
@@ -144,34 +190,6 @@ function RequestPanel({
         data: { description },
       }),
     [dispatchCurrentRequest],
-  );
-
-  const setUriFromParams = useCallback(
-    (params: Array<KVRow>) => {
-      try {
-        let uri = currentRequest.data.uri ?? '';
-        if (!uri.includes('?')) {
-          uri += '?';
-        }
-        const base = uri.split('?')[0];
-        let searchParams = '';
-        for (let i = 0; i < params.length; i++) {
-          if (params[i].key === '' && params[i].value === '') {
-            continue;
-          }
-          if (i !== 0) searchParams += '&';
-          searchParams += `${params[i].key}=${params[i].value}`;
-        }
-        if (searchParams === '') {
-          setUri(base);
-        } else {
-          setUri(`${base}?${searchParams}`);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    },
-    [currentRequest.data.uri, setUri],
   );
 
   async function handleSendButtonClick() {
@@ -269,8 +287,12 @@ function RequestPanel({
           <TabPanel>
             <KVEditor
               name="params"
-              kvs={params}
-              setKvs={setUriFromParams}
+              kvs={
+                currentRequest.data.params ??
+                getParamsFromUri(currentRequest.data.uri ?? '')
+              }
+              setKvs={setParams}
+              canDisableRows={true}
               hasEnvSupport={'BOTH'}
               env={selectedEnv}
             />
