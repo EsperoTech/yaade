@@ -109,11 +109,11 @@ chmod +x build.sh
 
 ### More Screenshots
 
-<div style="display:flex;flex-wrap:wrap;justify-content:space-evenly">
-    <img style="width:300px;min-width:300px;max-width:300px;height:auto;margin-bottom:20px" src="assets/documentation.png" alt="documentation-screenshot"/>
-    <img style="width:300px;min-width:300px;max-width:300px;height:auto;margin-bottom:20px" src="assets/environments.png" alt="environments-screenshot"/>
-    <img style="width:300px;min-width:300px;max-width:300px;height:auto" src="assets/scripts.png" alt="scripts-screenshot"/>
-    <img style="width:300px;min-width:300px;max-width:300px;height:auto" src="assets/user-management.png" alt="user-management-screenshot"/>
+<div style="width:100%;min-width:100%;display:flex;flex-wrap:wrap;justify-content:space-evenly">
+    <img style="width:48%;min-width:48%;max-width:48%;height:auto;margin-bottom:20px" src="assets/documentation.png" alt="documentation-screenshot"/>
+    <img style="width:48%;min-width:48%;max-width:48%;height:auto;margin-bottom:20px" src="assets/environments.png" alt="environments-screenshot"/>
+    <img style="width:48%;min-width:48%;max-width:48%;height:auto" src="assets/scripts.png" alt="scripts-screenshot"/>
+    <img style="width:48%;min-width:48%;max-width:48%;height:auto" src="assets/user-management.png" alt="user-management-screenshot"/>
 </div>
 
 ## 🤝  How can I contribute?
