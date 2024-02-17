@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/YaadeIcon.png" alt="yaade-icon"/>
+    <img style="width:128px;min-width:128px;max-width:128px;height:auto" src="assets/YaadeIcon.png" alt="yaade-icon"/>
 </p>
 
 <h1 align="center"><span style="color:#48bb78">Yaade</span> - Yet Another API Development Environment</h1>
