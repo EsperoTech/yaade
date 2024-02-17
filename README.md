@@ -6,7 +6,7 @@
 
 Yaade is an open-source, self-hosted, collaborative API development environment.
 
-<img src="assets/dark-mode.jpg" alt="dark-mode-screenshot"/>
+<img src="assets/dark-mode.png" alt="dark-mode-screenshot"/>
 
 ## 📚 Documentation
 
@@ -101,11 +101,20 @@ chmod +x build.sh
 
 ### 🌙 Dark mode
 
-<img src="assets/dark-mode.jpg" alt="dark-mode-screenshot"/>
+<img src="assets/dark-mode.png" alt="dark-mode-screenshot"/>
 
 ### ☀️ Light mode
 
-<img src="assets/light-mode.jpg" alt="light-mode-screenshot"/>
+<img src="assets/light-mode.png" alt="light-mode-screenshot"/>
+
+### More Screenshots
+
+<div style="display:flex;flex-wrap:wrap;justify-content:space-evenly">
+    <img style="width:300px;min-width:300px;max-width:300px;height:auto;margin-bottom:20px" src="assets/documentation.png" alt="documentation-screenshot"/>
+    <img style="width:300px;min-width:300px;max-width:300px;height:auto;margin-bottom:20px" src="assets/environments.png" alt="environments-screenshot"/>
+    <img style="width:300px;min-width:300px;max-width:300px;height:auto" src="assets/scripts.png" alt="scripts-screenshot"/>
+    <img style="width:300px;min-width:300px;max-width:300px;height:auto" src="assets/user-management.png" alt="user-management-screenshot"/>
+</div>
 
 ## 🤝  How can I contribute?
 
