@@ -2,6 +2,7 @@ export default {
   title: "Yaade",
   description: "The official Yaade docs.",
   themeConfig: {
+    logo: "/yaade-icon.png",
     sidebar: [
       {
         text: "Introduction",
