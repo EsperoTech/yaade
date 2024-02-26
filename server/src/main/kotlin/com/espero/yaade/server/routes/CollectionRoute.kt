@@ -94,6 +94,12 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
     suspend fun putCollection(ctx: RoutingContext) {
         val body = ctx.body().asJsonObject()
+
+        val id = body.getLong("id") ?: throw RuntimeException("No id provided")
+        val collection = daoManager.collectionDao.getById(id)
+            ?: throw RuntimeException("Collection not found")
+        assertUserCanReadCollection(ctx, collection)
+
         val newCollection = CollectionDb.fromUpdateRequest(body)
         daoManager.collectionDao.updateWithoutSecrets(newCollection)
         ctx.end().coAwait()
@@ -105,6 +111,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val newRank = body.getInteger("newRank") ?: throw RuntimeException("Invalid new rank")
         val collection = daoManager.collectionDao.getById(id)
             ?: throw RuntimeException("Collection not found")
+        assertUserCanReadCollection(ctx, collection)
         val collections = daoManager.collectionDao
             .getAll()
             .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
@@ -130,6 +137,9 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
     suspend fun deleteCollection(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
+        val collection = daoManager.collectionDao.getById(id)
+            ?: throw RuntimeException("Collection not found")
+        assertUserCanReadCollection(ctx, collection)
 
         val collections = daoManager
             .collectionDao.getAll()
@@ -203,25 +213,6 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         vertx.fileSystem().delete(f.uploadedFileName()).coAwait()
 
         ctx.end(collectionJson.encode()).coAwait()
-    }
-
-    private fun assertUserCanReadCollection(ctx: RoutingContext, collection: CollectionDb?) {
-        val principal = ctx.user().principal()
-        val userId = principal.getLong("id")
-
-        val user = daoManager.userDao.getById(userId)
-            ?: throw RuntimeException("No user found for id $userId")
-
-        if (collection == null) {
-            throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "Collection cannot be null")
-        }
-
-        if (!collection.canRead(user)) {
-            throw ServerError(
-                HttpResponseStatus.FORBIDDEN.code(),
-                "User ${user.username} is not allowed to read this collection"
-            )
-        }
     }
 
     suspend fun createEnv(ctx: RoutingContext) {
@@ -314,6 +305,25 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         collection.deleteSecret(envName, key)
         daoManager.collectionDao.update(collection)
         ctx.end().coAwait()
+    }
+
+    private fun assertUserCanReadCollection(ctx: RoutingContext, collection: CollectionDb?) {
+        val principal = ctx.user().principal()
+        val userId = principal.getLong("id")
+
+        val user = daoManager.userDao.getById(userId)
+            ?: throw RuntimeException("No user found for id $userId")
+
+        if (collection == null) {
+            throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "Collection not found")
+        }
+
+        if (!collection.canRead(user)) {
+            throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "No collection found for id: ${collection.id}"
+            )
+        }
     }
 
 }
