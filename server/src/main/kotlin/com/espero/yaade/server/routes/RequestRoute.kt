@@ -39,11 +39,12 @@ class RequestRoute(private val daoManager: DaoManager) {
         val body = ctx.body().asJsonObject()
         val id = ctx.pathParam("id").toLong()
         val newCollectionId = body.getLong("newCollectionId")
-        assertUserCanReadCollection(ctx, newCollectionId)
         val request = daoManager.requestDao.getById(id)
             ?: throw RuntimeException("Request not found")
-
+        assertUserCanReadCollection(ctx, request.collectionId)
+        
         if (newCollectionId != null) {
+            assertUserCanReadCollection(ctx, newCollectionId)
             daoManager.collectionDao.getById(newCollectionId)
                 ?: throw RuntimeException("Collection not found")
             request.collectionId = newCollectionId
