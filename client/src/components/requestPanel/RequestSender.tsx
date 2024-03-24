@@ -25,6 +25,10 @@ import { getSelectedEnv } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import RequestPanel from './RequestPanel';
+import { FormDataEncoder } from 'form-data-encoder';
+import getStream from 'get-stream';
+import KVRow from '../../model/KVRow';
+import { KVFileRow } from '../../model/KVRow';
 
 type NewReqFormState = {
   collectionId: number;
@@ -170,6 +174,33 @@ function RequestSender({
     });
   }
 
+  const encodeFormDataBody = async (kvs: KVFileRow[]): Promise<string> => {
+    if (!kvs) {
+      return '';
+    }
+    var formData = new FormData();
+
+    for (const kv of kvs) {
+      if (kv.fileSource) {
+        formData.append(kv.key, new Blob([kv.value]), kv.fileSource);
+      } else {
+        formData.append(kv.key, kv.value);
+      }
+    }
+    const encoder = new FormDataEncoder(formData);
+
+    return await getStream(encoder.encode());
+  };
+
+  const encodeUrlencodedBody = (kvs: KVRow[]) => {
+    if (!kvs) {
+      return '';
+    }
+    return kvs
+      .map((kv) => `${encodeURIComponent(kv.key)}=${encodeURIComponent(kv.value)}`)
+      .join('&');
+  };
+
   async function sendRequest(
     request: Request,
     envName?: string,
@@ -187,10 +218,24 @@ function RequestSender({
     const enabledRequestHeaders = request.data.headers
       ? request.data.headers.filter((h) => h.isEnabled !== false)
       : [];
+
+    let body;
+    switch (request.data.contentType) {
+      case 'application/x-www-form-urlencoded':
+        body = encodeUrlencodedBody(request.data.body as KVRow[]);
+        break;
+      case 'multipart/form-data':
+        body = await encodeFormDataBody(request.data.body as KVFileRow[]);
+        break;
+      default:
+        body = request.data.body;
+    }
+
     const injectedReq: Request = {
       ...request,
       data: {
         ...request.data,
+        body: body,
         // NOTE: this order is important because we want request headers to take precedence
         headers: [...enabledCollectionHeaders, ...enabledRequestHeaders],
       },
@@ -355,7 +400,7 @@ function RequestSender({
       setTimeout(() => {
         // Remove the event listener if the Promise is not resolved after 5 seconds
         window.removeEventListener('message', handleMessage);
-        reject(new Error('Timeout wating for response from: ' + request.id));
+        reject(new Error('Timeout waiting for response from: ' + request.id));
       }, 5000);
 
       // TODO: check if this mutates the original request object

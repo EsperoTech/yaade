@@ -25,7 +25,8 @@ interface RequestData {
   uri?: string;
   method?: string;
   headers?: Array<KVRow>;
-  body?: string;
+  body?: string | Array<KVRow>;
+  contentType?: string;
   requestScript?: string;
   responseScript?: string;
   response?: Response;

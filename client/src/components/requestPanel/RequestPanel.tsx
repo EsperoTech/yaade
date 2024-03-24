@@ -115,6 +115,11 @@ function RequestPanel({
     [currentRequest.data.headers],
   );
 
+  const contentType = useMemo(
+    () => currentRequest.data.contentType ?? 'application/json',
+    [currentRequest.data.contentType],
+  );
+
   const setMethod = useCallback(
     (method: string) =>
       dispatchCurrentRequest({
@@ -161,6 +166,15 @@ function RequestPanel({
       dispatchCurrentRequest({
         type: CurrentRequestActionType.PATCH_DATA,
         data: { body },
+      }),
+    [dispatchCurrentRequest],
+  );
+
+  const setContentType = useCallback(
+    (contentType: string) =>
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.PATCH_DATA,
+        data: { contentType },
       }),
     [dispatchCurrentRequest],
   );
@@ -312,6 +326,8 @@ function RequestPanel({
               content={currentRequest.data.body ?? ''}
               setContent={setBody}
               selectedEnv={selectedEnv}
+              contentType={contentType}
+              setContentType={setContentType}
             />
           </TabPanel>
           <TabPanel h="100%">
