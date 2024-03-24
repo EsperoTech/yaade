@@ -1,5 +1,5 @@
-import { DeleteIcon } from '@chakra-ui/icons';
-import { Checkbox, IconButton, useColorMode } from '@chakra-ui/react';
+import { AttachmentIcon, DeleteIcon } from '@chakra-ui/icons';
+import { Button, Checkbox, IconButton, useColorMode } from '@chakra-ui/react';
 import { drawSelection, EditorView } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import React, { useEffect, useRef } from 'react';
@@ -100,7 +100,7 @@ const kvThemeLeftDark = EditorView.theme(rawLeftDark);
 const kvThemeRightLight = EditorView.theme(rawRightLight);
 const kvThemeRightDark = EditorView.theme(rawRightDark);
 
-type KVEditorRowProps = {
+type KVFileEditorRowProps = {
   i: number;
   name: string;
   kKey: string;
@@ -118,7 +118,7 @@ type KVEditorRowProps = {
   env?: any;
 };
 
-function KVEditorRow({
+function KVFileEditorRow({
   i,
   name,
   kKey,
@@ -132,7 +132,7 @@ function KVEditorRow({
   readOnly,
   hasEnvSupport,
   env,
-}: KVEditorRowProps) {
+}: KVFileEditorRowProps) {
   const { colorMode } = useColorMode();
 
   const leftref = useRef<HTMLDivElement>(null);
@@ -214,6 +214,16 @@ function KVEditorRow({
             }`}
             ref={rightref}
           />
+          <IconButton
+            aria-label="upload-file"
+            isRound
+            variant="ghost"
+            onClick={() => {
+              return;
+            }}
+            colorScheme="green"
+            icon={<AttachmentIcon />}
+          />
 
           {canDisableRow && (
             <Checkbox
@@ -258,4 +268,4 @@ function KVEditorRow({
   );
 }
 
-export default React.memo(KVEditorRow);
+export default React.memo(KVFileEditorRow);
