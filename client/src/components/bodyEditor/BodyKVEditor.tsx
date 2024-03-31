@@ -1,10 +1,7 @@
-import { useState } from 'react';
-
 import KVRow from '../../model/KVRow';
 import { KVFileRow } from '../../model/KVRow';
 import KVEditor from '../kvEditor';
 import KVFileEditor from '../kvEditor/KVFileEditor';
-import { Button } from '@chakra-ui/react';
 
 type BodyKVEditorProps = {
   content: KVRow[] | KVFileRow[];

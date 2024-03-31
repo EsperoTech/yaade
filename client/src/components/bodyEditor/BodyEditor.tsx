@@ -2,12 +2,12 @@ import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, Select, useToast } from '@chakra-ui/react';
 import { useMemo } from 'react';
 
-import { beautifyBody, errorToast } from '../../utils';
-import styles from './BodyEditor.module.css';
-import BodyTextEditor from './BodyTextEditor';
-import BodyKVEditor from './BodyKVEditor';
 import KVRow from '../../model/KVRow';
 import KVFileRow from '../../model/KVRow';
+import { beautifyBody, errorToast } from '../../utils';
+import styles from './BodyEditor.module.css';
+import BodyKVEditor from './BodyKVEditor';
+import BodyTextEditor from './BodyTextEditor';
 
 type BodyEditorProps = {
   content: string | KVRow[] | KVFileRow[];

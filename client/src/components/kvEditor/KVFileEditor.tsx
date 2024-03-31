@@ -1,8 +1,8 @@
-import { Button } from '@chakra-ui/react';
+import { useEffect, useMemo, useRef } from 'react';
+
 import { KVFileRow } from '../../model/KVRow';
 import styles from './KVEditor.module.css';
 import KVFileEditorRow from './KVFileEditorRow';
-import { useMemo, useRef, useEffect } from 'react';
 
 type KVFileEditorProps = {
   kvs: Array<KVFileRow>;

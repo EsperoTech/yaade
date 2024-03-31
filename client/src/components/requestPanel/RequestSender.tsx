@@ -1,8 +1,12 @@
 import { Input, Select, useColorMode, useDisclosure, useToast } from '@chakra-ui/react';
+import { FormDataEncoder } from 'form-data-encoder';
+import getStream from 'get-stream';
 import { Dispatch, MutableRefObject, useRef, useState } from 'react';
 
 import api from '../../api';
 import Collection from '../../model/Collection';
+import KVRow from '../../model/KVRow';
+import { KVFileRow } from '../../model/KVRow';
 import Request, { CurrentRequest } from '../../model/Request';
 import Response from '../../model/Response';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
@@ -25,10 +29,6 @@ import { getSelectedEnv } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import RequestPanel from './RequestPanel';
-import { FormDataEncoder } from 'form-data-encoder';
-import getStream from 'get-stream';
-import KVRow from '../../model/KVRow';
-import { KVFileRow } from '../../model/KVRow';
 
 type NewReqFormState = {
   collectionId: number;

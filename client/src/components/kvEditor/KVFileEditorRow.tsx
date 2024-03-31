@@ -1,5 +1,5 @@
 import { AttachmentIcon, DeleteIcon } from '@chakra-ui/icons';
-import { Button, Checkbox, IconButton, useColorMode } from '@chakra-ui/react';
+import { Checkbox, IconButton, useColorMode } from '@chakra-ui/react';
 import { drawSelection, EditorView } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import React, { useEffect, useRef } from 'react';
