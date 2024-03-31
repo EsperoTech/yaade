@@ -220,6 +220,40 @@ class CollectionDb {
         this.data = json.encode().toByteArray()
     }
 
+    fun getCert(envName: String, host: String): String? {
+        val env = this
+            .jsonData()
+            .getJsonObject("envs")
+            ?.getJsonObject(envName)
+
+        val certs = env?.getJsonArray("certs") ?: return null
+
+        val cert = certs
+            .map { it as JsonObject }
+            .firstOrNull { it.getString("host") == host }
+            ?: return null
+
+        return cert.getString("cert")
+    }
+
+    fun setCert(envName: String, host: String, cert: String) {
+        val json = jsonData()
+        var envs = json.getJsonObject("envs") ?: throw RuntimeException("No envs")
+        var env = envs.getJsonObject(envName)
+        if (env == null) {
+            env = JsonObject()
+            envs.put(envName, env)
+        }
+        var certs = env.getJsonArray("certs")
+        if (certs == null) {
+            certs = JsonArray()
+            env.put("certs", certs)
+        }
+        val newCert = JsonObject().put("host", host).put("cert", cert)
+        certs.add(newCert)
+        this.data = json.encode().toByteArray()
+    }
+
     companion object {
 
         fun fromUpdateRequest(request: JsonObject): CollectionDb {
