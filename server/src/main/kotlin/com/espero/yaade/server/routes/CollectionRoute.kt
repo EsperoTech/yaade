@@ -307,24 +307,6 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         ctx.end().coAwait()
     }
 
-    suspend fun setCert(ctx: RoutingContext) {
-        val id = ctx.pathParam("id").toLong()
-        val collection = daoManager.collectionDao.getById(id)
-            ?: throw ServerError(
-                HttpResponseStatus.BAD_REQUEST.code(),
-                "No collection found for id: $id"
-            )
-        assertUserCanReadCollection(ctx, collection)
-
-        val envName = ctx.pathParam("env")
-        val f = ctx.fileUploads().iterator().next()
-        val rawCert = vertx.fileSystem().readFile(f.uploadedFileName()).coAwait()
-
-        collection.setCert(envName, rawCert.toString())
-        daoManager.collectionDao.update(collection)
-        ctx.end().coAwait()
-    }
-
     private fun assertUserCanReadCollection(ctx: RoutingContext, collection: CollectionDb?) {
         val principal = ctx.user().principal()
         val userId = principal.getLong("id")

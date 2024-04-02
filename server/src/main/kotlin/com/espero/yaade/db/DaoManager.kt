@@ -11,6 +11,7 @@ class DaoManager {
     lateinit var collectionDao: CollectionDao
     lateinit var userDao: UserDao
     lateinit var configDao: ConfigDao
+    lateinit var certificatesDao: CertificatesDao
     lateinit var dataSource: HikariDataSource
     lateinit var connectionSource: ConnectionSource
 
@@ -26,6 +27,7 @@ class DaoManager {
         collectionDao = CollectionDao(connectionSource)
         userDao = UserDao(connectionSource)
         configDao = ConfigDao(connectionSource)
+        certificatesDao = CertificatesDao(connectionSource)
     }
 
     fun close() {
