@@ -16,6 +16,7 @@ import GeneralSettings from './generalSettings';
 import styles from './Settings.module.css';
 import SettingsTab from './settingsTab';
 import UserSettings from './userSettings';
+import CertificateSettings from './certificateSettings';
 
 const sx = {
   borderRadius: '0 20px 20px 0',
@@ -55,6 +56,9 @@ function Settings() {
                 <Tab sx={sx} _selected={selected}>
                   Users
                 </Tab>
+                <Tab sx={sx} _selected={selected}>
+                  Certificates
+                </Tab>
                 <Divider my="4" />
               </>
             ) : null}
@@ -79,6 +83,11 @@ function Settings() {
           {isAdmin() ? (
             <TabPanel>
               <UserSettings />
+            </TabPanel>
+          ) : null}
+          {isAdmin() ? (
+            <TabPanel>
+              <CertificateSettings />
             </TabPanel>
           ) : null}
           <TabPanel>
