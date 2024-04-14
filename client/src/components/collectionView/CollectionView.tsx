@@ -210,7 +210,7 @@ function CollectionView({
                       />
                     </TabPanel>
                     <TabPanel>
-                      <Select size="xs" value="curl">
+                      <Select size="xs" value="curl" marginBottom={4}>
                         <option value="curl">cURL</option>
                       </Select>
                       <Input
@@ -219,6 +219,7 @@ function CollectionView({
                         borderRadius={20}
                         colorScheme="green"
                         value={state.newRequestName}
+                        marginBottom={4}
                         onChange={(e) =>
                           setState({ ...state, newRequestName: e.target.value })
                         }
@@ -229,7 +230,7 @@ function CollectionView({
                         onChange={(e) =>
                           setState({ ...state, importData: e.target.value })
                         }
-                        height="300px"
+                        height="150px"
                         resize="none"
                       />
                     </TabPanel>
