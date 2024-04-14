@@ -1,4 +1,4 @@
-import { Input, Select, useDisclosure, useToast } from '@chakra-ui/react';
+import { Input, Select, useColorMode, useDisclosure, useToast } from '@chakra-ui/react';
 import { Dispatch, MutableRefObject, useRef, useState } from 'react';
 
 import api from '../../api';
@@ -57,6 +57,7 @@ function RequestSender({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef(null);
   const toast = useToast();
+  const { colorMode } = useColorMode();
 
   function getEnv(collectionId: number, envName?: string) {
     if (!envName) return;
@@ -180,13 +181,18 @@ function RequestSender({
 
     const collection = collections.find((c) => c.id === request.collectionId);
 
-    const collectionHeaders = collection?.data?.headers ?? [];
+    const enabledCollectionHeaders = collection?.data?.headers
+      ? collection.data.headers.filter((h) => h.isEnabled !== false)
+      : [];
+    const enabledRequestHeaders = request.data.headers
+      ? request.data.headers.filter((h) => h.isEnabled !== false)
+      : [];
     const injectedReq: Request = {
       ...request,
       data: {
         ...request.data,
         // NOTE: this order is important because we want request headers to take precedence
-        headers: [...collectionHeaders, ...(request.data.headers ?? [])],
+        headers: [...enabledCollectionHeaders, ...enabledRequestHeaders],
       },
     };
 
@@ -465,6 +471,7 @@ function RequestSender({
           w="100%"
           borderRadius={20}
           colorScheme="green"
+          backgroundColor={colorMode === 'light' ? 'white' : undefined}
           value={newReqForm.name}
           onChange={(e) => setNewReqForm({ ...newReqForm, name: e.target.value })}
           ref={initialRef}

@@ -2,29 +2,37 @@ package com.espero.yaade.server.routes
 
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.RequestDb
+import com.espero.yaade.server.errors.ServerError
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
-import io.vertx.kotlin.coroutines.await
+import io.vertx.kotlin.coroutines.coAwait
 
 class RequestRoute(private val daoManager: DaoManager) {
 
     suspend fun postRequest(ctx: RoutingContext) {
-        // TODO: can i add requests to collection that i cannot see? also edit?
         val body = ctx.body().asJsonObject()
+        val collectionId = body.getLong("collectionId")
+            ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No collectionId provided")
+        assertUserCanReadCollection(ctx, collectionId)
         val newRequest = if (body.containsKey("data"))
-            RequestDb(body.getLong("collectionId"), body.getJsonObject("data"))
+            RequestDb(collectionId, body.getJsonObject("data"))
         else
-            RequestDb(body.getLong("collectionId"), body.getString("name"))
+            RequestDb(collectionId, body.getString("name"))
 
         daoManager.requestDao.create(newRequest)
 
-        ctx.end(newRequest.toJson().encode()).await()
+        ctx.end(newRequest.toJson().encode()).coAwait()
     }
 
     suspend fun putRequest(ctx: RoutingContext) {
+        val body = ctx.body().asJsonObject()
+        val collectionId = body.getLong("collectionId")
+            ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No collectionId provided")
+        assertUserCanReadCollection(ctx, collectionId)
         val newRequest = RequestDb.fromUpdateRequest(ctx.body().asJsonObject())
         daoManager.requestDao.update(newRequest)
-        ctx.end().await()
+        ctx.end().coAwait()
     }
 
     suspend fun moveRequest(ctx: RoutingContext) {
@@ -33,8 +41,10 @@ class RequestRoute(private val daoManager: DaoManager) {
         val newCollectionId = body.getLong("newCollectionId")
         val request = daoManager.requestDao.getById(id)
             ?: throw RuntimeException("Request not found")
-
+        assertUserCanReadCollection(ctx, request.collectionId)
+        
         if (newCollectionId != null) {
+            assertUserCanReadCollection(ctx, newCollectionId)
             daoManager.collectionDao.getById(newCollectionId)
                 ?: throw RuntimeException("Collection not found")
             request.collectionId = newCollectionId
@@ -42,6 +52,7 @@ class RequestRoute(private val daoManager: DaoManager) {
         }
 
         val collectionId = request.collectionId
+        assertUserCanReadCollection(ctx, collectionId)
         val requests = daoManager.requestDao
             .getAllInCollection(collectionId)
             .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
@@ -71,13 +82,15 @@ class RequestRoute(private val daoManager: DaoManager) {
             daoManager.requestDao.update(requestDb)
         }
 
-        ctx.end().await()
+        ctx.end().coAwait()
     }
 
     suspend fun deleteRequest(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
-        val request = daoManager.requestDao.getById(id) ?: throw RuntimeException("Request not found")
+        val request =
+            daoManager.requestDao.getById(id) ?: throw RuntimeException("Request not found")
         val collectionId = request.collectionId
+        assertUserCanReadCollection(ctx, collectionId)
 
         val requests = daoManager.requestDao
             .getAllInCollection(collectionId)
@@ -97,6 +110,22 @@ class RequestRoute(private val daoManager: DaoManager) {
 
         daoManager.requestDao.delete(id)
 
-        ctx.end().await()
+        ctx.end().coAwait()
+    }
+
+    private fun assertUserCanReadCollection(ctx: RoutingContext, collectionId: Long) {
+        val collection = daoManager.collectionDao.getById(collectionId)
+            ?: throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "No collection found for id: $collectionId"
+            )
+        val userId = ctx.user().principal().getLong("id")
+        val user = daoManager.userDao.getById(userId)
+            ?: throw ServerError(HttpResponseStatus.FORBIDDEN.code(), "User is not logged in")
+        if (!collection.canRead(user))
+            throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "No collection found for id: $collectionId"
+            )
     }
 }

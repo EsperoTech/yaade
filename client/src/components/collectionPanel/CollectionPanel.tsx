@@ -9,10 +9,10 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import React, { useState } from 'react';
+import React from 'react';
 import { VscSave } from 'react-icons/vsc';
 
-import { CurrentCollection } from '../../model/Collection';
+import { CollectionSettings, CurrentCollection } from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import {
@@ -51,7 +51,7 @@ export default function CollectionPanel({
   const headers =
     currentCollection.data?.headers && currentCollection.data.headers.length !== 0
       ? currentCollection.data.headers
-      : [{ key: '', value: '' }];
+      : [{ key: '', value: '', isEnabled: true }];
 
   const handleSaveCollection = async () => {
     try {
@@ -121,6 +121,12 @@ export default function CollectionPanel({
       data: { groups },
     });
 
+  const setSettings = (settings: CollectionSettings) =>
+    dispatchCurrentCollection({
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { settings },
+    });
+
   useKeyPress(handleSaveCollection, 's', true);
 
   return (
@@ -182,6 +188,7 @@ export default function CollectionPanel({
               name="headers"
               kvs={headers}
               setKvs={setHeaders}
+              canDisableRows={true}
               hasEnvSupport={'BOTH'}
               env={selectedEnv}
             />
@@ -202,6 +209,8 @@ export default function CollectionPanel({
             <CollectionSettingsTab
               groups={currentCollection.data.groups ?? []}
               setGroups={setGroups}
+              settings={currentCollection.data.settings}
+              setSettings={setSettings}
             />
           </TabPanel>
         </TabPanels>

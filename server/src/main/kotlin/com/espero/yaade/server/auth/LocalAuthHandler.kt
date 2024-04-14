@@ -12,6 +12,7 @@ import io.vertx.ext.web.handler.impl.AuthenticationHandlerImpl
 
 class LocalAuthHandler(authProvider: AuthenticationProvider) :
     AuthenticationHandlerImpl<AuthenticationProvider>(authProvider) {
+
     override fun authenticate(ctx: RoutingContext, handler: Handler<AsyncResult<User>>) {
         try {
             val username = ctx.body().asJsonObject().getString("username")

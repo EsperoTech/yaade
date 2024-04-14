@@ -1,13 +1,12 @@
 import { DeleteIcon } from '@chakra-ui/icons';
-import { color, IconButton, useColorMode } from '@chakra-ui/react';
-import { EditorView } from '@codemirror/view';
-import { drawSelection } from '@codemirror/view';
-import ReactCodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Checkbox, IconButton, useColorMode } from '@chakra-ui/react';
+import { drawSelection, EditorView } from '@codemirror/view';
+import { useCodeMirror } from '@uiw/react-codemirror';
+import React, { useEffect, useRef } from 'react';
 
+import { cn } from '../../utils';
 import { helpCursor, singleLine } from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
-import { json } from '../../utils/codemirror/lang-json';
 import { yaade } from '../../utils/codemirror/lang-yaade';
 import {
   cmThemeDark,
@@ -106,9 +105,14 @@ type KVEditorRowProps = {
   name: string;
   kKey: string;
   value: string;
-  onChangeRow: React.MutableRefObject<(i: number, param: string, value: string) => void>;
+  isEnabled?: boolean;
+  canDisableRow: boolean;
+  onChangeRow: React.MutableRefObject<
+    (i: number, param: string, value: string | boolean) => void
+  >;
   onDeleteRow: React.MutableRefObject<(i: number) => void>;
   isDeleteDisabled?: boolean;
+  isEnableDisabled?: boolean;
   readOnly?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
@@ -119,9 +123,12 @@ function KVEditorRow({
   name,
   kKey,
   value,
+  isEnabled = true,
+  canDisableRow = false,
   onChangeRow,
   onDeleteRow,
   isDeleteDisabled,
+  isEnableDisabled,
   readOnly,
   hasEnvSupport,
   env,
@@ -195,8 +202,27 @@ function KVEditorRow({
     <div key={`${name}-${i}`} className={styles.row}>
       {!readOnly ? (
         <>
-          <div className={styles.cm} ref={leftref} />
-          <div className={styles.cm} ref={rightref} />
+          <div
+            className={`${styles.cm} ${
+              !isEnabled ? cn(styles, 'inputDisabled', [colorMode]) : ''
+            }`}
+            ref={leftref}
+          />
+          <div
+            className={`${styles.cm} ${
+              !isEnabled ? cn(styles, 'inputDisabled', [colorMode]) : ''
+            }`}
+            ref={rightref}
+          />
+          {canDisableRow && (
+            <Checkbox
+              className={cn(styles, 'checkbox', [colorMode])}
+              disabled={isEnableDisabled}
+              isChecked={isEnabled}
+              onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
+              colorScheme="green"
+            />
+          )}
           <IconButton
             aria-label="delete-row"
             isRound
@@ -217,7 +243,6 @@ function KVEditorRow({
             value={kKey}
             readOnly={readOnly}
           />
-
           <input
             className={`${styles.input} ${styles['input--right']} ${
               styles[`input--${colorMode}`]
