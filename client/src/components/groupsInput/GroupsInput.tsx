@@ -10,7 +10,6 @@ import {
 import { FunctionComponent, useState } from 'react';
 
 type GroupsInputProps = {
-  id: string;
   groups: string[];
   setGroups: (groups: string[]) => void;
   isRounded?: boolean;
@@ -18,7 +17,6 @@ type GroupsInputProps = {
 };
 
 const GroupsInput: FunctionComponent<GroupsInputProps> = ({
-  id,
   groups,
   setGroups,
   isRounded,
@@ -46,7 +44,7 @@ const GroupsInput: FunctionComponent<GroupsInputProps> = ({
   }
 
   return (
-    <VStack alignItems="start" width="100%" className={className} id={id}>
+    <VStack alignItems="start" width="100%" className={className}>
       <Input
         size={isRounded ? 'md' : 'sm'}
         borderRadius={isRounded ? '20px' : undefined}

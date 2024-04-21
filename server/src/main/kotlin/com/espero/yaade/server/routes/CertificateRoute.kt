@@ -45,7 +45,11 @@ class CertificateRoute(private val daoManager: DaoManager, private val vertx: Ve
         val data = JsonObject()
             .put("type", type)
             .put("host", host)
-            .put("groups", JsonArray(groups.split(",")))
+        if (groups.isNotEmpty()) {
+            data.put("groups", JsonArray(groups.split(",")))
+        } else {
+            data.put("groups", JsonArray())
+        }
         when (type) {
             "pem" -> {
                 val pemConfig = JsonObject()

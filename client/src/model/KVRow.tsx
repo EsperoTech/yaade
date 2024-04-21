@@ -4,11 +4,4 @@ interface KVRow {
   isEnabled?: boolean;
 }
 
-export interface KVFileRow {
-  key: string;
-  value: string | File;
-  isFile?: boolean;
-  isEnabled?: boolean;
-}
-
 export default KVRow;

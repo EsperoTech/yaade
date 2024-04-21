@@ -2,7 +2,10 @@ import { DeleteIcon } from '@chakra-ui/icons';
 import {
   Button,
   Heading,
+  HStack,
   IconButton,
+  Input,
+  Select,
   Table,
   TableContainer,
   Tag,
@@ -14,141 +17,136 @@ import {
   Tr,
   useColorMode,
   useToast,
+  VStack,
 } from '@chakra-ui/react';
-import { FunctionComponent, useEffect, useState } from 'react';
+import { FunctionComponent, useEffect, useRef, useState } from 'react';
 
-import Certificate, { CreateCertificateRequest } from '../../../model/Certificate';
-import { KVFileRow } from '../../../model/KVRow';
-import { BASE_PATH, errorToast, successToast } from '../../../utils';
-import { encodeFormDataBody } from '../../../utils/encodeRequests';
+import Certificate from '../../../model/Certificate';
+import { BASE_PATH, cn, errorToast, successToast } from '../../../utils';
+import GroupsInput from '../../groupsInput';
 import SettingsTab from '../settingsTab';
-import CertificateForm from './CertificateForm';
+import styles from './CertificateSettings.module.css';
 
 type CertificateSettingsState = {
   certificates: Certificate[];
   showAddCertificate: boolean;
-  newCertificate: CreateCertificateRequest;
 };
 
-const defaultCreateCertificate: CreateCertificateRequest = {
+type CreateNewCertificateState = {
+  host: string;
+  type: string;
+  groups: string[];
+  pemCert?: File;
+};
+
+const defaultCreateCertificate: CreateNewCertificateState = {
   host: '',
   type: 'pem',
   groups: [],
-  pemCert: undefined,
 };
 
 const CertificateSettings: FunctionComponent = () => {
   const [state, setState] = useState<CertificateSettingsState>({
-    certificates: [
-      {
-        host: 'test',
-        type: 'pem',
-        groups: ['group1', 'group2'],
-      },
-      {
-        host: 'test2',
-        type: 'pem',
-        groups: ['group1', 'someLongerGroupName'],
-      },
-    ],
+    certificates: [],
     showAddCertificate: false,
-    newCertificate: defaultCreateCertificate,
   });
+  const [newCertState, setNewCertState] = useState<CreateNewCertificateState>(
+    defaultCreateCertificate,
+  );
 
   const { colorMode } = useColorMode();
   const toast = useToast();
+  const pemInputRef = useRef<HTMLInputElement>(null);
 
-  // useEffect(() => {
-  //   const getCertificates = async () => {
-  //     try {
-  //       const res = await fetch(BASE_PATH + 'api/certificates');
-  //       const resObject = await res.json();
-  //       const certificates = resObject.certificates as Array<Certificate>;
-
-  //       setState((s) => {
-  //         return { ...s, certificates };
-  //       });
-  //     } catch (e) {
-  //       errorToast('Certificate could not be fetched.', toast);
-  //     }
-  //   };
-  //   getCertificates();
-  // }, []);
-
-  function setCertificates(certificates: CreateCertificateRequest[]) {
-    setState((s) => {
-      return { ...s, certificates };
-    });
-  }
-
-  async function handleAddCertificate() {
-    try {
-      const formDataBody = await encodeFormDataBody(
-        mapNewCertificateToKVFileRows(state.newCertificate),
-      );
-      const res = await fetch(BASE_PATH + 'api/certificates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formDataBody,
-      });
-
-      if (res.status === 200) {
-        successToast('Certificate created', toast);
-
+  useEffect(() => {
+    const getCertificates = async () => {
+      try {
         const res = await fetch(BASE_PATH + 'api/certificates');
         const resObject = await res.json();
         const certificates = resObject.certificates as Array<Certificate>;
 
         setState((s) => {
-          return {
-            ...s,
-            showAddCertificate: false,
-            newCertificate: defaultCreateCertificate,
-            certificates,
-          };
+          return { ...s, certificates };
         });
+      } catch (e) {
+        errorToast('Certificate could not be fetched.', toast);
+      }
+    };
+    getCertificates();
+  }, [toast]);
+
+  async function handleAddCertificateClick() {
+    try {
+      const formdata = new FormData();
+      formdata.append('host', newCertState.host);
+      formdata.append('type', newCertState.type);
+      if (newCertState.groups.length > 0) {
+        formdata.append('groups', newCertState.groups.join(','));
+      }
+      if (newCertState.type === 'pem' && newCertState.pemCert) {
+        formdata.append('pemCert', newCertState.pemCert!);
+      }
+
+      const res = await fetch(BASE_PATH + 'api/certificates', {
+        method: 'POST',
+        body: formdata,
+      });
+
+      if (res.status === 200) {
+        const newCert = (await res.json()) as Certificate;
+
+        setState({ ...state, certificates: [...state.certificates, newCert] });
+        setNewCertState(defaultCreateCertificate);
+        pemInputRef.current!.value = '';
+        successToast('Certificate created', toast);
       } else if (res.status === 409) {
         errorToast('Certificate already exists', toast);
       } else {
-        throw new Error('Could not create user');
+        throw new Error();
       }
     } catch (e) {
-      errorToast('Certificate could not be created: ' + e, toast);
+      errorToast('Certificate could not be created', toast);
     }
   }
 
-  function resetAddCertificate() {
-    setState((s) => {
-      return {
-        ...s,
-        showAddCertificate: false,
-        newCertificate: defaultCreateCertificate,
-      };
-    });
+  function handleDeleteCertificateClick(id: number) {
+    try {
+      fetch(BASE_PATH + 'api/certificates/' + id, {
+        method: 'DELETE',
+      });
+
+      setState((s) => {
+        return {
+          ...s,
+          certificates: s.certificates.filter((c) => c.id !== id),
+        };
+      });
+
+      successToast('Certificate deleted', toast);
+    } catch (e) {
+      errorToast('Certificate could not be deleted.', toast);
+    }
   }
 
-  function onChangeNewCertificate(newCertificate: CreateCertificateRequest) {
-    setState((s) => {
-      return { ...s, newCertificate: newCertificate };
-    });
+  function onChangeNewCertificate(newCertificate: CreateNewCertificateState) {
+    setNewCertState({ ...newCertificate });
   }
 
-  function mapNewCertificateToKVFileRows(
-    newCertificate: CreateCertificateRequest,
-  ): KVFileRow[] {
-    return Object.entries(newCertificate).map(([key, value]) => {
-      if (key === 'pemCert') {
-        return { key, value, isFile: true };
-      }
-      return { key, value };
-    });
+  function validateForm(): boolean {
+    if (newCertState.host === '') {
+      return false;
+    }
+
+    if (newCertState.type === 'pem' && !newCertState.pemCert) {
+      return false;
+    }
+
+    return true;
   }
 
   return (
     <SettingsTab name="Certificates">
-      <TableContainer overflowY="scroll">
+      <TableContainer maxHeight="200px" overflowY="scroll">
         <Table size="sm" whiteSpace="normal">
           <Thead>
             <Tr>
@@ -162,12 +160,12 @@ const CertificateSettings: FunctionComponent = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {state.certificates.length == 0 ? (
+            {state.certificates?.length == 0 ? (
               <div style={{ marginTop: '5px' }}>
                 <span> No certificates</span>
               </div>
             ) : (
-              state.certificates.map((u, i) => {
+              state.certificates?.map((u, i) => {
                 return (
                   <Tr key={`certificate-list-${i}`}>
                     <Td
@@ -180,10 +178,10 @@ const CertificateSettings: FunctionComponent = () => {
                       verticalAlign="top"
                       padding="12px 0 0 0"
                     >
-                      {u.host}
+                      {u.data.host}
                     </Td>
                     <Td p="0" overflowX="hidden" verticalAlign="top" padding="8px 0 0 0">
-                      {u.groups.map((group: string) => (
+                      {u.data.groups.map((group: string) => (
                         <Tag
                           size="sm"
                           key={`certificate-list-${i}-${group}`}
@@ -202,9 +200,7 @@ const CertificateSettings: FunctionComponent = () => {
                         aria-label="delete-row"
                         isRound
                         variant="ghost"
-                        onClick={() => {
-                          errorToast('Not implemented', toast);
-                        }}
+                        onClick={() => handleDeleteCertificateClick(u.id)}
                         color={colorMode === 'light' ? 'red.500' : 'red.300'}
                         icon={<DeleteIcon />}
                       />
@@ -218,54 +214,73 @@ const CertificateSettings: FunctionComponent = () => {
       </TableContainer>
       <hr style={{ marginTop: '10px' }} />
       <div style={{ marginTop: '10px' }}>
-        {!state.showAddCertificate && (
-          <Button
-            borderRadius={20}
-            colorScheme="green"
-            w={150}
-            onClick={() => {
-              setState((s) => {
-                return { ...s, showAddCertificate: true };
-              });
+        <Heading as="h4" size="md" mb="2" mt="4">
+          Add a new Certificate
+        </Heading>
+        <Input
+          size="sm"
+          placeholder="Host"
+          mb="2"
+          backgroundColor={colorMode === 'light' ? 'white' : undefined}
+          value={newCertState.host}
+          onChange={(e) =>
+            onChangeNewCertificate({ ...newCertState, host: e.target.value })
+          }
+        />
+        <HStack alignItems="start">
+          <Select
+            id="type"
+            value={newCertState.type}
+            size="sm"
+            onChange={(e) => {
+              onChangeNewCertificate({ ...newCertState, type: e.target.value });
             }}
           >
-            Add Certificate
-          </Button>
-        )}
+            <option key={'pem'} value={'pem'}>
+              pem
+            </option>
+          </Select>
+          <GroupsInput
+            groups={newCertState.groups}
+            setGroups={(groups) => {
+              onChangeNewCertificate({ ...newCertState, groups });
+            }}
+          />
+        </HStack>
 
-        {state.showAddCertificate && (
-          <>
-            <Heading as="h4" size="md" mb="2" mt="2">
-              Add a new certificate
-            </Heading>
-
-            <CertificateForm
-              newCertificate={state.newCertificate}
-              onChangeNewCertificate={onChangeNewCertificate}
-            />
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Button
-                mt="4"
-                borderRadius={20}
-                colorScheme="green"
-                w={150}
-                onClick={handleAddCertificate}
-              >
-                Add
-              </Button>
-              <Button
-                mt="4"
-                borderRadius={20}
-                colorScheme="red"
-                w={150}
-                onClick={resetAddCertificate}
-                style={{ marginLeft: '10px' }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </>
-        )}
+        <HStack mb="4">
+          <label
+            htmlFor="pemCert"
+            className={styles.fieldLabel}
+            style={{ width: '160px' }}
+          >
+            Pem Certificate
+          </label>
+          <input
+            id="pemCert"
+            ref={pemInputRef}
+            className={`${cn(styles, 'fileInput', [colorMode])} ${styles.formField}`}
+            type="file"
+            accept=".pem"
+            onChange={(e) => {
+              const pemCert = e.target.files ? e.target.files[0] : undefined;
+              if (!pemCert) {
+                return;
+              }
+              onChangeNewCertificate({ ...newCertState, pemCert });
+            }}
+          />
+        </HStack>
+        <Button
+          mt="4"
+          borderRadius={20}
+          colorScheme="green"
+          w={150}
+          onClick={handleAddCertificateClick}
+          disabled={!validateForm()}
+        >
+          Add
+        </Button>
       </div>
     </SettingsTab>
   );

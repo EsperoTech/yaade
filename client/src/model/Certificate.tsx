@@ -1,11 +1,9 @@
-export interface CreateCertificateRequest {
-  host: string;
-  type: string;
-  groups: string[];
-  pemCert: File | undefined | null;
+interface Certificate {
+  id: number;
+  data: CertificateData;
 }
 
-interface Certificate {
+interface CertificateData {
   host: string;
   type: string;
   groups: string[];

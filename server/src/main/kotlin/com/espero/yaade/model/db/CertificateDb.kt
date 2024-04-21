@@ -61,8 +61,9 @@ class CertificateDb {
     }
 
     fun canRead(user: UserDb): Boolean {
-        return user.isAdmin() || user.groups().intersect(this.groups())
-            .isNotEmpty()
+        return user.isAdmin() ||
+                user.groups().isEmpty() ||
+                user.groups().intersect(this.groups()).isNotEmpty()
     }
 
     fun mutateWebClientOptions(webClientOptions: WebClientOptions) {

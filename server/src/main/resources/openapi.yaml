@@ -802,10 +802,6 @@ components:
             $ref: '#/components/schemas/Certificate'
     CreateCertificateRequest:
       type: object
-      required:
-        - host
-        - type
-        - groups
       properties:
         host:
           type: string
