@@ -12,11 +12,11 @@ import { useContext } from 'react';
 import { UserContext } from '../../context';
 import AccountSettings from './accountSettings';
 import AdminSettings from './adminSettings';
+import CertificateSettings from './certificateSettings';
 import GeneralSettings from './generalSettings';
 import styles from './Settings.module.css';
 import SettingsTab from './settingsTab';
 import UserSettings from './userSettings';
-import CertificateSettings from './certificateSettings';
 
 const sx = {
   borderRadius: '0 20px 20px 0',
@@ -56,12 +56,12 @@ function Settings() {
                 <Tab sx={sx} _selected={selected}>
                   Users
                 </Tab>
-                <Tab sx={sx} _selected={selected}>
-                  Certificates
-                </Tab>
                 <Divider my="4" />
               </>
             ) : null}
+            <Tab sx={sx} _selected={selected}>
+              Certificates
+            </Tab>
             <Tab sx={sx} _selected={selected}>
               About
             </Tab>
@@ -85,11 +85,9 @@ function Settings() {
               <UserSettings />
             </TabPanel>
           ) : null}
-          {isAdmin() ? (
-            <TabPanel>
-              <CertificateSettings />
-            </TabPanel>
-          ) : null}
+          <TabPanel>
+            <CertificateSettings />
+          </TabPanel>
           <TabPanel>
             <SettingsTab name="About">
               From Munich with ❤️

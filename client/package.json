@@ -28,8 +28,6 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react": "^7.29.2",
-    "form-data-encoder": "^4.0.2",
-    "formdata-node": "^6.0.3",
     "framer-motion": "^6.2.8",
     "json-beautify": "^1.1.1",
     "jsonpath": "^1.1.1",

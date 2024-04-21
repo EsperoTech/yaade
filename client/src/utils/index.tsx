@@ -2,7 +2,7 @@ import beautify from 'beautify';
 import { Location } from 'react-router-dom';
 
 import Collection, { SidebarCollection } from '../model/Collection';
-import KVRow, { KVFileRow } from '../model/KVRow';
+import KVRow from '../model/KVRow';
 import Request, { CurrentRequest } from '../model/Request';
 import { parseResponse } from './parseResponseEvent';
 
