@@ -92,9 +92,9 @@ paths:
           required: true
       requestBody:
         content:
-            application/json:
-              schema:
-                  $ref: "#/components/schemas/MoveCollectionRequest"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveCollectionRequest"
       responses:
         "200":
           description: Success
@@ -596,6 +596,49 @@ paths:
           description: Success
       operationId: invoke
       summary: Invoke a request
+  /api/certificates:
+    get:
+      tags:
+        - Certificates
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCertificatesResponse"
+      operationId: getCertificates
+      summary: Get all certificates
+    post:
+      requestBody:
+        description: A new certificate
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateCertificateRequest"
+        required: true
+      tags:
+        - Certificates
+      responses:
+        '200':
+          description: Success
+      operationId: createCertificate
+      summary: Create a certificate
+  /api/certificates/{id}:
+    delete:
+      tags:
+        - Certificates
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+      responses:
+        '200':
+          description: Success
+      operationId: deleteCertificate
+      summary: Delete a certificate
 
 components:
   schemas:
@@ -703,8 +746,8 @@ components:
           format: int64
           type: integer
           description: |
-              The new rank of the request. If set, the newCollectionId field will be ignored 
-              and the request will be moved to the new rank in the same collection.
+            The new rank of the request. If set, the newCollectionId field will be ignored 
+            and the request will be moved to the new rank in the same collection.
         newCollectionId:
           format: int64
           type: integer
@@ -724,3 +767,52 @@ components:
         name:
           type: string
           description: The name of the new collection.
+    Certificate:
+      required:
+        - id
+        - data
+      type: object
+      properties:
+        id:
+          format: int64
+          type: integer
+        data:
+          type: object
+          required:
+            - host
+            - type
+            - groups
+          properties:
+            host:
+              type: string
+            type:
+              type: string
+            groups:
+              type: array
+              items:
+                type: string
+    GetCertificatesResponse:
+      type: object
+      required:
+        - certificates
+      properties:
+        certificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Certificate'
+    CreateCertificateRequest:
+      type: object
+      required:
+        - host
+        - type
+      properties:
+        host:
+          type: string
+        type:
+          type: string
+        groups:
+          type: string
+        pemCert:
+          type: string
+        pemKey:
+          type: string

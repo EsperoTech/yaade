@@ -19,6 +19,7 @@ export default {
           { text: "Environments", link: "/environments" },
           { text: "Scripts", link: "/scripts" },
           { text: "Backups", link: "/backups" },
+          { text: "Certificates", link: "/certificates" },
         ],
       },
     ],
