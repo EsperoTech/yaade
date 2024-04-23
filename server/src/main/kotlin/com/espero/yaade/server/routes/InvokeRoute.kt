@@ -69,12 +69,14 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
                 ?: JsonObject()
         val webClientOptions = WebClientOptions(clientOptions)
 
-        // TODO: improve performance by caching certificates
-        val certificates = daoManager.certificatesDao.getAll()
-        for (cert in certificates) {
-            if (cert.canRead(user) && cert.doesHostMatch(url)) {
-                cert.mutateWebClientOptions(webClientOptions)
-                break
+        if (url.startsWith("https")) {
+            // TODO: improve performance by caching certificates
+            val certificates = daoManager.certificatesDao.getAll()
+            for (cert in certificates) {
+                if (cert.canRead(user) && cert.doesHostMatch(url)) {
+                    cert.mutateWebClientOptions(webClientOptions)
+                    break
+                }
             }
         }
         val httpClient = WebClient.create(vertx, webClientOptions)

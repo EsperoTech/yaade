@@ -53,14 +53,23 @@ class CertificateRoute(private val daoManager: DaoManager, private val vertx: Ve
         when (type) {
             "pem" -> {
                 val pemConfig = JsonObject()
-                val f = ctx.fileUploads().firstOrNull { it.name() == "pemCert" }
+                val pemCertFile = ctx.fileUploads().firstOrNull { it.name() == "pemCert" }
                     ?: throw ServerError(
                         HttpResponseStatus.BAD_REQUEST.code(),
                         "No certificate file provided for PEM certificate creation"
                     )
                 // read the content of the file into a string
-                val pemCert = vertx.fileSystem().readFile(f.uploadedFileName()).coAwait().toString()
+                val pemCert =
+                    vertx.fileSystem().readFile(pemCertFile.uploadedFileName()).coAwait().toString()
+                val pemKeyFile = ctx.fileUploads().firstOrNull { it.name() == "pemKey" }
+                    ?: throw ServerError(
+                        HttpResponseStatus.BAD_REQUEST.code(),
+                        "No key file provided for PEM certificate creation"
+                    )
+                val pemKey =
+                    vertx.fileSystem().readFile(pemKeyFile.uploadedFileName()).coAwait().toString()
                 pemConfig.put("cert", pemCert)
+                pemConfig.put("key", pemKey)
                 data.put("pemConfig", pemConfig)
             }
 

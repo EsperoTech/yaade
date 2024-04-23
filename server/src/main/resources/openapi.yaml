@@ -814,3 +814,5 @@ components:
           type: string
         pemCert:
           type: string
+        pemKey:
+          type: string

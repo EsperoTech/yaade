@@ -12,6 +12,7 @@ import {
   TagLabel,
   Tbody,
   Td,
+  Text,
   Th,
   Thead,
   Tr,
@@ -37,6 +38,7 @@ type CreateNewCertificateState = {
   type: string;
   groups: string[];
   pemCert?: File;
+  pemKey?: File;
 };
 
 const defaultCreateCertificate: CreateNewCertificateState = {
@@ -56,7 +58,8 @@ const CertificateSettings: FunctionComponent = () => {
 
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const pemInputRef = useRef<HTMLInputElement>(null);
+  const pemCertInputRef = useRef<HTMLInputElement>(null);
+  const pemKeyInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const getCertificates = async () => {
@@ -86,6 +89,9 @@ const CertificateSettings: FunctionComponent = () => {
       if (newCertState.type === 'pem' && newCertState.pemCert) {
         formdata.append('pemCert', newCertState.pemCert!);
       }
+      if (newCertState.type === 'pem' && newCertState.pemKey) {
+        formdata.append('pemKey', newCertState.pemKey!);
+      }
 
       const res = await fetch(BASE_PATH + 'api/certificates', {
         method: 'POST',
@@ -97,7 +103,8 @@ const CertificateSettings: FunctionComponent = () => {
 
         setState({ ...state, certificates: [...state.certificates, newCert] });
         setNewCertState(defaultCreateCertificate);
-        pemInputRef.current!.value = '';
+        pemCertInputRef.current!.value = '';
+        pemKeyInputRef.current!.value = '';
         successToast('Certificate created', toast);
       } else if (res.status === 409) {
         errorToast('Certificate already exists', toast);
@@ -146,7 +153,11 @@ const CertificateSettings: FunctionComponent = () => {
 
   return (
     <SettingsTab name="Certificates">
-      <TableContainer maxHeight="200px" overflowY="scroll">
+      <Text mb="4">
+        Upload SSL certificates to be used by the server proxy for matching hostnames.
+        Limit access to certificates via groups.
+      </Text>
+      <TableContainer maxHeight="160px" overflowY="scroll">
         <Table size="sm" whiteSpace="normal">
           <Thead>
             <Tr>
@@ -248,7 +259,7 @@ const CertificateSettings: FunctionComponent = () => {
           />
         </HStack>
 
-        <HStack mb="4">
+        <HStack mb="2">
           <label
             htmlFor="pemCert"
             className={styles.fieldLabel}
@@ -258,10 +269,9 @@ const CertificateSettings: FunctionComponent = () => {
           </label>
           <input
             id="pemCert"
-            ref={pemInputRef}
+            ref={pemCertInputRef}
             className={`${cn(styles, 'fileInput', [colorMode])} ${styles.formField}`}
             type="file"
-            accept=".pem"
             onChange={(e) => {
               const pemCert = e.target.files ? e.target.files[0] : undefined;
               if (!pemCert) {
@@ -271,6 +281,30 @@ const CertificateSettings: FunctionComponent = () => {
             }}
           />
         </HStack>
+
+        <HStack mb="4">
+          <label
+            htmlFor="pemKey"
+            className={styles.fieldLabel}
+            style={{ width: '160px' }}
+          >
+            Pem Key
+          </label>
+          <input
+            id="pemKey"
+            ref={pemKeyInputRef}
+            className={`${cn(styles, 'fileInput', [colorMode])} ${styles.formField}`}
+            type="file"
+            onChange={(e) => {
+              const pemKey = e.target.files ? e.target.files[0] : undefined;
+              if (!pemKey) {
+                return;
+              }
+              onChangeNewCertificate({ ...newCertState, pemKey: pemKey });
+            }}
+          />
+        </HStack>
+
         <Button
           mt="4"
           borderRadius={20}

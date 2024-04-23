@@ -4,6 +4,7 @@ import com.j256.ormlite.field.DataType
 import com.j256.ormlite.field.DatabaseField
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonObject
+import io.vertx.core.net.PemKeyCertOptions
 import io.vertx.core.net.PemTrustOptions
 import io.vertx.ext.web.client.WebClientOptions
 import java.net.URL
@@ -16,7 +17,8 @@ import java.net.URL
         "groups": ["group1", "group2"],
         "type": "pem",
         "pemConfig": {
-            "cert": "... pem cert as string ..."
+            "cert": "... pem cert as string ...",
+            "key": "... pem key as string ..."
         }
     }
 */
@@ -72,8 +74,14 @@ class CertificateDb {
             "pem" -> {
                 val pemCert = certData.getJsonObject("pemConfig")?.getString("cert")
                     ?: return
-                webClientOptions.pemTrustOptions = PemTrustOptions()
+                val pemKey = certData.getJsonObject("pemConfig")?.getString("key")
+                    ?: return
+                webClientOptions.trustOptions = PemTrustOptions()
                     .addCertValue(Buffer.buffer(pemCert))
+                webClientOptions.keyCertOptions = PemKeyCertOptions()
+                    .addCertValue(Buffer.buffer(pemCert))
+                    .addKeyValue(Buffer.buffer(pemKey))
+                webClientOptions.setSsl(true)
             }
         }
     }
