@@ -3,6 +3,7 @@ package com.espero.yaade.model.db
 import com.j256.ormlite.field.DataType
 import com.j256.ormlite.field.DatabaseField
 import com.j256.ormlite.table.DatabaseTable
+import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 
@@ -76,7 +77,7 @@ class RequestDb {
             .put("collectionId", collectionId)
             .put("type", type)
             .put("version", version)
-            .put("data", JsonObject(data.decodeToString()))
+            .put("data", JsonObject(Buffer.buffer(data)))
     }
 
     companion object {

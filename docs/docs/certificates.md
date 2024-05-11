@@ -1,6 +1,6 @@
 # Certificates
 
-You can upload your SSL certificates to the server to use them in your requests. This is useful if you have a self-signed certificate or a certificate that is not trusted by the system. To upload a certificate, go to the **⚙️ > Certificates**. Select the certiicate file and specify for which hostname it should be used. The hostname is the domain name of the server that the certificate is used for.
+You can upload your SSL certificates to the server to use them in your requests. This is useful if you have a self-signed certificate or a certificate that is not trusted by the system. To upload a certificate, go to the **⚙️ > Certificates**. Select the certificate file and specify for which hostname it should be used. The hostname is the domain name of the server that the certificate is used for.
 
 ::: warning
 If multiple certificates are uploaded for the same hostname, the last uploaded certificate will be used.
