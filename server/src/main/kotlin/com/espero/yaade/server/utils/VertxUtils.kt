@@ -1,8 +1,10 @@
 package com.espero.yaade.server.utils
 
 import com.espero.yaade.server.errors.ServerError
+import com.fasterxml.jackson.core.StreamReadConstraints
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Handler
+import io.vertx.core.json.jackson.DatabindCodec
 import io.vertx.ext.auth.User
 import io.vertx.ext.web.Route
 import io.vertx.ext.web.RoutingContext
@@ -84,4 +86,15 @@ fun Route.coroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Handle
             }
         }
     }
+}
+
+fun configureDatabindCodec() {
+    // we do not limit the length of strings for now
+    // this might become a performance problem later on
+    val s = StreamReadConstraints
+        .builder()
+        .maxStringLength(Integer.MAX_VALUE)
+        .build()
+    DatabindCodec.mapper().factory.setStreamReadConstraints(s)
+    DatabindCodec.prettyMapper().factory.setStreamReadConstraints(s)
 }

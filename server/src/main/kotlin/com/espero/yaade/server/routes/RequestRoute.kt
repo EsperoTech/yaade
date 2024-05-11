@@ -42,7 +42,7 @@ class RequestRoute(private val daoManager: DaoManager) {
         val request = daoManager.requestDao.getById(id)
             ?: throw RuntimeException("Request not found")
         assertUserCanReadCollection(ctx, request.collectionId)
-        
+
         if (newCollectionId != null) {
             assertUserCanReadCollection(ctx, newCollectionId)
             daoManager.collectionDao.getById(newCollectionId)
