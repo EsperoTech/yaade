@@ -7,6 +7,7 @@ interface Collection {
   open: boolean;
   ownerId: number;
   version: string;
+  children: Array<Collection>;
   requests: Array<Request>;
 }
 
@@ -22,6 +23,7 @@ interface CollectionData {
   requestScript?: string;
   responseScript?: string;
   settings?: CollectionSettings;
+  parentId?: number;
 }
 
 interface CollectionSettings {
@@ -43,6 +45,7 @@ interface SidebarCollection {
   selected: boolean;
   groups?: string[];
   requests: SidebarRequest[];
+  children: SidebarCollection[];
 }
 
 interface CurrentCollection {

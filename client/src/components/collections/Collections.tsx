@@ -70,6 +70,7 @@ function Collections({
         duplicateRequest={duplicateRequest}
         duplicateCollection={duplicateCollection}
         dispatchCollections={dispatchCollections}
+        renderCollection={renderCollection}
       />
     );
   };

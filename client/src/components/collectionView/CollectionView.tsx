@@ -54,6 +54,7 @@ type CollectionProps = {
   duplicateRequest: (id: number, newName: string) => void;
   duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
+  renderCollection: (collection: SidebarCollection, index: number) => any;
 };
 
 type CollectionState = {
@@ -74,6 +75,7 @@ function CollectionView({
   duplicateRequest,
   duplicateCollection,
   dispatchCollections,
+  renderCollection,
 }: CollectionProps) {
   const [state, setState] = useState<CollectionState>({
     name: collection.name,
@@ -470,6 +472,13 @@ function CollectionView({
           </span>
         </div>
       </div>
+      {collection.open && (
+        <div className={cn(styles, 'collection', [...iconVariants, colorMode])}>
+          {collection.children?.map((child: SidebarCollection, i: number) =>
+            renderCollection(child, i),
+          )}
+        </div>
+      )}
       {collection.open && (
         <div className={cn(styles, 'requests', [...iconVariants, colorMode])}>
           {collection.requests?.map((request, i) => renderRequest(request, i))}

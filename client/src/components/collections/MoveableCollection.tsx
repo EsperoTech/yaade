@@ -1,5 +1,5 @@
 import type { Identifier } from 'dnd-core';
-import { Dispatch, useRef } from 'react';
+import { Dispatch, useMemo, useRef, useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 
 import { SidebarCollection } from '../../model/Collection';
@@ -20,6 +20,7 @@ type MoveableCollectionProps = {
   duplicateRequest: (id: number, newName: string) => void;
   duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
+  renderCollection: (collection: SidebarCollection, index: number) => any;
 };
 
 function MoveableCollection({
@@ -35,16 +36,30 @@ function MoveableCollection({
   duplicateRequest,
   duplicateCollection,
   dispatchCollections,
+  renderCollection,
 }: MoveableCollectionProps) {
   const id = collection.id;
   const ref = useRef<HTMLDivElement>(null);
-  const [{ handlerId, hoveredDownwards, hoveredUpwards }, drop] = useDrop<
+  const [isTopHovered, setIsTopHovered] = useState(false);
+  const [isMiddleHovered, setIsMiddleHovered] = useState(false);
+  const [isBottomHovered, setIsBottomHovered] = useState(false);
+  const [{ handlerId }, drop] = useDrop<
     DragItem,
     void,
-    { handlerId: Identifier | null; hoveredUpwards: boolean; hoveredDownwards: boolean }
+    {
+      handlerId: Identifier | null;
+    }
   >({
     accept: DragTypes.COLLECTION,
-    collect(monitor) {
+    hover(item, monitor) {
+      if (!ref.current || !monitor.isOver()) {
+        return;
+      }
+      const dragIndex = item.index;
+      const hoverIndex = index;
+      if (dragIndex === hoverIndex) {
+        return;
+      }
       if (!ref.current || !monitor || !monitor.getItem() || monitor.getItem().id === id) {
         return {
           handlerId: null,
@@ -52,20 +67,57 @@ function MoveableCollection({
           hoveredUpwards: false,
         };
       }
-      const itemIndex = monitor.getItem().index;
-      const hoveredUpwards = monitor.isOver() && itemIndex > index;
-      const hoveredDownwards = monitor.isOver() && itemIndex < index;
+
+      // check if the item is in the top or bottom 50%
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) {
+        return;
+      }
+      const hoverTopThirdBoundary =
+        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 3;
+      const hoverBottomThirdBoundary =
+        ((hoverBoundingRect.bottom - hoverBoundingRect.top) / 3) * 2;
+
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      const hoveredTop = hoverClientY < hoverTopThirdBoundary;
+      const hoveredMiddle =
+        hoverClientY >= hoverTopThirdBoundary && hoverClientY <= hoverBottomThirdBoundary;
+      const hoveredBottom = hoverClientY > hoverBottomThirdBoundary;
+
+      setIsTopHovered(hoveredTop);
+      setIsMiddleHovered(hoveredMiddle);
+      setIsBottomHovered(hoveredBottom);
+    },
+    collect(monitor) {
+      if (!ref.current || !monitor || !monitor.getItem() || monitor.getItem().id === id) {
+        return {
+          handlerId: null,
+        };
+      }
+      if (!monitor.isOver()) {
+        setIsTopHovered(false);
+        setIsMiddleHovered(false);
+        setIsBottomHovered(false);
+      }
       return {
         handlerId: monitor.getHandlerId(),
-        hoveredDownwards,
-        hoveredUpwards,
       };
     },
     drop(item: DragItem) {
       if (item.index === index) {
         return;
       }
-      moveCollection(item.index, index);
+      if (isTopHovered) {
+        return moveCollection(item.index, index);
+      }
+      if (isMiddleHovered) {
+        return moveCollection(item.index, index);
+      }
+      if (isBottomHovered) {
+        return moveCollection(item.index, index + 1);
+      }
     },
   });
 
@@ -80,13 +132,18 @@ function MoveableCollection({
   });
 
   const opacity = isDragging ? 0.5 : 1;
-  let boxShadow = 'none';
-  if (hoveredDownwards) {
-    boxShadow = '0 2px 0 var(--chakra-colors-green-500)';
-  }
-  if (hoveredUpwards) {
-    boxShadow = '0 -2px 0 var(--chakra-colors-green-500)';
-  }
+  const boxShadow = useMemo(() => {
+    if (isBottomHovered) {
+      return '0 2px 0 var(--chakra-colors-green-500)';
+    }
+    if (isMiddleHovered) {
+      return '0 0 0 2px red';
+    }
+    if (isTopHovered) {
+      return '0 -2px 0 var(--chakra-colors-green-500)';
+    }
+    return 'none';
+  }, [isBottomHovered, isMiddleHovered, isTopHovered]);
 
   drag(drop(ref));
   return (
@@ -102,6 +159,7 @@ function MoveableCollection({
         duplicateRequest={duplicateRequest}
         duplicateCollection={duplicateCollection}
         dispatchCollections={dispatchCollections}
+        renderCollection={renderCollection}
       />
     </div>
   );

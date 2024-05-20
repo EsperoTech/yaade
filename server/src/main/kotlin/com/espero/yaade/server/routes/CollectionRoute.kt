@@ -20,14 +20,14 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
     suspend fun getAllCollections(ctx: RoutingContext) {
         val principal = ctx.user().principal()
         val userId = principal.getLong("id")
-        val collections = if (daoManager.userDao.isAdmin(userId))
+        val rawCollections = if (daoManager.userDao.isAdmin(userId))
             daoManager.collectionDao.getAll()
         else {
             daoManager.userDao.getById(userId)?.let { daoManager.collectionDao.getForUser(it) }
                 ?: listOf()
         }
 
-        val result = collections.map {
+        val collections = rawCollections.map {
             val requests = daoManager.requestDao
                 .getAllInCollection(it.id)
                 .map(RequestDb::toJson)
@@ -35,6 +35,27 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             it.hideSecrets()
             it.toJson().put("requests", requests)
         }.sortedBy { it.getJsonObject("data").getInteger("rank") ?: 0 }
+
+        val result = ArrayList<JsonObject>()
+
+        for (collection in collections) {
+            println("Collection: $collection")
+            val parentId = collection.getJsonObject("data").getLong("parentId")
+            if (parentId == null) {
+                result.add(collection)
+            } else {
+                val parent =
+                    collections.find { it.getLong("id") == parentId }
+                if (parent == null) {
+                    // NOTE: we add orphaned collections to the root, to not make them invisible
+                    // but this should never happen
+                    result.add(collection)
+                    continue
+                }
+                val children = parent.getJsonArray("children", JsonArray()).add(collection)
+                parent.put("children", children)
+            }
+        }
 
         ctx.end(JsonArray(result).encode()).coAwait()
     }
@@ -108,26 +129,46 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
     suspend fun moveCollection(ctx: RoutingContext) {
         val body = ctx.body().asJsonObject()
         val id = ctx.pathParam("id").toLong()
-        val newRank = body.getInteger("newRank") ?: throw RuntimeException("Invalid new rank")
+        val newParentId = body.getLong("newParentId")
+        // TODO: new parent id can be -1 -> move to root
         val collection = daoManager.collectionDao.getById(id)
             ?: throw RuntimeException("Collection not found")
         assertUserCanReadCollection(ctx, collection)
-        val collections = daoManager.collectionDao
-            .getAll()
-            .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
 
-        val oldRank = collections.indexOfFirst { it.id == id }
-        if (oldRank == -1) {
-            throw RuntimeException("Collection not found")
+        if (newParentId != null) {
+            val newParent = daoManager.collectionDao.getById(newParentId)
+                ?: throw RuntimeException("Parent collection not found")
+            assertUserCanReadCollection(ctx, newParent)
+            collection.patchData(JsonObject().put("parentId", newParentId))
+            daoManager.collectionDao.update(collection)
         }
-        if (newRank < 0 || newRank >= collections.size) {
+
+        val children = daoManager.collectionDao
+            .getAll()
+            .filter { it.jsonData().getLong("parentId") == newParentId }
+            .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
+        val newChildren = children.toMutableList()
+
+        if (newParentId == null) {
+            val oldRank = children.indexOfFirst { it.id == id }
+            if (oldRank == -1) {
+                throw RuntimeException("Child not found in collection")
+            }
+
+            newChildren.removeAt(oldRank)
+        }
+
+        val newRank = if (newParentId == null) {
+            body.getInteger("newRank")
+        } else {
+            children.size
+        } ?: throw RuntimeException("Invalid new rank")
+        if (newRank < 0 || newRank > children.size) {
             throw RuntimeException("Invalid new rank")
         }
 
-        val newCollections = collections.toMutableList()
-        newCollections.removeAt(oldRank)
-        newCollections.add(newRank, collection)
-        newCollections.forEachIndexed { index, collectionDb ->
+        newChildren.add(newRank, collection)
+        newChildren.forEachIndexed { index, collectionDb ->
             collectionDb.patchData(JsonObject().put("rank", index))
             daoManager.collectionDao.update(collectionDb)
         }

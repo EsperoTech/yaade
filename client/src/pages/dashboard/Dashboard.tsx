@@ -35,7 +35,7 @@ import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
 import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
-import Request from '../../model/Request';
+import Request, { SidebarRequest } from '../../model/Request';
 import {
   CollectionsActionType,
   collectionsReducer,
@@ -52,6 +52,27 @@ import {
 } from '../../state/currentRequest';
 import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
 import styles from './Dashboard.module.css';
+
+function mapRequestToSidebarRequest(r: Request): SidebarRequest {
+  return {
+    id: r.id,
+    collectionId: r.collectionId,
+    name: r.data.name ?? '',
+    method: r.data.method ?? '',
+  };
+}
+
+function mapCollectionToSidebarCollection(c: Collection): SidebarCollection {
+  return {
+    id: c.id,
+    name: c.data.name ?? '',
+    open: c.open,
+    selected: false,
+    groups: c.data.groups,
+    requests: c.requests?.map(mapRequestToSidebarRequest) ?? [],
+    children: c.children?.map(mapCollectionToSidebarCollection) ?? [],
+  };
+}
 
 function Dashboard() {
   const [collections, dispatchCollections] = useReducer(
@@ -96,20 +117,7 @@ function Dashboard() {
 
   const toast = useToast();
   const sidebarCollections: SidebarCollection[] = useMemo(() => {
-    return collections.map((c) => ({
-      id: c.id,
-      name: c.data.name ?? '',
-      open: c.open,
-      selected: false,
-      groups: c.data.groups,
-      requests:
-        c.requests?.map((r) => ({
-          id: r.id,
-          collectionId: r.collectionId,
-          name: r.data.name ?? '',
-          method: r.data.method ?? '',
-        })) ?? [],
-    }));
+    return collections.map(mapCollectionToSidebarCollection);
   }, [collections]);
 
   useEffect(() => {
@@ -126,6 +134,7 @@ function Dashboard() {
       try {
         const response = await fetch(BASE_PATH + 'api/collection');
         const collections = await response.json();
+        console.log(collections);
         const loc = parseLocation(location);
         collections.forEach((c: any) => {
           if (loc.collectionId === c.id) {

@@ -761,6 +761,10 @@ components:
           format: int64
           type: integer
           description: The new rank of the collection.
+        newParentId:
+          format: int64
+          type: integer
+          description: The new parent id of the collection.
     DuplicateCollectionRequest:
       type: object
       properties:
