@@ -3,9 +3,9 @@ import {
   Tag,
   TagCloseButton,
   TagLabel,
+  useColorMode,
   VStack,
   Wrap,
-  useColorMode,
 } from '@chakra-ui/react';
 import { FunctionComponent, useState } from 'react';
 
@@ -13,12 +13,14 @@ type GroupsInputProps = {
   groups: string[];
   setGroups: (groups: string[]) => void;
   isRounded?: boolean;
+  className?: string;
 };
 
 const GroupsInput: FunctionComponent<GroupsInputProps> = ({
   groups,
   setGroups,
   isRounded,
+  className,
 }) => {
   const [newGroup, setNewGroup] = useState('');
 
@@ -42,7 +44,7 @@ const GroupsInput: FunctionComponent<GroupsInputProps> = ({
   }
 
   return (
-    <VStack alignItems="start" width="100%">
+    <VStack alignItems="start" width="100%" className={className}>
       <Input
         size={isRounded ? 'md' : 'sm'}
         borderRadius={isRounded ? '20px' : undefined}

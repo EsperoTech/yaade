@@ -12,6 +12,7 @@ import { useContext } from 'react';
 import { UserContext } from '../../context';
 import AccountSettings from './accountSettings';
 import AdminSettings from './adminSettings';
+import CertificateSettings from './certificateSettings';
 import GeneralSettings from './generalSettings';
 import styles from './Settings.module.css';
 import SettingsTab from './settingsTab';
@@ -59,6 +60,9 @@ function Settings() {
               </>
             ) : null}
             <Tab sx={sx} _selected={selected}>
+              Certificates
+            </Tab>
+            <Tab sx={sx} _selected={selected}>
               About
             </Tab>
           </TabList>
@@ -81,6 +85,9 @@ function Settings() {
               <UserSettings />
             </TabPanel>
           ) : null}
+          <TabPanel>
+            <CertificateSettings />
+          </TabPanel>
           <TabPanel>
             <SettingsTab name="About">
               From Munich with ❤️

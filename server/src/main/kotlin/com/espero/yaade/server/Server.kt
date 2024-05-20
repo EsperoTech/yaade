@@ -51,6 +51,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val userRoute = UserRoute(daoManager, vertx)
             val adminRoute = AdminRoute(daoManager, vertx, authHandler::testAuthConfig, this)
             val invokeRoute = InvokeRoute(vertx, daoManager)
+            val certificateRoute = CertificateRoute(daoManager, vertx)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
@@ -144,6 +145,12 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .adminCoroutineHandler(this, adminRoute::getConfig)
             routerBuilder.operation("setConfig")
                 .adminCoroutineHandler(this, adminRoute::updateConfig)
+            routerBuilder.operation("getCertificates")
+                .userCoroutineHandler(this, certificateRoute::getCertificates)
+            routerBuilder.operation("createCertificate")
+                .userCoroutineHandler(this, certificateRoute::createCertificate)
+            routerBuilder.operation("deleteCertificate")
+                .userCoroutineHandler(this, certificateRoute::deleteCertificate)
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())

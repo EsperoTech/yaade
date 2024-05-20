@@ -2,6 +2,7 @@ package com.espero.yaade.server.routes
 
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
+import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.errors.ServerError
 import com.espero.yaade.services.SecretInterpolator
 import io.netty.handler.codec.http.HttpResponseStatus
@@ -42,14 +43,15 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
             )
         val envName: String? = ctx.body().asJsonObject().getString("envName")
 
-        val result = send(request, collection, envName)
+        val result = send(request, collection, envName, user)
         ctx.end(result.encode()).coAwait()
     }
 
     private suspend fun send(
         request: JsonObject,
         collection: CollectionDb,
-        envName: String?
+        envName: String?,
+        user: UserDb
     ): JsonObject {
         val requestData = request.getJsonObject("data")
         val interpolated = if (envName != null)
@@ -66,6 +68,17 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
             collection.jsonData().getJsonObject("settings")?.getJsonObject("webClientOptions")
                 ?: JsonObject()
         val webClientOptions = WebClientOptions(clientOptions)
+
+        if (url.startsWith("https")) {
+            // TODO: improve performance by caching certificates
+            val certificates = daoManager.certificatesDao.getAll()
+            for (cert in certificates) {
+                if (cert.canRead(user) && cert.doesHostMatch(url)) {
+                    cert.mutateWebClientOptions(webClientOptions)
+                    break
+                }
+            }
+        }
         val httpClient = WebClient.create(vertx, webClientOptions)
 
         val httpRequest = httpClient.requestAbs(method, url)

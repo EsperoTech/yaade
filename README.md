@@ -1,12 +1,12 @@
 <p align="center">
-    <img src="assets/YaadeIcon.png" alt="yaade-icon"/>
+    <img style="width:128px;min-width:128px;max-width:128px;height:auto" src="assets/YaadeIcon.png" alt="yaade-icon"/>
 </p>
 
 <h1 align="center"><span style="color:#48bb78">Yaade</span> - Yet Another API Development Environment</h1>
 
 Yaade is an open-source, self-hosted, collaborative API development environment.
 
-<img src="assets/dark-mode.jpg" alt="dark-mode-screenshot"/>
+<img src="assets/dark-mode.png" alt="dark-mode-screenshot"/>
 
 ## 📚 Documentation
 
@@ -101,11 +101,20 @@ chmod +x build.sh
 
 ### 🌙 Dark mode
 
-<img src="assets/dark-mode.jpg" alt="dark-mode-screenshot"/>
+<img src="assets/dark-mode.png" alt="dark-mode-screenshot"/>
 
 ### ☀️ Light mode
 
-<img src="assets/light-mode.jpg" alt="light-mode-screenshot"/>
+<img src="assets/light-mode.png" alt="light-mode-screenshot"/>
+
+### More Screenshots
+
+<div style="width:100%;min-width:100%;display:flex;flex-wrap:wrap;justify-content:space-evenly">
+    <img style="width:48%;min-width:48%;max-width:48%;height:auto;margin-bottom:20px" src="assets/documentation.png" alt="documentation-screenshot"/>
+    <img style="width:48%;min-width:48%;max-width:48%;height:auto;margin-bottom:20px" src="assets/environments.png" alt="environments-screenshot"/>
+    <img style="width:48%;min-width:48%;max-width:48%;height:auto" src="assets/scripts.png" alt="scripts-screenshot"/>
+    <img style="width:48%;min-width:48%;max-width:48%;height:auto" src="assets/user-management.png" alt="user-management-screenshot"/>
+</div>
 
 ## 🤝  How can I contribute?
 
