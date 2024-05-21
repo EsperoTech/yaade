@@ -4,9 +4,4 @@ interface KVRow {
   isEnabled?: boolean;
 }
 
-interface KVFileRow extends KVRow {
-  fileSource: string;
-}
-
-export type { KVFileRow };
 export default KVRow;

@@ -214,7 +214,6 @@ function KVEditorRow({
             }`}
             ref={rightref}
           />
-
           {canDisableRow && (
             <Checkbox
               className={cn(styles, 'checkbox', [colorMode])}

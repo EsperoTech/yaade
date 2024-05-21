@@ -59,12 +59,10 @@
   border: 1px solid var(--chakra-colors-gray-700);
 }
 
-.buttonGroup {
+.checkbox {
   margin-left: 10px;
-  display: flex !important;
-  flex-direction: row;
-  align-items: center;
 }
+
 .checkbox--light {
   background-color: white;
 }
@@ -75,9 +73,4 @@
 
 .inputDisabled--dark * {
   color: rgba(255, 255, 255, 0.25);
-}
-
-.button {
-  margin-left: 5px;
-  height: 20px;
 }

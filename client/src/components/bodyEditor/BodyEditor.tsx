@@ -1,36 +1,38 @@
 import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
-import { IconButton, Select, useToast } from '@chakra-ui/react';
+import { Button, IconButton, Select, useToast } from '@chakra-ui/react';
 import { useMemo } from 'react';
 
 import KVRow from '../../model/KVRow';
-import KVFileRow from '../../model/KVRow';
 import { beautifyBody, errorToast } from '../../utils';
 import styles from './BodyEditor.module.css';
 import BodyKVEditor from './BodyKVEditor';
 import BodyTextEditor from './BodyTextEditor';
 
 type BodyEditorProps = {
-  content: string | KVRow[] | KVFileRow[];
+  content?: string;
+  formDataContent?: KVRow[];
   setContent: any;
+  setFormDataContent: any;
   selectedEnv: any;
   contentType: string;
   setContentType: any;
+  setContentTypeHeader: any;
 };
 
 function BodyEditor({
   content,
+  formDataContent,
   setContent,
+  setFormDataContent,
   selectedEnv,
   contentType,
   setContentType,
+  setContentTypeHeader,
 }: BodyEditorProps) {
   const toast = useToast();
   function handleBeautifyClick() {
     try {
-      if (typeof content != 'string') {
-        console.debug('Cannot beautify. Content is not a string.');
-        return;
-      }
+      if (!content) return;
       const beautifiedBody = beautifyBody(content, contentType);
       setContent(beautifiedBody);
     } catch (e) {
@@ -38,11 +40,6 @@ function BodyEditor({
     }
   }
 
-  const isTextEditor = useMemo(() => {
-    return ['application/json', 'application/xml', 'text/html', 'text/plain'].includes(
-      contentType,
-    );
-  }, [contentType]);
   const isKVEditor = useMemo(() => {
     return ['multipart/form-data', 'application/x-www-form-urlencoded'].includes(
       contentType,
@@ -69,40 +66,48 @@ function BodyEditor({
           <option value="multipart/form-data">multipart/form-data</option>
           <option value="none">none</option>
         </Select>
-        <div className={styles.iconBar}>
-          {isTextEditor && (
+        <Button
+          ml="2"
+          size="xs"
+          onClick={() => setContentTypeHeader(contentType)}
+          variant="outline"
+          disabled={contentType === 'none'}
+        >
+          Set Header
+        </Button>
+        {!isKVEditor && (
+          <div className={styles.iconBar}>
             <IconButton
               aria-label="beautify-content"
               isRound
               variant="ghost"
               size="xs"
-              disabled={!isTextEditor}
+              disabled={content?.length === 0}
               onClick={handleBeautifyClick}
               icon={<StarIcon />}
             />
-          )}
-          <IconButton
-            aria-label="delete-content"
-            isRound
-            variant="ghost"
-            size="xs"
-            disabled={content.length === 0}
-            onClick={() => setContent('')}
-            icon={<DeleteIcon />}
-          />
-        </div>
+            <IconButton
+              aria-label="delete-content"
+              isRound
+              variant="ghost"
+              size="xs"
+              disabled={content?.length === 0}
+              onClick={() => setContent('')}
+              icon={<DeleteIcon />}
+            />
+          </div>
+        )}
       </div>
-      {isTextEditor && typeof content == 'string' && (
-        <BodyTextEditor
-          content={content ?? ''}
-          setContent={setContent}
+      {isKVEditor ? (
+        <BodyKVEditor
+          content={formDataContent ?? []}
+          setContent={setFormDataContent}
           selectedEnv={selectedEnv}
           contentType={contentType}
         />
-      )}
-      {isKVEditor && (
-        <BodyKVEditor
-          content={typeof content == 'string' ? [] : content}
+      ) : (
+        <BodyTextEditor
+          content={content ?? ''}
           setContent={setContent}
           selectedEnv={selectedEnv}
           contentType={contentType}

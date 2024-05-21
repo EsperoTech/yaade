@@ -27,6 +27,7 @@ enum CurrentRequestActionType {
   PATCH_DATA = 'PATCH_DATA',
   SET_IS_LOADING = 'SET_IS_LOADING',
   SET_IS_CHANGED = 'SET_IS_CHANGED',
+  SET_CONTENT_TYPE_HEADER = 'SET_CONTENT_TYPE_HEADER',
 }
 
 type SetAction = {
@@ -51,6 +52,11 @@ type SetIsLoadingAction = {
 type SetIsChangedAction = {
   type: CurrentRequestActionType.SET_IS_CHANGED;
   isChanged: boolean;
+};
+
+type SetContentTypeHeader = {
+  type: CurrentRequestActionType.SET_CONTENT_TYPE_HEADER;
+  value: string;
 };
 
 function set(request: Request): CurrentRequest {
@@ -97,12 +103,41 @@ function setIsChanged(state: CurrentRequest | undefined, isChanged: boolean) {
   };
 }
 
+function setContentTypeHeader(state: CurrentRequest | undefined, value: string) {
+  if (!state) return state;
+  let found = false;
+  const headers = (state.data?.headers ?? []).map((header) => {
+    if (header.key.toLowerCase() === 'content-type') {
+      found = true;
+      return {
+        key: 'Content-Type',
+        value,
+      };
+    }
+    return header;
+  });
+  if (!found) {
+    headers.push({
+      key: 'Content-Type',
+      value,
+    });
+  }
+  return {
+    ...state,
+    data: {
+      ...state.data,
+      headers,
+    },
+  };
+}
+
 type CurrentRequestAction =
   | SetAction
   | UnsetAction
   | PatchDataAction
   | SetIsLoadingAction
-  | SetIsChangedAction;
+  | SetIsChangedAction
+  | SetContentTypeHeader;
 
 function currentRequestReducer(
   state: CurrentRequest | undefined = defaultCurrentRequest,
@@ -119,6 +154,8 @@ function currentRequestReducer(
       return setIsLoading(state, action.isLoading);
     case CurrentRequestActionType.SET_IS_CHANGED:
       return setIsChanged(state, action.isChanged);
+    case CurrentRequestActionType.SET_CONTENT_TYPE_HEADER:
+      return setContentTypeHeader(state, action.value);
     default:
       console.error('Invalid action type');
       return state;

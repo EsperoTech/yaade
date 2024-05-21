@@ -1,12 +1,9 @@
 import { Input, Select, useColorMode, useDisclosure, useToast } from '@chakra-ui/react';
-import { FormDataEncoder } from 'form-data-encoder';
-import getStream from 'get-stream';
 import { Dispatch, MutableRefObject, useRef, useState } from 'react';
 
 import api from '../../api';
 import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
-import { KVFileRow } from '../../model/KVRow';
 import Request, { CurrentRequest } from '../../model/Request';
 import Response from '../../model/Response';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
@@ -174,31 +171,15 @@ function RequestSender({
     });
   }
 
-  const encodeFormDataBody = async (kvs: KVFileRow[]): Promise<string> => {
-    if (!kvs) {
-      return '';
-    }
-    var formData = new FormData();
-
+  const encodeFormDataBody = (kvs: KVRow[]) => {
+    const params = new URLSearchParams();
     for (const kv of kvs) {
-      if (kv.fileSource) {
-        formData.append(kv.key, new Blob([kv.value]), kv.fileSource);
-      } else {
-        formData.append(kv.key, kv.value);
+      if (kv.isEnabled !== false) {
+        params.append(kv.key, kv.value);
       }
     }
-    const encoder = new FormDataEncoder(formData);
 
-    return await getStream(encoder.encode());
-  };
-
-  const encodeUrlencodedBody = (kvs: KVRow[]) => {
-    if (!kvs) {
-      return '';
-    }
-    return kvs
-      .map((kv) => `${encodeURIComponent(kv.key)}=${encodeURIComponent(kv.value)}`)
-      .join('&');
+    return params.toString();
   };
 
   async function sendRequest(
@@ -221,11 +202,10 @@ function RequestSender({
 
     let body;
     switch (request.data.contentType) {
-      case 'application/x-www-form-urlencoded':
-        body = encodeUrlencodedBody(request.data.body as KVRow[]);
-        break;
-      case 'multipart/form-data':
-        body = await encodeFormDataBody(request.data.body as KVFileRow[]);
+      case 'application/x-www-form-urlencoded' || 'multipart/form-data':
+        if (request.data.formDataBody) {
+          body = encodeFormDataBody(request.data.formDataBody);
+        }
         break;
       default:
         body = request.data.body;
