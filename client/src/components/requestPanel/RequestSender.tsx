@@ -265,7 +265,11 @@ function RequestSender({
           openExtModal();
           throw Error('Extension not initialized');
         }
-        response = await sendRequestToExtension(injectedReq, envName);
+        response = await sendRequestToExtension(
+          injectedReq,
+          envName,
+          collection?.data?.settings?.extensionOptions?.timeout,
+        );
         break;
       default:
         throw Error('Unknown proxy');
@@ -354,11 +358,8 @@ function RequestSender({
   async function sendRequestToExtension(
     request: Request,
     envName?: string,
-    n?: number,
+    timeout = 5,
   ): Promise<Response> {
-    if (n && n >= 5) {
-      throw Error('Exec loop detected in request script');
-    }
     return new Promise((resolve, reject) => {
       const messageId = createMessageId(request.id);
 
@@ -380,8 +381,8 @@ function RequestSender({
       setTimeout(() => {
         // Remove the event listener if the Promise is not resolved after 5 seconds
         window.removeEventListener('message', handleMessage);
-        reject(new Error('Timeout waiting for response from: ' + request.id));
-      }, 5000);
+        reject(new Error('Timeout wating for response from: ' + request.id));
+      }, timeout * 1000);
 
       // TODO: check if this mutates the original request object
       let interpolatedRequest = { ...request };
@@ -413,7 +414,6 @@ function RequestSender({
           metaData: {
             messageId,
             envName,
-            isRequestScript: n ?? 0 > 0,
           },
         },
         '*',

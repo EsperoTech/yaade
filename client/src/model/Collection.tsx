@@ -25,6 +25,7 @@ interface CollectionData {
 }
 
 interface CollectionSettings {
+  extensionOptions?: Record<string, any>;
   webClientOptions?: Record<string, any>;
 }
 
