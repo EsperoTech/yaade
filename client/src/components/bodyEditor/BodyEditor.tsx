@@ -41,9 +41,7 @@ function BodyEditor({
   }
 
   const isKVEditor = useMemo(() => {
-    return ['multipart/form-data', 'application/x-www-form-urlencoded'].includes(
-      contentType,
-    );
+    return ['application/x-www-form-urlencoded'].includes(contentType);
   }, [contentType]);
 
   return (
@@ -63,7 +61,6 @@ function BodyEditor({
           <option value="application/x-www-form-urlencoded">
             application/x-www-form-urlencoded
           </option>
-          <option value="multipart/form-data">multipart/form-data</option>
           <option value="none">none</option>
         </Select>
         <Button

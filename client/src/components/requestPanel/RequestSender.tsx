@@ -202,7 +202,6 @@ function RequestSender({
 
     let body;
     switch (request.data.contentType) {
-      case 'multipart/form-data':
       case 'application/x-www-form-urlencoded':
         if (request.data.formDataBody) {
           body = encodeFormDataBody(request.data.formDataBody);
