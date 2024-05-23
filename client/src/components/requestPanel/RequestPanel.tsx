@@ -16,6 +16,7 @@ import { getSelectedEnvs } from '../../utils/store';
 import BodyEditor from '../bodyEditor';
 import OverviewTab from '../collectionPanel/OverviewTab';
 import Editor from '../editor';
+import GenerateCodeTab from '../generateCodeTab';
 import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
@@ -308,6 +309,7 @@ function RequestPanel({
           <Tab>Body</Tab>
           <Tab>Request Script</Tab>
           <Tab>Response Script</Tab>
+          <Tab>Code</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
           <TabPanel>
@@ -362,6 +364,9 @@ function RequestPanel({
               content={currentRequest.data.responseScript ?? ''}
               setContent={setResponseScript}
             />
+          </TabPanel>
+          <TabPanel>
+            <GenerateCodeTab request={currentRequest} env={selectedEnv} />
           </TabPanel>
         </TabPanels>
       </Tabs>
