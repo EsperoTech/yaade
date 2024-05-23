@@ -3,7 +3,7 @@ import { HTTPSnippet } from 'httpsnippet';
 import { CurrentRequest } from '../model/Request';
 import interpolate from './interpolate';
 
-type Target =
+export type Target =
   | 'c'
   | 'clojure'
   | 'csharp'
