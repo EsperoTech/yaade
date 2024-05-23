@@ -1,4 +1,5 @@
 import { Input, Select, useColorMode, useDisclosure, useToast } from '@chakra-ui/react';
+import { HTTPSnippet } from 'httpsnippet';
 import { Dispatch, MutableRefObject, useRef, useState } from 'react';
 
 import api from '../../api';
