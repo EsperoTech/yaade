@@ -56,7 +56,9 @@
   },
   "devDependencies": {
     "@types/beautify": "^0.0.0",
+    "@types/har-format": "^1.2.15",
     "@types/luxon": "^3.2.0",
+    "@types/node": "^20.12.12",
     "@types/react": "^17.0.33",
     "@types/react-command-palette": "^0.18.1",
     "@types/react-dom": "^17.0.10",
