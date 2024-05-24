@@ -29,8 +29,8 @@ function generateHTTPSnippet(
   client?: string,
   env: Record<string, any> = {},
 ): string {
-  const interpolatedResult = interpolate(request, env.data ?? {});
-  const interpolated = interpolatedResult.result as CurrentRequest;
+  const interpolatedResult = interpolate(request, env?.data ?? {});
+  const interpolated = (interpolatedResult.result as CurrentRequest) ?? request;
   const postData: any = {};
   if (interpolated.data.contentType === 'application/x-www-form-urlencoded') {
     const params = interpolated.data.formDataBody

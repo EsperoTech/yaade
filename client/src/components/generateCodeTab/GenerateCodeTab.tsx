@@ -37,10 +37,28 @@ const options: Array<StateTarget> = [
     language: 'java',
   },
   {
+    displayName: 'JavaScript: Fetch',
+    target: 'javascript',
+    client: 'fetch',
+    language: 'javascript',
+  },
+  {
+    displayName: 'JavaScript: Axios',
+    target: 'javascript',
+    client: 'axios',
+    language: 'javascript',
+  },
+  {
     displayName: 'JavaScript: jQuery.ajax',
     target: 'javascript',
     client: 'jquery',
     language: 'javascript',
+  },
+  {
+    displayName: 'PHP: Curl',
+    target: 'php',
+    client: 'curl',
+    language: 'php',
   },
   {
     displayName: 'Node.js: Native',
