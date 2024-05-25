@@ -68,7 +68,12 @@ function Settings() {
           </TabList>
         </div>
 
-        <TabPanels tabIndex={-1}>
+        <TabPanels
+          tabIndex={-1}
+          overflowY="auto"
+          sx={{ scrollbarGutter: 'stable' }}
+          h="100%"
+        >
           <TabPanel tabIndex={-1}>
             <GeneralSettings />
           </TabPanel>
