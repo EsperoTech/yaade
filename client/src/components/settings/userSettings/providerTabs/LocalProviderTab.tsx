@@ -185,7 +185,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
           />
         </div>
       </HStack>
-      <TableContainer height="330px" overflowY="scroll">
+      <TableContainer overflowY="scroll">
         <Table size="sm" whiteSpace="normal">
           <Thead>
             <Tr>
@@ -268,7 +268,12 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
                       </Tag>
                     ))}
                   </Td>
-                  <Td p="0" isNumeric verticalAlign="top">
+                  <Td
+                    p="0"
+                    isNumeric
+                    verticalAlign="top"
+                    style={{ display: 'flex', alignItems: 'center' }}
+                  >
                     <IconButton
                       aria-label="edit-row"
                       isRound
