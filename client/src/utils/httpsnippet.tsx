@@ -58,12 +58,16 @@ function generateHTTPSnippet(
         value: header.value,
       };
     });
+  const uri = interpolated.data.uri ?? 'https://example.com';
+  const url = uri.startsWith('http') ? uri : `http://${uri}`;
   const opts: any = {
     method: interpolated.data.method ?? 'GET',
-    url: interpolated.data.uri ?? 'https://example.com',
+    url,
     headers: headers ?? [],
-    postData,
   };
+  if (opts.method !== 'GET') {
+    opts.postData = postData;
+  }
   const snippet = new HTTPSnippet(opts);
   const res = snippet.convert(target, client);
   if (typeof res !== 'string') {
