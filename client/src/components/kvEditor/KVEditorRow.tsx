@@ -155,6 +155,22 @@ function KVEditorRow({
     }
   }
 
+  const eventHandlers = EditorView.domEventHandlers({
+    paste(event) {
+      event.preventDefault();
+      if (!event.clipboardData) {
+        return;
+      }
+      const text = event.clipboardData.getData('text');
+      const sanitized = text.replace(/(\r\n|\n|\r)/gm, '');
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
+      selection.deleteFromDocument();
+      selection.getRangeAt(0).insertNode(document.createTextNode(sanitized));
+      selection.collapseToEnd();
+    },
+  });
+
   const { setContainer: setLeftContainer } = useCodeMirror({
     container: leftref.current,
     onChange: (key: string) => onChangeRow.current(i, 'key', key),
@@ -162,6 +178,7 @@ function KVEditorRow({
       colorMode === 'light' ? kvThemeLeftLight : kvThemeLeftDark,
       ...extensionKeys,
       drawSelection(),
+      eventHandlers,
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: kKey,
@@ -177,6 +194,7 @@ function KVEditorRow({
       colorMode === 'light' ? kvThemeRightLight : kvThemeRightDark,
       ...extensionsValue,
       drawSelection(),
+      eventHandlers,
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value,
