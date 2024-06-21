@@ -154,7 +154,7 @@ object OpenApiService {
                         basePath,
                         collection,
                         "HEAD",
-                        pathItem.post,
+                        pathItem.head,
                         exampleGenerator
                     )
                 )
