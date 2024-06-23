@@ -15,7 +15,6 @@ import {
   rawThemeDark,
 } from '../../utils/codemirror/themes';
 import styles from './KVEditorRow.module.css';
-import { stopAnimation } from 'framer-motion/types/render/utils/animation';
 
 const kvRowRawTheme = {
   ...rawThemeDark,
