@@ -15,6 +15,7 @@ import {
   rawThemeDark,
 } from '../../utils/codemirror/themes';
 import styles from './KVEditorRow.module.css';
+import { stopAnimation } from 'framer-motion/types/render/utils/animation';
 
 const kvRowRawTheme = {
   ...rawThemeDark,
@@ -157,17 +158,28 @@ function KVEditorRow({
 
   const eventHandlers = EditorView.domEventHandlers({
     paste(event) {
-      event.preventDefault();
-      if (!event.clipboardData) {
+      if (!event.target || !event.clipboardData) {
         return;
       }
-      const text = event.clipboardData.getData('text');
+      // differenciates between initial and synthetic event to prevent infinite loop
+      if (!event.isTrusted) {
+        return;
+      }
+      event.preventDefault();
+
+      const text = event.clipboardData.getData('text/plain');
       const sanitized = text.replace(/(\r\n|\n|\r)/gm, '');
-      const selection = window.getSelection();
-      if (!selection || !selection.rangeCount) return;
-      selection.deleteFromDocument();
-      selection.getRangeAt(0).insertNode(document.createTextNode(sanitized));
-      selection.collapseToEnd();
+
+      const data = new DataTransfer();
+      data.setData('text/plain', sanitized);
+      const sanitizedEvent = new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clipboardData: data,
+      });
+
+      event.target?.dispatchEvent(sanitizedEvent);
     },
   });
 
