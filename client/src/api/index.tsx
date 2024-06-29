@@ -47,12 +47,17 @@ const duplicateCollection = (id: number, name: string): Promise<Response> =>
     }),
   });
 
-const moveCollection = (id: number, newRank: number): Promise<Response> =>
+const moveCollection = (
+  id: number,
+  newRank?: number,
+  newParentId?: number,
+): Promise<Response> =>
   fetch(BASE_PATH + `api/collection/${id}/move`, {
     method: 'POST',
     headers: DEFAULT_HEADERS,
     body: JSON.stringify({
-      newRank: newRank,
+      newRank,
+      newParentId,
     }),
   });
 

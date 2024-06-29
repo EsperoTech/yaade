@@ -9,7 +9,7 @@ import CollectionView from '../collectionView';
 
 type MoveableCollectionProps = {
   collection: SidebarCollection;
-  moveCollection: (dragIndex: number, hoverIndex: number) => void;
+  moveCollection: (dragIndex: number, hoverIndex: number, newParentId?: number) => void;
   index: number;
   currentCollectionId?: number;
   currentRequstId?: number;
@@ -68,7 +68,6 @@ function MoveableCollection({
         };
       }
 
-      // check if the item is in the top or bottom 50%
       const hoverBoundingRect = ref.current.getBoundingClientRect();
       const clientOffset = monitor.getClientOffset();
       if (!clientOffset) {
@@ -105,7 +104,7 @@ function MoveableCollection({
         handlerId: monitor.getHandlerId(),
       };
     },
-    drop(item: DragItem) {
+    drop(item, monitor) {
       if (item.index === index) {
         return;
       }
@@ -113,7 +112,7 @@ function MoveableCollection({
         return moveCollection(item.index, index);
       }
       if (isMiddleHovered) {
-        return moveCollection(item.index, index);
+        return moveCollection(item.id, 0, monitor.getItem().id);
       }
       if (isBottomHovered) {
         return moveCollection(item.index, index + 1);
@@ -137,7 +136,7 @@ function MoveableCollection({
       return '0 2px 0 var(--chakra-colors-green-500)';
     }
     if (isMiddleHovered) {
-      return '0 0 0 2px red';
+      return '0 0 0 2px var(--chakra-colors-green-500)';
     }
     if (isTopHovered) {
       return '0 -2px 0 var(--chakra-colors-green-500)';
@@ -147,7 +146,11 @@ function MoveableCollection({
 
   drag(drop(ref));
   return (
-    <div ref={ref} style={{ opacity, boxShadow }} data-handler-id={handlerId}>
+    <div
+      ref={ref}
+      style={{ opacity, boxShadow, paddingLeft: '10px' }}
+      data-handler-id={handlerId}
+    >
       <CollectionView
         collection={collection}
         currentRequstId={currentRequstId}

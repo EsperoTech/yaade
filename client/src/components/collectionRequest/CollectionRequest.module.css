@@ -3,7 +3,6 @@
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  border-bottom: 1px solid;
 }
 
 .request:focus {

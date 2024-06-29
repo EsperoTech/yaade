@@ -1,11 +1,9 @@
 .header {
   width: 100%;
-  height: 60px;
-  border-bottom: 1px solid;
+  /* border-bottom: 1px solid; */
   display: flex;
   align-items: center;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: 0.5rem;
   overflow-x: hidden;
   box-sizing: border-box;
 }

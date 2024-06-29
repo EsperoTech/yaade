@@ -6,7 +6,11 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import api from '../../api';
 import { SidebarCollection } from '../../model/Collection';
-import { CollectionsAction, CollectionsActionType } from '../../state/collections';
+import {
+  CollectionsAction,
+  CollectionsActionType,
+  findCollection,
+} from '../../state/collections';
 import { errorToast, successToast } from '../../utils';
 import styles from './Collections.module.css';
 import MoveableCollection from './MoveableCollection';
@@ -38,15 +42,15 @@ function Collections({
 }: CollectionsProps) {
   const toast = useToast();
 
-  const dragCollection = async (dragIndex: number, hoverIndex: number) => {
-    const item = collections[dragIndex];
+  const dragCollection = async (id: number, newRank: number, newParentId?: number) => {
     dispatchCollections({
       type: CollectionsActionType.MOVE_COLLECTION,
-      id: item.id,
-      newRank: hoverIndex,
+      id,
+      newRank,
+      newParentId,
     });
     try {
-      const res = await api.moveCollection(item.id, hoverIndex);
+      const res = await api.moveCollection(id, newRank, newParentId);
       if (res.status !== 200) throw new Error();
       successToast('Collection was moved.', toast);
     } catch (e) {

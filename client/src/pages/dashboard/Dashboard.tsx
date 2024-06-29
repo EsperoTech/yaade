@@ -40,6 +40,8 @@ import {
   CollectionsActionType,
   collectionsReducer,
   defaultCollections,
+  findCollection,
+  findRequest,
 } from '../../state/collections';
 import {
   CurrentCollectionActionType,
@@ -182,7 +184,7 @@ function Dashboard() {
 
   const dispatchSelectCollection = useCallback(
     (id: number) => {
-      const collection = collections.find((c) => c.id === id);
+      const collection = findCollection(collections, id);
       if (!collection) throw new Error("Collection doesn't exist");
       navigate(`/${id}`);
       dispatchCurrentRequest({
@@ -198,10 +200,7 @@ function Dashboard() {
 
   const dispatchSelectRequest = useCallback(
     (id: number) => {
-      const request = collections
-        .map((c) => c.requests)
-        .flat()
-        .find((r) => r.id === id);
+      const request = findRequest(collections, id);
       if (!request) throw new Error("Request doesn't exist");
       navigate(`/${request.collectionId}/${request.id}`);
       dispatchCurrentRequest({

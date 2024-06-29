@@ -29,7 +29,7 @@ import {
 import type { Identifier } from 'dnd-core';
 import { Dispatch, useCallback, useContext, useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
-import { VscEllipsis } from 'react-icons/vsc';
+import { VscEllipsis, VscFolder, VscFolderOpened } from 'react-icons/vsc';
 
 import api from '../../api';
 import { SidebarCollection } from '../../model/Collection';
@@ -380,7 +380,7 @@ function CollectionView({
   );
 
   return (
-    <div className={styles.root}>
+    <>
       <div
         ref={ref}
         data-handler-id={handlerId}
@@ -388,10 +388,17 @@ function CollectionView({
           cn(styles, 'header', [...headerVariants, colorMode]) + ' ' + hoverClass
         }
       >
-        <ChevronRightIcon
-          className={cn(styles, 'icon', [...iconVariants, colorMode])}
-          onClick={handleArrowClick}
-        />
+        {iconVariants.includes('open') ? (
+          <VscFolderOpened
+            className={cn(styles, 'icon', [colorMode])}
+            onClick={handleArrowClick}
+          />
+        ) : (
+          <VscFolder
+            className={cn(styles, 'icon', [colorMode])}
+            onClick={handleArrowClick}
+          />
+        )}
         <div
           className={styles.wrapper}
           onClick={() => selectCollection.current(collection.id)}
@@ -485,7 +492,7 @@ function CollectionView({
         </div>
       )}
       {currentModal}
-    </div>
+    </>
   );
 }
 

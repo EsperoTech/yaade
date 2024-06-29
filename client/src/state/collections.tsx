@@ -3,6 +3,34 @@ import Request from '../model/Request';
 
 const defaultCollections: Collection[] = [];
 
+function findCollection(collections: Collection[], id: number): Collection | undefined {
+  for (const collection of collections) {
+    if (collection.id === id) {
+      return collection;
+    }
+    if (collection.children) {
+      const c = findCollection(collection.children, id);
+      if (c) return c;
+    }
+  }
+  return undefined;
+}
+
+function findRequest(collections: Collection[], id: number): Request | undefined {
+  for (const collection of collections) {
+    for (const request of collection.requests) {
+      if (request.id === id) {
+        return request;
+      }
+    }
+    if (collection.children) {
+      const r = findRequest(collection.children, id);
+      if (r) return r;
+    }
+  }
+  return undefined;
+}
+
 // CAUTION: any visible mutation of state needs to return a new array,
 // otherwise react will not rerender the component.
 enum CollectionsActionType {
@@ -46,6 +74,7 @@ type MoveCollectionAction = {
   type: CollectionsActionType.MOVE_COLLECTION;
   id: number;
   newRank: number;
+  newParentId?: number;
 };
 
 type AddRequestAction = {
@@ -97,6 +126,35 @@ type SetEnvVar = {
   payload: SetEnvVarPayload;
 };
 
+function modifyCollection(state: Collection[], id: number, f: (c: Collection) => void) {
+  const s = JSON.parse(JSON.stringify(state));
+  mod(s, id, f);
+  return s;
+}
+
+function mod(collections: Collection[], id: number, f: (c: Collection) => void) {
+  for (let i = 0; i < collections.length; i++) {
+    if (collections[i].id === id) {
+      f(collections[i]);
+      return;
+    }
+    if (collections[i].children) {
+      mod(collections[i].children, id, f);
+    }
+  }
+}
+
+function modifyRequest(collections: Collection[], id: number, f: (r: Request) => void) {
+  return modifyCollection(collections, id, (c) => {
+    for (let i = 0; i < c.requests.length; i++) {
+      if (c.requests[i].id === id) {
+        f(c.requests[i]);
+        return;
+      }
+    }
+  });
+}
+
 function set(collections: Collection[]): Collection[] {
   return collections;
 }
@@ -110,29 +168,135 @@ function patchCollectionData(
   collectionId: number,
   data: any,
 ): Collection[] {
-  const collectionIndex = state.findIndex((c) => c.id === collectionId);
-  if (collectionIndex === -1) return state;
-
-  const newState = [...state];
-  newState[collectionIndex].data = { ...newState[collectionIndex].data, ...data };
-
-  return newState;
+  return modifyCollection(state, collectionId, (c) => {
+    c.data = { ...c.data, ...data };
+  });
 }
 
 function deleteCollection(state: Collection[], id: number): Collection[] {
   return state.filter((c) => c.id !== id);
 }
 
-function moveCollection(state: Collection[], id: number, newRank: number): Collection[] {
+function moveCollection(
+  state: Collection[],
+  id: number,
+  newRank: number,
+  newParentId?: number,
+): Collection[] {
+  console.log('moveCollection', id, newRank, newParentId);
+  const currentCollection = findCollection(state, id);
+  if (!currentCollection) return state;
+
+  const currentParentId = currentCollection.data.parentId;
+
+  if (newParentId && currentParentId) {
+    console.log('moveCollectionFromOldParentToNewParent');
+    return moveCollectionFromOldParentToNewParent(
+      state,
+      id,
+      currentParentId,
+      newParentId,
+    );
+  }
+
+  if (newParentId && !currentParentId) {
+    console.log('moveCollectionFromTopToNewParent');
+    const x = moveCollectionFromTopToNewParent(state, id, newParentId);
+    console.log('res', x);
+    return x;
+  }
+
+  if (!newParentId && !currentParentId) {
+    console.log('moveCollectionFromTopToTop');
+    return moveCollectionFromTopToTop(state, id, newRank);
+  }
+
+  if (!newParentId && currentParentId) {
+    console.log('moveCollectionFromOldParentToTop');
+    return moveCollectionFromOldParentToTop(state, id, newRank, currentParentId);
+  }
+
+  return state;
+}
+
+function moveCollectionFromTopToTop(
+  state: Collection[],
+  id: number,
+  newRank: number,
+): Collection[] {
+  const c = [...state];
   for (let i = 0; i < state.length; i++) {
-    if (state[i].id === id) {
+    if (c[i].id === id) {
       const newState = [...state];
       const collection = newState.splice(i, 1)[0];
       newState.splice(newRank, 0, collection);
       return newState;
     }
   }
+
   return state;
+}
+
+function moveCollectionFromTopToNewParent(
+  state: Collection[],
+  id: number,
+  newParentId: number,
+): Collection[] {
+  let i = state.findIndex((c) => c.id === newParentId);
+  if (i === -1) return state;
+
+  const newState = JSON.parse(JSON.stringify(state));
+  const collection = newState.splice(i, 1)[0];
+
+  console.log(id, newParentId);
+  console.log(collection);
+
+  if (!collection) return state;
+
+  return modifyCollection(newState, newParentId, (c) => {
+    c.children.splice(0, 0, collection);
+  });
+}
+
+function moveCollectionFromOldParentToTop(
+  state: Collection[],
+  id: number,
+  newRank: number,
+  currentParentId: number,
+): Collection[] {
+  let collection = undefined;
+  const res = modifyCollection(state, currentParentId, (c) => {
+    const index = c.children.findIndex((child) => child.id === id);
+    if (index === -1) return;
+
+    collection = c.children.splice(index, 1)[0];
+    c.children.splice(newRank, 0);
+  });
+
+  res.splice(newRank, 0, collection);
+
+  return res;
+}
+
+function moveCollectionFromOldParentToNewParent(
+  state: Collection[],
+  id: number,
+  currentParentId: number,
+  newParentId: number,
+): Collection[] {
+  let collection: any = undefined;
+  const res = modifyCollection(state, currentParentId, (c) => {
+    const index = c.children.findIndex((child) => child.id === id);
+    if (index === -1) return;
+
+    collection = c.children.splice(index, 1)[0];
+  });
+
+  if (!collection) return state;
+
+  return modifyCollection(res, newParentId, (c) => {
+    c.children.splice(0, 0, collection);
+  });
 }
 
 function addRequest(state: Collection[], request: Request): Collection[] {
@@ -209,13 +373,9 @@ function closeAll(state: Collection[]): Collection[] {
 }
 
 function toggleOpenCollection(state: Collection[], id: number): Collection[] {
-  const collectionIndex = state.findIndex((c) => c.id === id);
-  if (collectionIndex === -1) return state;
-
-  const newState = [...state];
-  const newOpen = !state[collectionIndex].open;
-  newState[collectionIndex] = { ...newState[collectionIndex], open: newOpen };
-  return newState;
+  return modifyCollection(state, id, (c) => {
+    c.open = !c.open;
+  });
 }
 
 function setEnvVar(state: Collection[], payload: SetEnvVarPayload): Collection[] {
@@ -280,7 +440,7 @@ function collectionsReducer(
     case CollectionsActionType.DELETE_COLLECTION:
       return deleteCollection(state, action.id);
     case CollectionsActionType.MOVE_COLLECTION:
-      return moveCollection(state, action.id, action.newRank);
+      return moveCollection(state, action.id, action.newRank, action.newParentId);
     case CollectionsActionType.ADD_REQUEST:
       return addRequest(state, action.request);
     case CollectionsActionType.PATCH_REQUEST_DATA:
@@ -305,4 +465,10 @@ function collectionsReducer(
 
 export type { CollectionsAction };
 
-export { CollectionsActionType, collectionsReducer, defaultCollections };
+export {
+  CollectionsActionType,
+  collectionsReducer,
+  defaultCollections,
+  findCollection,
+  findRequest,
+};
