@@ -43,6 +43,7 @@ interface SidebarCollection {
   name: string;
   open: boolean;
   selected: boolean;
+  parentId?: number;
   groups?: string[];
   requests: SidebarRequest[];
   children: SidebarCollection[];

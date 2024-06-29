@@ -107,7 +107,10 @@ function MoveableRequest({
 
   drag(drop(ref));
   return (
-    <div ref={ref} style={{ boxShadow, opacity, boxSizing: 'border-box' }}>
+    <div
+      ref={ref}
+      style={{ boxShadow, opacity, boxSizing: 'border-box', paddingLeft: '10px' }}
+    >
       <CollectionRequest
         request={request}
         data-handler-id={handlerId}

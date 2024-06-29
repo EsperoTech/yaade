@@ -1,19 +1,15 @@
 import { useToast } from '@chakra-ui/react';
-import { Dispatch, useEffect } from 'react';
+import { Dispatch, useCallback, useEffect } from 'react';
 import React from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import api from '../../api';
 import { SidebarCollection } from '../../model/Collection';
-import {
-  CollectionsAction,
-  CollectionsActionType,
-  findCollection,
-} from '../../state/collections';
+import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import { errorToast, successToast } from '../../utils';
+import CollectionView from '../collectionView';
 import styles from './Collections.module.css';
-import MoveableCollection from './MoveableCollection';
 
 type CollectionsProps = {
   collections: SidebarCollection[];
@@ -42,7 +38,7 @@ function Collections({
 }: CollectionsProps) {
   const toast = useToast();
 
-  const dragCollection = async (id: number, newRank: number, newParentId?: number) => {
+  const dragCollection = async (id: number, newRank: number, newParentId: number) => {
     dispatchCollections({
       type: CollectionsActionType.MOVE_COLLECTION,
       id,
@@ -58,16 +54,57 @@ function Collections({
     }
   };
 
+  const isCollectionDescendant = useCallback(
+    (ancestorId: number, descendantId: number): boolean => {
+      function isDescendant(cs: SidebarCollection[], visitedIds: number[] = []): boolean {
+        for (const collection of cs) {
+          if (collection.id === descendantId && visitedIds.includes(ancestorId)) {
+            return true;
+          }
+          return isDescendant(collection.children, [...visitedIds, collection.id]);
+        }
+
+        return false;
+      }
+
+      if (ancestorId === descendantId) return true;
+
+      for (const collection of collections) {
+        if (isDescendant(collection.children, [collection.id])) return true;
+      }
+
+      return false;
+    },
+    [collections],
+  );
+
+  // const findCollection = useCallback(
+  //   (id: number): SidebarCollection | undefined => {
+  //     function find(cs: SidebarCollection[]): SidebarCollection | undefined {
+  //       for (const c of cs) {
+  //         if (c.id === id) {
+  //           return c;
+  //         }
+  //         return find(c.children);
+  //       }
+  //       return undefined;
+  //     }
+
+  //     return find(collections);
+  //   },
+  //   [collections],
+  // );
+
   const renderCollection = (collection: SidebarCollection, index: number) => {
     return (
-      <MoveableCollection
+      <CollectionView
         key={collection.id}
         collection={collection}
-        index={index}
-        moveCollection={dragCollection}
         currentCollectionId={currentCollectionId}
         currentRequstId={currentRequstId}
         selectCollection={selectCollection}
+        index={index}
+        moveCollection={dragCollection}
         selectRequest={selectRequest}
         renameRequest={renameRequest}
         deleteRequest={deleteRequest}
@@ -75,6 +112,7 @@ function Collections({
         duplicateCollection={duplicateCollection}
         dispatchCollections={dispatchCollections}
         renderCollection={renderCollection}
+        isCollectionDescendant={isCollectionDescendant}
       />
     );
   };

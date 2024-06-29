@@ -70,6 +70,7 @@ function mapCollectionToSidebarCollection(c: Collection): SidebarCollection {
     name: c.data.name ?? '',
     open: c.open,
     selected: false,
+    parentId: c.data.parentId,
     groups: c.data.groups,
     requests: c.requests?.map(mapRequestToSidebarRequest) ?? [],
     children: c.children?.map(mapCollectionToSidebarCollection) ?? [],

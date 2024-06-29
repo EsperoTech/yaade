@@ -8,10 +8,7 @@ function findCollection(collections: Collection[], id: number): Collection | und
     if (collection.id === id) {
       return collection;
     }
-    if (collection.children) {
-      const c = findCollection(collection.children, id);
-      if (c) return c;
-    }
+    return findCollection(collection.children, id);
   }
   return undefined;
 }
@@ -74,7 +71,7 @@ type MoveCollectionAction = {
   type: CollectionsActionType.MOVE_COLLECTION;
   id: number;
   newRank: number;
-  newParentId?: number;
+  newParentId: number;
 };
 
 type AddRequestAction = {
@@ -180,40 +177,36 @@ function deleteCollection(state: Collection[], id: number): Collection[] {
 function moveCollection(
   state: Collection[],
   id: number,
-  newRank: number,
-  newParentId?: number,
+  rank: number,
+  parentId: number,
 ): Collection[] {
-  console.log('moveCollection', id, newRank, newParentId);
+  console.log('moveCollection', id, rank, parentId);
   const currentCollection = findCollection(state, id);
   if (!currentCollection) return state;
 
   const currentParentId = currentCollection.data.parentId;
+  const isNewParentId = currentParentId === parentId;
 
-  if (newParentId && currentParentId) {
+  if (isNewParentId && currentParentId) {
     console.log('moveCollectionFromOldParentToNewParent');
-    return moveCollectionFromOldParentToNewParent(
-      state,
-      id,
-      currentParentId,
-      newParentId,
-    );
+    return moveCollectionFromOldParentToNewParent(state, id, currentParentId, parentId);
   }
 
-  if (newParentId && !currentParentId) {
+  if (isNewParentId && !currentParentId) {
     console.log('moveCollectionFromTopToNewParent');
-    const x = moveCollectionFromTopToNewParent(state, id, newParentId);
+    const x = moveCollectionFromTopToNewParent(state, id, parentId);
     console.log('res', x);
     return x;
   }
 
-  if (!newParentId && !currentParentId) {
+  if (!isNewParentId && !currentParentId) {
     console.log('moveCollectionFromTopToTop');
-    return moveCollectionFromTopToTop(state, id, newRank);
+    return moveCollectionFromTopToTop(state, id, rank);
   }
 
-  if (!newParentId && currentParentId) {
+  if (!isNewParentId && currentParentId) {
     console.log('moveCollectionFromOldParentToTop');
-    return moveCollectionFromOldParentToTop(state, id, newRank, currentParentId);
+    return moveCollectionFromOldParentToTop(state, id, rank, currentParentId);
   }
 
   return state;
