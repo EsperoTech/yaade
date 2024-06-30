@@ -2,13 +2,17 @@ package com.espero.yaade.services
 
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.RequestDb
+import com.espero.yaade.server.Server
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
+import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.openapitools.codegen.examples.ExampleGenerator
 
 object OpenApiService {
+
+    private val log = LoggerFactory.getLogger(Server::class.java)
 
     private fun extractRequestFromOperation(
         path: String,
@@ -48,10 +52,16 @@ object OpenApiService {
                 val mediaType = mediaTypes[0]
                 val schema = operation.requestBody.content[mediaType]?.schema
 
-                val examples = exampleGenerator.generate(null, mediaTypes, schema)
-                if (examples.isNotEmpty()) {
-                    body = examples[0]["example"]
+                try {
+                    val examples = exampleGenerator.generate(null, mediaTypes, schema)
+                    if (examples.isNotEmpty()) {
+                        body = examples[0]["example"]
+                    }
+                } catch (e: Exception) {
+                    // NOTE: we don't want to crash the whole thing if we can't generate an example
+                    log.error("Error generating example for request body", e)
                 }
+
             }
         }
 
@@ -144,7 +154,7 @@ object OpenApiService {
                         basePath,
                         collection,
                         "HEAD",
-                        pathItem.post,
+                        pathItem.head,
                         exampleGenerator
                     )
                 )

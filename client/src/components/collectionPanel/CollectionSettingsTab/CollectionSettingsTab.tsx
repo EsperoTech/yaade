@@ -1,5 +1,14 @@
 import { QuestionIcon } from '@chakra-ui/icons';
-import { Switch, Tooltip } from '@chakra-ui/react';
+import {
+  Input,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  Switch,
+  Tooltip,
+} from '@chakra-ui/react';
 
 import { CollectionSettings } from '../../../model/Collection';
 import GroupsInput from '../../groupsInput';
@@ -27,16 +36,51 @@ export default function CollectionSettingsTab({
       },
     });
   }
+  function handleExtensionOptionsChanged(key: string, value: any) {
+    setSettings({
+      ...settings,
+      extensionOptions: {
+        ...settings?.extensionOptions,
+        [key]: value,
+      },
+    });
+  }
+
+  function handleExtensionTimeoutChange(value: string) {
+    if (!value || isNaN(Number(value))) {
+      return;
+    }
+    handleExtensionOptionsChanged('timeout', Number(value));
+  }
 
   return (
     <div className={styles.grid}>
       <div>Groups</div>
       <GroupsInput groups={groups} setGroups={setGroups} isRounded />
       <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-        <p>Web Client Options</p>
-        <Tooltip label="Only applies for the server proxy" fontSize="md">
-          <QuestionIcon />
-        </Tooltip>
+        <p>Extension Options</p>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <NumberInput
+            value={settings?.extensionOptions?.timeout || 5}
+            onChange={(value) => handleExtensionTimeoutChange(value)}
+            placeholder="Timeout (seconds)"
+            size="sm"
+            min={1}
+            width="75px"
+          >
+            <NumberInputField />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
+          <p>Timeout (Seconds)</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <p>Server Proxy Options</p>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <Switch

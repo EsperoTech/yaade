@@ -3,6 +3,7 @@ import { Dispatch, MutableRefObject, useRef, useState } from 'react';
 
 import api from '../../api';
 import Collection from '../../model/Collection';
+import KVRow from '../../model/KVRow';
 import Request, { CurrentRequest } from '../../model/Request';
 import Response from '../../model/Response';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
@@ -170,6 +171,17 @@ function RequestSender({
     });
   }
 
+  const encodeFormDataBody = (kvs: KVRow[]) => {
+    const params = new URLSearchParams();
+    for (const kv of kvs) {
+      if (kv.isEnabled !== false) {
+        params.append(kv.key, kv.value);
+      }
+    }
+
+    return params.toString();
+  };
+
   async function sendRequest(
     request: Request,
     envName?: string,
@@ -187,10 +199,23 @@ function RequestSender({
     const enabledRequestHeaders = request.data.headers
       ? request.data.headers.filter((h) => h.isEnabled !== false)
       : [];
+
+    let body;
+    switch (request.data.contentType) {
+      case 'application/x-www-form-urlencoded':
+        if (request.data.formDataBody) {
+          body = encodeFormDataBody(request.data.formDataBody);
+        }
+        break;
+      default:
+        body = request.data.body;
+    }
+
     const injectedReq: Request = {
       ...request,
       data: {
         ...request.data,
+        body: body,
         // NOTE: this order is important because we want request headers to take precedence
         headers: [...enabledCollectionHeaders, ...enabledRequestHeaders],
       },
@@ -240,7 +265,11 @@ function RequestSender({
           openExtModal();
           throw Error('Extension not initialized');
         }
-        response = await sendRequestToExtension(injectedReq, envName);
+        response = await sendRequestToExtension(
+          injectedReq,
+          envName,
+          collection?.data?.settings?.extensionOptions?.timeout,
+        );
         break;
       default:
         throw Error('Unknown proxy');
@@ -329,11 +358,8 @@ function RequestSender({
   async function sendRequestToExtension(
     request: Request,
     envName?: string,
-    n?: number,
+    timeout = 5,
   ): Promise<Response> {
-    if (n && n >= 5) {
-      throw Error('Exec loop detected in request script');
-    }
     return new Promise((resolve, reject) => {
       const messageId = createMessageId(request.id);
 
@@ -356,7 +382,7 @@ function RequestSender({
         // Remove the event listener if the Promise is not resolved after 5 seconds
         window.removeEventListener('message', handleMessage);
         reject(new Error('Timeout wating for response from: ' + request.id));
-      }, 5000);
+      }, timeout * 1000);
 
       // TODO: check if this mutates the original request object
       let interpolatedRequest = { ...request };
@@ -388,7 +414,6 @@ function RequestSender({
           metaData: {
             messageId,
             envName,
-            isRequestScript: n ?? 0 > 0,
           },
         },
         '*',

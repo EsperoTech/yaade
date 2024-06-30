@@ -1,7 +1,7 @@
 import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, useColorMode, useToast } from '@chakra-ui/react';
 import { javascript } from '@codemirror/lang-javascript';
-import CodeMirror, { useCodeMirror } from '@uiw/react-codemirror';
+import { useCodeMirror } from '@uiw/react-codemirror';
 import beautify from 'beautify';
 import React, { useEffect, useRef } from 'react';
 

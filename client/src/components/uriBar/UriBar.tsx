@@ -1,5 +1,6 @@
 import { Spinner, useColorMode } from '@chakra-ui/react';
 import { drawSelection } from '@codemirror/view';
+import { EditorView } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import { FormEvent, useEffect, useRef } from 'react';
 
@@ -41,6 +42,33 @@ function UriBar({
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
 
+  const eventHandlers = EditorView.domEventHandlers({
+    paste(event) {
+      if (!event.target || !event.clipboardData) {
+        return;
+      }
+      // differenciates between initial and synthetic event to prevent infinite loop
+      if (!event.isTrusted) {
+        return;
+      }
+      event.preventDefault();
+
+      const text = event.clipboardData.getData('text/plain');
+      const sanitized = text.replace(/(\r\n|\n|\r)/gm, '');
+
+      const data = new DataTransfer();
+      data.setData('text/plain', sanitized);
+      const sanitizedEvent = new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clipboardData: data,
+      });
+
+      event.target?.dispatchEvent(sanitizedEvent);
+    },
+  });
+
   const { setContainer } = useCodeMirror({
     container: ref.current,
     onChange: (value: string) => setUri(value),
@@ -52,6 +80,7 @@ function UriBar({
       helpCursor,
       cursorTooltipBaseTheme,
       drawSelection(),
+      eventHandlers,
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: uri,

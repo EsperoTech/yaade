@@ -27,6 +27,8 @@ interface RequestData {
   headers?: Array<KVRow>;
   body?: string;
   rank?: number;
+  formDataBody?: Array<KVRow>;
+  contentType?: string;
   requestScript?: string;
   responseScript?: string;
   response?: Response;

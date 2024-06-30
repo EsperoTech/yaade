@@ -16,6 +16,7 @@ import { getSelectedEnvs } from '../../utils/store';
 import BodyEditor from '../bodyEditor';
 import OverviewTab from '../collectionPanel/OverviewTab';
 import Editor from '../editor';
+import GenerateCodeTab from '../generateCodeTab';
 import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
@@ -115,6 +116,11 @@ function RequestPanel({
     [currentRequest.data.headers],
   );
 
+  const contentType = useMemo(
+    () => currentRequest.data.contentType ?? 'application/json',
+    [currentRequest.data.contentType],
+  );
+
   const setMethod = useCallback(
     (method: string) =>
       dispatchCurrentRequest({
@@ -165,6 +171,24 @@ function RequestPanel({
     [dispatchCurrentRequest],
   );
 
+  const setFormDataBody = useCallback(
+    (formDataBody: Array<KVRow>) =>
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.PATCH_DATA,
+        data: { formDataBody },
+      }),
+    [dispatchCurrentRequest],
+  );
+
+  const setContentType = useCallback(
+    (contentType: string) =>
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.PATCH_DATA,
+        data: { contentType },
+      }),
+    [dispatchCurrentRequest],
+  );
+
   const setResponseScript = useCallback(
     (responseScript: string) =>
       dispatchCurrentRequest({
@@ -188,6 +212,15 @@ function RequestPanel({
       dispatchCurrentRequest({
         type: CurrentRequestActionType.PATCH_DATA,
         data: { description },
+      }),
+    [dispatchCurrentRequest],
+  );
+
+  const setContentTypeHeader = useCallback(
+    (value: string) =>
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.SET_CONTENT_TYPE_HEADER,
+        value,
       }),
     [dispatchCurrentRequest],
   );
@@ -276,6 +309,7 @@ function RequestPanel({
           <Tab>Body</Tab>
           <Tab>Request Script</Tab>
           <Tab>Response Script</Tab>
+          <Tab>Code</Tab>
         </TabList>
         <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
           <TabPanel>
@@ -309,9 +343,14 @@ function RequestPanel({
           </TabPanel>
           <TabPanel h="100%">
             <BodyEditor
-              content={currentRequest.data.body ?? ''}
+              content={currentRequest.data.body}
+              formDataContent={currentRequest.data.formDataBody}
               setContent={setBody}
+              setFormDataContent={setFormDataBody}
               selectedEnv={selectedEnv}
+              contentType={contentType}
+              setContentType={setContentType}
+              setContentTypeHeader={setContentTypeHeader}
             />
           </TabPanel>
           <TabPanel h="100%">
@@ -325,6 +364,9 @@ function RequestPanel({
               content={currentRequest.data.responseScript ?? ''}
               setContent={setResponseScript}
             />
+          </TabPanel>
+          <TabPanel>
+            <GenerateCodeTab request={currentRequest} env={selectedEnv} />
           </TabPanel>
         </TabPanels>
       </Tabs>
