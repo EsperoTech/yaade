@@ -207,6 +207,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
     suspend fun importOpenApiCollection(ctx: RoutingContext) {
         val basePath = ctx.queryParam("basePath").elementAtOrNull(0) ?: ""
         val groups = ctx.queryParam("groups").elementAtOrNull(0) ?: ""
+        val parentId = ctx.queryParam("parentId").elementAtOrNull(0)?.toLongOrNull()
         val userId = ctx.user().principal().getLong("id")
         val f = ctx.fileUploads().iterator().next()
         val openApi = OpenAPIV3Parser().read(f.uploadedFileName())
@@ -218,6 +219,9 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             .put("description", description)
             .put("groups", groups.split(","))
 
+        if (parentId != null) {
+            data.put("parentId", parentId)
+        }
         val collection = CollectionDb(data, userId)
         collection.createEnv("default", null)
         daoManager.collectionDao.create(collection)
@@ -235,6 +239,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
     suspend fun importPostmanCollection(ctx: RoutingContext) {
         val groups = ctx.queryParam("groups").elementAtOrNull(0) ?: ""
+        val parentId = ctx.queryParam("parentId").elementAtOrNull(0)?.toLongOrNull()
         val userId = ctx.user().principal().getLong("id")
         val f = ctx.fileUploads().iterator().next()
 
@@ -242,7 +247,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val postmanCollection = rawContent.toJsonObject()
         val parser = PostmanParser(postmanCollection)
 
-        val collection = parser.parseCollection(userId, groups.split(","))
+        val collection = parser.parseCollection(userId, groups.split(","), parentId)
         daoManager.collectionDao.create(collection)
         val requests = parser.parseRequests(collection.id)
         requests.forEach { daoManager.requestDao.create(it) }
