@@ -85,6 +85,17 @@ function mapCollectionToSidebarCollection(
   };
 }
 
+function openCollectionTree(collections: Collection[], id: number) {
+  let parentId: number | undefined = id;
+
+  while (parentId) {
+    const parent = findCollection(collections, parentId);
+    if (!parent) return;
+    parent.open = true;
+    parentId = parent.data.parentId;
+  }
+}
+
 function Dashboard() {
   const [collections, dispatchCollections] = useReducer(
     collectionsReducer,
@@ -145,31 +156,32 @@ function Dashboard() {
       try {
         const response = await fetch(BASE_PATH + 'api/collection');
         const collections = await response.json();
-        console.log(collections);
         const loc = parseLocation(location);
-        collections.forEach((c: any) => {
-          if (loc.collectionId === c.id) {
-            c.open = true;
-            if (loc.requestId && c.requests) {
-              c.requests.forEach((r: any) => {
-                if (loc.requestId === r.id) {
-                  dispatchCurrentRequest({
-                    type: CurrentRequestActionType.SET,
-                    request: r,
-                  });
-                }
-              });
-            } else {
-              dispatchCurrentCollection({
-                type: CurrentCollectionActionType.SET,
-                collection: c,
-              });
-              dispatchCurrentRequest({
-                type: CurrentRequestActionType.UNSET,
-              });
-            }
+        if (loc.requestId && loc.collectionId) {
+          const r = findRequest(collections, loc.requestId);
+          if (r) {
+            dispatchCurrentRequest({
+              type: CurrentRequestActionType.SET,
+              request: r,
+            });
+            dispatchCurrentCollection({
+              type: CurrentCollectionActionType.UNSET,
+            });
           }
-        });
+          openCollectionTree(collections, loc.collectionId);
+        } else if (loc.collectionId) {
+          const c = findCollection(collections, loc.collectionId);
+          if (c) {
+            dispatchCurrentCollection({
+              type: CurrentCollectionActionType.SET,
+              collection: c,
+            });
+            dispatchCurrentRequest({
+              type: CurrentRequestActionType.UNSET,
+            });
+          }
+          openCollectionTree(collections, loc.collectionId);
+        }
         dispatchCollections({
           type: CollectionsActionType.SET,
           collections: collections,
