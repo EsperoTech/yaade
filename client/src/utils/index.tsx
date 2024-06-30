@@ -163,22 +163,6 @@ function currentRequestToRequest(currentRequest: CurrentRequest): Request {
   };
 }
 
-function mapCollectionToSidebarCollection(collection: Collection): SidebarCollection {
-  return {
-    id: collection.id,
-    name: collection.data.name ?? '',
-    open: collection.open,
-    selected: false,
-    groups: collection.data.groups,
-    requests: collection.requests?.map((r) => ({
-      id: r.id,
-      collectionId: r.collectionId,
-      name: r.data.name ?? '',
-      method: r.data.method ?? 'GET',
-    })),
-  };
-}
-
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
@@ -193,7 +177,6 @@ export {
   groupsArrayToStr,
   groupsStrToArray,
   kvRowsToMap,
-  mapCollectionToSidebarCollection,
   mapToKvRows,
   parseLocation,
   parseResponse,
