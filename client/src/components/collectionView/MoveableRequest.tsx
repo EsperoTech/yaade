@@ -1,6 +1,6 @@
 import { border } from '@chakra-ui/react';
 import type { Identifier } from 'dnd-core';
-import React, { Dispatch, useRef } from 'react';
+import React, { Dispatch, useMemo, useRef, useState } from 'react';
 import { useDrag, useDrop, XYCoord } from 'react-dnd';
 
 import { SidebarRequest } from '../../model/Request';
@@ -11,8 +11,9 @@ import CollectionRequest from '../collectionRequest';
 type MoveableRequestProps = {
   request: SidebarRequest;
   selected: boolean;
-  moveRequest: (id: number, newRank?: number, newCollectionId?: number) => void;
+  moveRequest: (id: number, newRank: number, newCollectionId: number) => void;
   index: number;
+  depth: number;
   selectRequest: any;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
@@ -24,9 +25,36 @@ export interface RequestDragItem extends DragItem {
   collectionId: number;
 }
 
+function calculateTopHoveredRank(
+  hoverIndex: number,
+  dragIndex: number,
+  hoverCollectionId?: number,
+  dragCollectionId?: number,
+) {
+  if (hoverCollectionId !== dragCollectionId) {
+    return hoverIndex;
+  }
+
+  return hoverIndex < dragIndex ? hoverIndex : hoverIndex - 1;
+}
+
+function calculateBottomHoveredRank(
+  hoverIndex: number,
+  dragIndex: number,
+  hoverCollectionId?: number,
+  dragCollectionId?: number,
+) {
+  if (hoverCollectionId !== dragCollectionId) {
+    return hoverIndex + 1;
+  }
+
+  return hoverIndex < dragIndex ? hoverIndex + 1 : hoverIndex;
+}
+
 function MoveableRequest({
   request,
   index,
+  depth,
   selected,
   moveRequest,
   selectRequest,
@@ -37,45 +65,104 @@ function MoveableRequest({
 }: MoveableRequestProps) {
   const id = request.id;
   const ref = useRef<HTMLDivElement>(null);
-  const [{ handlerId, hoveredDownwards, hoveredUpwards }, drop] = useDrop<
+  const [isTopHovered, setIsTopHovered] = useState(false);
+  const [isBottomHovered, setIsBottomHovered] = useState(false);
+  const [{ handlerId }, drop] = useDrop<
     RequestDragItem,
     void,
-    { handlerId: Identifier | null; hoveredDownwards: boolean; hoveredUpwards: boolean }
+    { handlerId: Identifier | null }
   >({
     accept: DragTypes.REQUEST,
-    collect(monitor) {
-      if (
-        !ref.current ||
-        !monitor ||
-        !monitor.getItem() ||
-        monitor.getItem().id === id ||
-        // NOTE: we currently do not allow moving requests to a specific rank in a different collection.
-        // The reasoning behind this is that there is currently no good way to determine if a request
-        // should be dropped above or below the hovered request other than comparing the indices of the
-        // hovered request and the dragged request. This is not possible if the requests are in different
-        // collections.
-        monitor.getItem().collectionId !== request.collectionId
-      ) {
+    hover(item, monitor) {
+      if (!ref.current || !monitor.isOver()) {
+        return;
+      }
+
+      if (!ref.current || !monitor || !item || item.id === id) {
         return {
           handlerId: null,
           hoveredDownwards: false,
           hoveredUpwards: false,
         };
       }
-      const itemIndex = monitor.getItem().index;
-      const hoveredUpwards = monitor.isOver() && itemIndex > index;
-      const hoveredDownwards = monitor.isOver() && itemIndex < index;
+
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) {
+        return;
+      }
+
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      const hoveredTop = hoverClientY < hoverBoundingRect.height / 2;
+      const hoveredBottom = hoverClientY > hoverBoundingRect.height / 2;
+
+      if (hoveredTop) {
+        const newRank = calculateTopHoveredRank(
+          index,
+          item.index,
+          request.collectionId,
+          item.collectionId,
+        );
+        if (newRank === item.index && item.collectionId === request.collectionId) {
+          return;
+        }
+      }
+
+      if (hoveredBottom) {
+        const newRank = calculateBottomHoveredRank(
+          index,
+          item.index,
+          request.collectionId,
+          item.collectionId,
+        );
+        if (newRank === item.index && item.collectionId === request.collectionId) {
+          return;
+        }
+      }
+
+      setIsTopHovered(hoveredTop);
+      setIsBottomHovered(hoveredBottom);
+    },
+    collect(monitor) {
+      if (!ref.current || !monitor || !monitor.getItem() || monitor.getItem().id === id) {
+        setIsTopHovered(false);
+        setIsBottomHovered(false);
+        return {
+          handlerId: null,
+        };
+      }
+      if (!monitor.isOver()) {
+        setIsTopHovered(false);
+        setIsBottomHovered(false);
+      }
       return {
         handlerId: monitor.getHandlerId(),
-        hoveredDownwards,
-        hoveredUpwards,
       };
     },
     drop(item: RequestDragItem) {
-      if (item.index === index) {
+      let newRank: number;
+      if (isTopHovered) {
+        newRank = calculateTopHoveredRank(
+          index,
+          item.index,
+          request.collectionId,
+          item.collectionId,
+        );
+      } else if (isBottomHovered) {
+        newRank = calculateBottomHoveredRank(
+          index,
+          item.index,
+          request.collectionId,
+          item.collectionId,
+        );
+      } else {
         return;
       }
-      moveRequest(item.id, index);
+      if (item.index === newRank && item.collectionId === request.collectionId) {
+        return;
+      }
+      moveRequest(item.id, newRank, request.collectionId);
     },
   });
 
@@ -96,14 +183,15 @@ function MoveableRequest({
   });
 
   const opacity = isDragging ? 0.5 : 1;
-
-  let boxShadow = 'none';
-  if (hoveredDownwards) {
-    boxShadow = '0 2px 0 var(--chakra-colors-green-500)';
-  }
-  if (hoveredUpwards) {
-    boxShadow = '0 -2px 0 var(--chakra-colors-green-500)';
-  }
+  const boxShadow = useMemo(() => {
+    if (isBottomHovered) {
+      return '0 2px 0 var(--chakra-colors-green-500)';
+    }
+    if (isTopHovered) {
+      return 'inset 0 2px 0 var(--chakra-colors-green-500)';
+    }
+    return 'none';
+  }, [isBottomHovered, isTopHovered]);
 
   drag(drop(ref));
   return (
@@ -113,6 +201,7 @@ function MoveableRequest({
         data-handler-id={handlerId}
         selected={selected}
         selectRequest={selectRequest}
+        depth={depth}
         dispatchCollections={dispatchCollections}
         renameRequest={renameRequest}
         deleteRequest={deleteRequest}

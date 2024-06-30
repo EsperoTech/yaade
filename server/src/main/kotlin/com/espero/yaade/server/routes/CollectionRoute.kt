@@ -20,14 +20,14 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
     suspend fun getAllCollections(ctx: RoutingContext) {
         val principal = ctx.user().principal()
         val userId = principal.getLong("id")
-        val collections = if (daoManager.userDao.isAdmin(userId))
+        val rawCollections = if (daoManager.userDao.isAdmin(userId))
             daoManager.collectionDao.getAll()
         else {
             daoManager.userDao.getById(userId)?.let { daoManager.collectionDao.getForUser(it) }
                 ?: listOf()
         }
 
-        val result = collections.map {
+        val collections = rawCollections.map {
             val requests = daoManager.requestDao
                 .getAllInCollection(it.id)
                 .map(RequestDb::toJson)
@@ -36,22 +36,40 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             it.toJson().put("requests", requests)
         }.sortedBy { it.getJsonObject("data").getInteger("rank") ?: 0 }
 
+        val result = ArrayList<JsonObject>()
+
+        for (collection in collections) {
+            val parentId = collection.getJsonObject("data").getLong("parentId")
+            if (parentId == null) {
+                result.add(collection)
+            } else {
+                val parent =
+                    collections.find { it.getLong("id") == parentId }
+                if (parent == null) {
+                    // NOTE: we add orphaned collections to the root, to not make them invisible
+                    // but this should never happen
+                    result.add(collection)
+                    continue
+                }
+                val children = parent.getJsonArray("children", JsonArray()).add(collection)
+                parent.put("children", children)
+            }
+        }
+
         ctx.end(JsonArray(result).encode()).coAwait()
     }
 
     suspend fun postCollection(ctx: RoutingContext) {
         val data = ctx.body().asJsonObject()
-        val name = data.getString("name")
         val userId = ctx.user().principal().getLong("id")
-        val user = daoManager.userDao.getById(userId) ?: throw RuntimeException("User not found")
-        val existingCollections = daoManager.collectionDao.getByUserAndName(user, name)
-        if (existingCollections.isNotEmpty()) {
-            throw ServerError(
-                HttpResponseStatus.CONFLICT.code(),
-                "A collection with this name already exists: $name"
-            )
-        }
         val newCollection = CollectionDb(data, userId)
+
+        val parentId = newCollection.jsonData().getLong("parentId")
+        if (parentId != null) {
+            val parent = daoManager.collectionDao.getById(parentId)
+                ?: throw RuntimeException("parent collection not found")
+            assertUserCanReadCollection(ctx, parent)
+        }
 
         daoManager.collectionDao.create(newCollection)
 
@@ -108,26 +126,48 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
     suspend fun moveCollection(ctx: RoutingContext) {
         val body = ctx.body().asJsonObject()
         val id = ctx.pathParam("id").toLong()
-        val newRank = body.getInteger("newRank") ?: throw RuntimeException("Invalid new rank")
+        val newParentId = body.getLong("newParentId")
         val collection = daoManager.collectionDao.getById(id)
             ?: throw RuntimeException("Collection not found")
         assertUserCanReadCollection(ctx, collection)
-        val collections = daoManager.collectionDao
+
+        if (newParentId != null) {
+            val newParent = daoManager.collectionDao.getById(newParentId)
+                ?: throw RuntimeException("Parent collection not found")
+            assertUserCanReadCollection(ctx, newParent)
+        }
+
+        val oldParentId = collection.jsonData().getLong("parentId")
+
+        val newChildren = daoManager.collectionDao
             .getAll()
+            .filter { it.jsonData().getLong("parentId") == newParentId }
             .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
+            .toMutableList()
 
-        val oldRank = collections.indexOfFirst { it.id == id }
-        if (oldRank == -1) {
-            throw RuntimeException("Collection not found")
-        }
-        if (newRank < 0 || newRank >= collections.size) {
-            throw RuntimeException("Invalid new rank")
+        if (oldParentId == newParentId) {
+            newChildren.removeIf { c -> c.id == id }
+        } else {
+            collection.patchData(JsonObject().put("parentId", newParentId))
+            daoManager.collectionDao.update(collection)
+            val oldChildren = daoManager.collectionDao
+                .getAll()
+                .filter {
+                    it.jsonData().getLong("parentId") == collection.jsonData()
+                        .getLong("parentId")
+                }
+                .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
+                .toMutableList()
+            oldChildren.removeIf { c -> c.id == id }
+            oldChildren.forEachIndexed { index, collectionDb ->
+                collectionDb.patchData(JsonObject().put("rank", index))
+                daoManager.collectionDao.update(collectionDb)
+            }
         }
 
-        val newCollections = collections.toMutableList()
-        newCollections.removeAt(oldRank)
-        newCollections.add(newRank, collection)
-        newCollections.forEachIndexed { index, collectionDb ->
+        val newRank = body.getInteger("newRank") ?: 0
+        newChildren.add(newRank, collection)
+        newChildren.forEachIndexed { index, collectionDb ->
             collectionDb.patchData(JsonObject().put("rank", index))
             daoManager.collectionDao.update(collectionDb)
         }
@@ -167,6 +207,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
     suspend fun importOpenApiCollection(ctx: RoutingContext) {
         val basePath = ctx.queryParam("basePath").elementAtOrNull(0) ?: ""
         val groups = ctx.queryParam("groups").elementAtOrNull(0) ?: ""
+        val parentId = ctx.queryParam("parentId").elementAtOrNull(0)?.toLongOrNull()
         val userId = ctx.user().principal().getLong("id")
         val f = ctx.fileUploads().iterator().next()
         val openApi = OpenAPIV3Parser().read(f.uploadedFileName())
@@ -178,6 +219,9 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             .put("description", description)
             .put("groups", groups.split(","))
 
+        if (parentId != null) {
+            data.put("parentId", parentId)
+        }
         val collection = CollectionDb(data, userId)
         collection.createEnv("default", null)
         daoManager.collectionDao.create(collection)
@@ -195,6 +239,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
     suspend fun importPostmanCollection(ctx: RoutingContext) {
         val groups = ctx.queryParam("groups").elementAtOrNull(0) ?: ""
+        val parentId = ctx.queryParam("parentId").elementAtOrNull(0)?.toLongOrNull()
         val userId = ctx.user().principal().getLong("id")
         val f = ctx.fileUploads().iterator().next()
 
@@ -202,7 +247,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val postmanCollection = rawContent.toJsonObject()
         val parser = PostmanParser(postmanCollection)
 
-        val collection = parser.parseCollection(userId, groups.split(","))
+        val collection = parser.parseCollection(userId, groups.split(","), parentId)
         daoManager.collectionDao.create(collection)
         val requests = parser.parseRequests(collection.id)
         requests.forEach { daoManager.requestDao.create(it) }

@@ -7,7 +7,9 @@ export function useKeyPress(
   shift?: boolean,
 ): void {
   const handler = (e: KeyboardEvent) => {
-    if (key === e.key && (!ctrl || e.ctrlKey) && (!shift || e.shiftKey)) {
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const cmd = isMac ? e.metaKey : e.ctrlKey;
+    if (key === e.key && (!ctrl || cmd) && (!shift || e.shiftKey)) {
       e.preventDefault();
       callback();
     }

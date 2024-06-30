@@ -16,6 +16,13 @@ export default defineConfig({
   ],
   server: {
     port: 9338,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:9339',
+        changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api/, '')
+      },
+    },
   },
   resolve: {
     alias: {

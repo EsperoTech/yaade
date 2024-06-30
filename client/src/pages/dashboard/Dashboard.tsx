@@ -35,11 +35,13 @@ import ResponsePanel from '../../components/responsePanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
 import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
-import Request from '../../model/Request';
+import Request, { SidebarRequest } from '../../model/Request';
 import {
   CollectionsActionType,
   collectionsReducer,
   defaultCollections,
+  findCollection,
+  findRequest,
 } from '../../state/collections';
 import {
   CurrentCollectionActionType,
@@ -52,6 +54,36 @@ import {
 } from '../../state/currentRequest';
 import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
 import styles from './Dashboard.module.css';
+
+function mapRequestToSidebarRequest(r: Request): SidebarRequest {
+  return {
+    id: r.id,
+    collectionId: r.collectionId,
+    name: r.data.name ?? '',
+    method: r.data.method ?? '',
+  };
+}
+
+function mapCollectionToSidebarCollection(
+  c: Collection,
+  index: number,
+  depth: number = 0,
+): SidebarCollection {
+  return {
+    id: c.id,
+    name: c.data.name ?? '',
+    open: c.open,
+    selected: false,
+    index: index,
+    parentId: c.data.parentId,
+    groups: c.data.groups,
+    requests: c.requests?.map(mapRequestToSidebarRequest) ?? [],
+    children:
+      c.children?.map((col, i) => mapCollectionToSidebarCollection(col, i, depth + 1)) ??
+      [],
+    depth,
+  };
+}
 
 function Dashboard() {
   const [collections, dispatchCollections] = useReducer(
@@ -96,20 +128,7 @@ function Dashboard() {
 
   const toast = useToast();
   const sidebarCollections: SidebarCollection[] = useMemo(() => {
-    return collections.map((c) => ({
-      id: c.id,
-      name: c.data.name ?? '',
-      open: c.open,
-      selected: false,
-      groups: c.data.groups,
-      requests:
-        c.requests?.map((r) => ({
-          id: r.id,
-          collectionId: r.collectionId,
-          name: r.data.name ?? '',
-          method: r.data.method ?? '',
-        })) ?? [],
-    }));
+    return collections.map((col, i) => mapCollectionToSidebarCollection(col, i));
   }, [collections]);
 
   useEffect(() => {
@@ -126,6 +145,7 @@ function Dashboard() {
       try {
         const response = await fetch(BASE_PATH + 'api/collection');
         const collections = await response.json();
+        console.log(collections);
         const loc = parseLocation(location);
         collections.forEach((c: any) => {
           if (loc.collectionId === c.id) {
@@ -173,7 +193,7 @@ function Dashboard() {
 
   const dispatchSelectCollection = useCallback(
     (id: number) => {
-      const collection = collections.find((c) => c.id === id);
+      const collection = findCollection(collections, id);
       if (!collection) throw new Error("Collection doesn't exist");
       navigate(`/${id}`);
       dispatchCurrentRequest({
@@ -189,10 +209,7 @@ function Dashboard() {
 
   const dispatchSelectRequest = useCallback(
     (id: number) => {
-      const request = collections
-        .map((c) => c.requests)
-        .flat()
-        .find((r) => r.id === id);
+      const request = findRequest(collections, id);
       if (!request) throw new Error("Request doesn't exist");
       navigate(`/${request.collectionId}/${request.id}`);
       dispatchCurrentRequest({
@@ -490,7 +507,7 @@ function Dashboard() {
             <Sidebar
               collections={sidebarCollections}
               currentCollectionId={currentCollection?.id}
-              currentRequstId={currentRequest?.id}
+              currentRequestId={currentRequest?.id}
               selectCollection={selectCollectionRef}
               selectRequest={selectRequestRef}
               renameRequest={renameRequest}

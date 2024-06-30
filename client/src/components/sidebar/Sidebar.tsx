@@ -38,7 +38,7 @@ type StateProps = {
 type SidebarProps = {
   collections: SidebarCollection[];
   currentCollectionId?: number;
-  currentRequstId?: number;
+  currentRequestId?: number;
   selectCollection: any;
   selectRequest: any;
   renameRequest: (id: number, newName: string) => void;
@@ -52,7 +52,7 @@ function Sidebar({
   collections,
   dispatchCollections,
   currentCollectionId,
-  currentRequstId,
+  currentRequestId,
   selectCollection,
   selectRequest,
   renameRequest,
@@ -186,7 +186,7 @@ function Sidebar({
       <Collections
         collections={filteredCollections}
         currentCollectionId={currentCollectionId}
-        currentRequstId={currentRequstId}
+        currentRequestId={currentRequestId}
         selectCollection={selectCollection}
         selectRequest={selectRequest}
         renameRequest={renameRequest}

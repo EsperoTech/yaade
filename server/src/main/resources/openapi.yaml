@@ -139,6 +139,11 @@ paths:
           schema:
             type: string
           in: query
+        - name: parentId
+          description: The parent id of the new collection
+          schema:
+            type: integer
+          in: query
       responses:
         "200":
           content:
@@ -157,6 +162,11 @@ paths:
           description: The groups for the collection
           schema:
             type: string
+          in: query
+        - name: parentId
+          description: The parent id of the new collection
+          schema:
+            type: integer
           in: query
       responses:
         "200":
@@ -761,6 +771,10 @@ components:
           format: int64
           type: integer
           description: The new rank of the collection.
+        newParentId:
+          format: int64
+          type: integer
+          description: The new parent id of the collection.
     DuplicateCollectionRequest:
       type: object
       properties:

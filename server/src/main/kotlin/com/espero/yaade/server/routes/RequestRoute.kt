@@ -45,41 +45,35 @@ class RequestRoute(private val daoManager: DaoManager) {
 
         if (newCollectionId != null) {
             assertUserCanReadCollection(ctx, newCollectionId)
-            daoManager.collectionDao.getById(newCollectionId)
-                ?: throw RuntimeException("Collection not found")
+        }
+
+        val oldCollectionId = request.collectionId
+
+        val newRequests = daoManager.requestDao.getAllInCollection(newCollectionId)
+            .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
+            .toMutableList()
+
+        if (oldCollectionId == newCollectionId) {
+            newRequests.removeIf { c -> c.id == id }
+        } else {
             request.collectionId = newCollectionId
             daoManager.requestDao.update(request)
-        }
-
-        val collectionId = request.collectionId
-        assertUserCanReadCollection(ctx, collectionId)
-        val requests = daoManager.requestDao
-            .getAllInCollection(collectionId)
-            .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
-        val newRequests = requests.toMutableList()
-
-        if (newCollectionId == null) {
-            val oldRank = requests.indexOfFirst { it.id == id }
-            if (oldRank == -1) {
-                throw RuntimeException("Request not found in collection")
+            val oldRequests = daoManager.requestDao
+                .getAllInCollection(oldCollectionId)
+                .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
+                .toMutableList()
+            oldRequests.removeIf { c -> c.id == id }
+            oldRequests.forEachIndexed { index, r ->
+                r.patchData(JsonObject().put("rank", index))
+                daoManager.requestDao.update(r)
             }
-
-            newRequests.removeAt(oldRank)
         }
 
-        val newRank = if (newCollectionId == null) {
-            body.getInteger("newRank")
-        } else {
-            requests.size
-        } ?: throw RuntimeException("Invalid new rank")
-        if (newRank < 0 || newRank > requests.size) {
-            throw RuntimeException("Invalid new rank")
-        }
-
+        val newRank = body.getInteger("newRank") ?: 0
         newRequests.add(newRank, request)
-        newRequests.forEachIndexed { index, requestDb ->
-            requestDb.patchData(JsonObject().put("rank", index))
-            daoManager.requestDao.update(requestDb)
+        newRequests.forEachIndexed { index, r ->
+            r.patchData(JsonObject().put("rank", index))
+            daoManager.requestDao.update(r)
         }
 
         ctx.end().coAwait()

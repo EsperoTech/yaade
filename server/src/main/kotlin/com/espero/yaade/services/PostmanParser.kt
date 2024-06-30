@@ -13,9 +13,14 @@ fun String.envReplace(): String {
 
 class PostmanParser(val collection: JsonObject) {
 
-    fun parseCollection(userId: Long, groups: List<String>): CollectionDb {
+    fun parseCollection(userId: Long, groups: List<String>, parentId: Long?): CollectionDb {
         val name = collection.getJsonObject("info")?.getString("name") ?: "Postman"
         val data = JsonObject().put("name", name).put("groups", groups)
+
+        if (parentId != null) {
+            data.put("parentId", parentId)
+        }
+
         val newCollection = CollectionDb(data, userId)
 
         val variables = collection.getJsonArray("variable") ?: JsonArray()
