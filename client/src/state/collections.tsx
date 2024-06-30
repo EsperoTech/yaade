@@ -155,6 +155,12 @@ function set(collections: Collection[]): Collection[] {
 }
 
 function addCollection(state: Collection[], collection: Collection): Collection[] {
+  if (collection.data.parentId) {
+    return modifyCollection(state, collection.data.parentId, (c) => {
+      if (!c.children) c.children = [];
+      c.children.push(collection);
+    });
+  }
   return [...state, collection];
 }
 
@@ -169,7 +175,16 @@ function patchCollectionData(
 }
 
 function deleteCollection(state: Collection[], id: number): Collection[] {
-  return state.filter((c) => c.id !== id);
+  const collection = findCollection(state, id);
+  if (!collection) return state;
+
+  if (collection.data.parentId) {
+    return modifyCollection(state, collection.data.parentId, (c) => {
+      c.children = c.children.filter((child) => child.id !== id);
+    });
+  } else {
+    return state.filter((c) => c.id !== id);
+  }
 }
 
 function moveCollection(

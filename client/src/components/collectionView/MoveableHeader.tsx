@@ -19,18 +19,20 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import type { Identifier } from 'dnd-core';
-import { Dispatch, useMemo, useRef, useState } from 'react';
+import { Dispatch, useContext, useMemo, useRef, useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { VscEllipsis, VscFolder, VscFolderOpened } from 'react-icons/vsc';
 
 import api from '../../api';
-import { SidebarCollection } from '../../model/Collection';
+import { UserContext } from '../../context';
+import Collection, { SidebarCollection } from '../../model/Collection';
 import Request from '../../model/Request';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import { cn, errorToast, successToast } from '../../utils';
 import { parseCurlCommand } from '../../utils/curl';
 import { DragItem, DragTypes } from '../../utils/dnd';
 import BasicModal from '../basicModal';
+import GroupsInput from '../groupsInput';
 import styles from './MoveableHeader.module.css';
 import { RequestDragItem } from './MoveableRequest';
 
@@ -53,6 +55,11 @@ type MoveableHeaderState = {
   newRequestName: string;
   importData: string;
   currentModal: string;
+  newCollectionName: string;
+  groups: string[];
+  uploadFile: any;
+  basePath: string;
+  selectedImport: string;
 };
 
 function calculateTopHoveredRank(
@@ -93,11 +100,17 @@ function MoveableHeader({
   moveRequest,
   isCollectionDescendant,
 }: MoveableHeaderProps) {
+  const { user } = useContext(UserContext);
   const [state, setState] = useState<MoveableHeaderState>({
     name: collection.name,
     newRequestName: '',
     currentModal: '',
     importData: '',
+    newCollectionName: '',
+    groups: user?.data?.groups ?? [],
+    uploadFile: undefined,
+    basePath: '',
+    selectedImport: 'openapi',
   });
   const id = collection.id;
   const ref = useRef<HTMLDivElement>(null);
@@ -319,7 +332,7 @@ function MoveableHeader({
   }
 
   function onCloseClear() {
-    setState({ ...state, newRequestName: '', importData: '' });
+    setState({ ...state, newRequestName: '', newCollectionName: '', importData: '' });
     onClose();
   }
 
@@ -358,6 +371,47 @@ function MoveableHeader({
     } catch (e) {
       console.error(e);
       errorToast('The request could be not created', toast);
+    }
+  }
+
+  async function handleCreateCollectionClick() {
+    try {
+      let response;
+      if (state.uploadFile) {
+        const data = new FormData();
+        data.append('File', state.uploadFile, 'file');
+
+        if (state.selectedImport === 'openapi') {
+          response = await api.importOpenApi(
+            state.basePath,
+            state.groups,
+            data,
+            collection.id,
+          );
+        } else {
+          response = await api.importPostman(state.groups, data, collection.id);
+        }
+      } else {
+        response = await api.createCollection(
+          state.newCollectionName,
+          state.groups,
+          collection.id,
+        );
+      }
+
+      if (response.status !== 200) throw new Error();
+      const newCollection = (await response.json()) as Collection;
+
+      dispatchCollections({
+        type: CollectionsActionType.ADD_COLLECTION,
+        collection: newCollection,
+      });
+
+      successToast('A new collection was created and saved', toast);
+      onCloseClear();
+    } catch (e) {
+      console.log(e);
+      errorToast('The collection could be not created', toast);
     }
   }
 
@@ -452,6 +506,111 @@ function MoveableHeader({
                 </Tabs>
               </BasicModal>
             );
+          case 'newCollection':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                onClose={onCloseClear}
+                initialRef={initialRef}
+                heading="Create a new collection"
+                onClick={handleCreateCollectionClick}
+                isButtonDisabled={state.name === ''}
+                buttonText="Create"
+                buttonColor="green"
+              >
+                <Tabs
+                  isLazy
+                  colorScheme="green"
+                  display="flex"
+                  flexDirection="column"
+                  maxHeight="100%"
+                  h="100%"
+                >
+                  <TabList>
+                    <Tab>Basic</Tab>
+                    <Tab>Import</Tab>
+                  </TabList>
+                  <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
+                    <TabPanel>
+                      <Input
+                        placeholder="Name"
+                        w="100%"
+                        my="4"
+                        borderRadius={20}
+                        colorScheme="green"
+                        backgroundColor={colorMode === 'light' ? 'white' : undefined}
+                        value={state.newCollectionName}
+                        onChange={(e) =>
+                          setState({ ...state, newCollectionName: e.target.value })
+                        }
+                        ref={initialRef}
+                      />
+                      <GroupsInput
+                        groups={state.groups}
+                        setGroups={(groups: string[]) =>
+                          setState({
+                            ...state,
+                            groups,
+                          })
+                        }
+                        isRounded
+                      />
+                    </TabPanel>
+                    <TabPanel>
+                      <Select
+                        size="xs"
+                        onChange={(e) =>
+                          setState({ ...state, selectedImport: e.target.value })
+                        }
+                        value={state.selectedImport}
+                      >
+                        <option value="openapi">OpenAPI</option>
+                        <option value="postman">Postman</option>
+                      </Select>
+                      <input
+                        className={cn(styles, 'fileInput', [colorMode])}
+                        type="file"
+                        accept=".yaml,.json"
+                        onChange={(e) => {
+                          const openApiFile = e.target.files
+                            ? e.target.files[0]
+                            : undefined;
+                          setState({
+                            ...state,
+                            uploadFile: openApiFile,
+                            name: openApiFile?.name ?? 'filename',
+                          });
+                        }}
+                      />
+                      {state.selectedImport === 'openapi' ? (
+                        <Input
+                          placeholder="Base Path"
+                          mb="4"
+                          w="100%"
+                          borderRadius={20}
+                          colorScheme="green"
+                          backgroundColor={colorMode === 'light' ? 'white' : undefined}
+                          value={state.basePath}
+                          onChange={(e) =>
+                            setState({ ...state, basePath: e.target.value })
+                          }
+                        />
+                      ) : null}
+                      <GroupsInput
+                        groups={state.groups}
+                        setGroups={(groups: string[]) =>
+                          setState({
+                            ...state,
+                            groups,
+                          })
+                        }
+                        isRounded
+                      />
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
+              </BasicModal>
+            );
           case 'duplicate':
             return (
               <BasicModal
@@ -508,7 +667,11 @@ function MoveableHeader({
         <div
           className={cn(styles, 'icon-wrapper', [colorMode])}
           onClick={handleArrowClick}
-          onKeyDown={handleArrowClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleArrowClick();
+            }
+          }}
           role="button"
           tabIndex={0}
         >
@@ -518,7 +681,11 @@ function MoveableHeader({
         <div
           className={cn(styles, 'icon-wrapper', [colorMode])}
           onClick={handleArrowClick}
-          onKeyDown={handleArrowClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleArrowClick();
+            }
+          }}
           role="button"
           tabIndex={0}
         >
@@ -561,6 +728,16 @@ function MoveableHeader({
                     }}
                   >
                     New Request
+                  </MenuItem>
+                  <MenuItem
+                    icon={<VscFolder />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setState({ ...state, currentModal: 'newCollection' });
+                      onOpen();
+                    }}
+                  >
+                    New Collection
                   </MenuItem>
                   <MenuItem
                     icon={<LinkIcon />}

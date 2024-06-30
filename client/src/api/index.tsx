@@ -10,31 +10,47 @@ const importOpenApi = (
   basePath: string,
   groups: string[],
   data: FormData,
+  parentId?: number,
 ): Promise<Response> =>
   fetch(
     BASE_PATH +
       `api/collection/importOpenApi?basePath=${basePath}&groups=${groupsArrayToStr(
         groups,
-      )}`,
+      )}&parentId=${parentId}`,
     {
       method: 'POST',
       body: data,
     },
   );
 
-const importPostman = (groups: string[], data: FormData): Promise<Response> =>
-  fetch(BASE_PATH + `api/collection/importPostman?groups=${groupsArrayToStr(groups)}`, {
-    method: 'POST',
-    body: data,
-  });
+const importPostman = (
+  groups: string[],
+  data: FormData,
+  parentId?: number,
+): Promise<Response> =>
+  fetch(
+    BASE_PATH +
+      `api/collection/importPostman?groups=${groupsArrayToStr(
+        groups,
+      )}&parentId=${parentId}`,
+    {
+      method: 'POST',
+      body: data,
+    },
+  );
 
-const createCollection = (name: string, groups: string[]): Promise<Response> =>
+const createCollection = (
+  name: string,
+  groups: string[],
+  parentId?: number,
+): Promise<Response> =>
   fetch(BASE_PATH + 'api/collection', {
     method: 'POST',
     headers: DEFAULT_HEADERS,
     body: JSON.stringify({
       name: name,
       groups: groups,
+      parentId,
     }),
   });
 

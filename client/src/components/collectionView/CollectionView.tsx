@@ -121,13 +121,14 @@ function CollectionView({
       );
     },
     [
-      currentRequestId,
-      deleteRequest,
-      dispatchCollections,
+      collection.depth,
       moveRequest,
-      renameRequest,
-      duplicateRequest,
+      currentRequestId,
       selectRequest,
+      renameRequest,
+      deleteRequest,
+      duplicateRequest,
+      dispatchCollections,
     ],
   );
 

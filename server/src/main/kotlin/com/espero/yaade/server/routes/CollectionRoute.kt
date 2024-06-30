@@ -61,17 +61,15 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
     suspend fun postCollection(ctx: RoutingContext) {
         val data = ctx.body().asJsonObject()
-        val name = data.getString("name")
         val userId = ctx.user().principal().getLong("id")
-        val user = daoManager.userDao.getById(userId) ?: throw RuntimeException("User not found")
-        val existingCollections = daoManager.collectionDao.getByUserAndName(user, name)
-        if (existingCollections.isNotEmpty()) {
-            throw ServerError(
-                HttpResponseStatus.CONFLICT.code(),
-                "A collection with this name already exists: $name"
-            )
-        }
         val newCollection = CollectionDb(data, userId)
+
+        val parentId = newCollection.jsonData().getLong("parentId")
+        if (parentId != null) {
+            val parent = daoManager.collectionDao.getById(parentId)
+                ?: throw RuntimeException("parent collection not found")
+            assertUserCanReadCollection(ctx, parent)
+        }
 
         daoManager.collectionDao.create(newCollection)
 
