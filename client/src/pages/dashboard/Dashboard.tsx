@@ -507,7 +507,7 @@ function Dashboard() {
             <Sidebar
               collections={sidebarCollections}
               currentCollectionId={currentCollection?.id}
-              currentRequstId={currentRequest?.id}
+              currentRequestId={currentRequest?.id}
               selectCollection={selectCollectionRef}
               selectRequest={selectRequestRef}
               renameRequest={renameRequest}

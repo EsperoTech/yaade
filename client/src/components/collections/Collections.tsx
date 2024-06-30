@@ -14,7 +14,7 @@ import styles from './Collections.module.css';
 type CollectionsProps = {
   collections: SidebarCollection[];
   currentCollectionId?: number;
-  currentRequstId?: number;
+  currentRequestId?: number;
   selectCollection: any;
   selectRequest: (requestId: number) => void;
   renameRequest: (id: number, newName: string) => void;
@@ -27,7 +27,7 @@ type CollectionsProps = {
 function Collections({
   collections,
   currentCollectionId,
-  currentRequstId,
+  currentRequestId,
   selectCollection,
   selectRequest,
   renameRequest,
@@ -117,7 +117,7 @@ function Collections({
         key={collection.id}
         collection={collection}
         currentCollectionId={currentCollectionId}
-        currentRequstId={currentRequstId}
+        currentRequestId={currentRequestId}
         selectCollection={selectCollection}
         index={collection.index}
         moveCollection={dragCollection}

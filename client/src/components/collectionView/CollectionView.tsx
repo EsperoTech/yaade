@@ -47,7 +47,7 @@ import MoveableRequest, { RequestDragItem } from './MoveableRequest';
 type CollectionProps = {
   collection: SidebarCollection;
   currentCollectionId?: number;
-  currentRequstId?: number;
+  currentRequestId?: number;
   selectCollection: any;
   selectRequest: any;
   index: number;
@@ -63,7 +63,7 @@ type CollectionProps = {
 
 function CollectionView({
   collection,
-  currentRequstId,
+  currentRequestId,
   currentCollectionId,
   selectCollection,
   selectRequest,
@@ -111,7 +111,7 @@ function CollectionView({
           index={index}
           depth={collection.depth}
           moveRequest={moveRequest}
-          selected={currentRequstId === request.id}
+          selected={currentRequestId === request.id}
           selectRequest={selectRequest}
           renameRequest={renameRequest}
           deleteRequest={deleteRequest}
@@ -121,7 +121,7 @@ function CollectionView({
       );
     },
     [
-      currentRequstId,
+      currentRequestId,
       deleteRequest,
       dispatchCollections,
       moveRequest,

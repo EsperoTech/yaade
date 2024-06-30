@@ -37,7 +37,7 @@ import { RequestDragItem } from './MoveableRequest';
 type MoveableHeaderProps = {
   collection: SidebarCollection;
   currentCollectionId?: number;
-  currentRequstId?: number;
+  currentRequestId?: number;
   selectCollection: any;
   selectRequest: any;
   index: number;
@@ -505,17 +505,25 @@ function MoveableHeader({
       style={{ boxShadow, opacity, paddingLeft: `${collection.depth}rem` }}
     >
       {iconVariants.includes('open') ? (
-        <VscFolderOpened
-          style={{ marginLeft: '0.8rem' }}
-          className={cn(styles, 'icon', [colorMode])}
+        <div
+          className={cn(styles, 'icon-wrapper', [colorMode])}
           onClick={handleArrowClick}
-        />
+          onKeyDown={handleArrowClick}
+          role="button"
+          tabIndex={0}
+        >
+          <VscFolderOpened className={cn(styles, 'icon', [colorMode])} />
+        </div>
       ) : (
-        <VscFolder
-          style={{ marginLeft: '0.8rem' }}
-          className={cn(styles, 'icon', [colorMode])}
+        <div
+          className={cn(styles, 'icon-wrapper', [colorMode])}
           onClick={handleArrowClick}
-        />
+          onKeyDown={handleArrowClick}
+          role="button"
+          tabIndex={0}
+        >
+          <VscFolder className={cn(styles, 'icon', [colorMode])} />
+        </div>
       )}
       <div
         className={styles.wrapper}
