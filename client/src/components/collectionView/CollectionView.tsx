@@ -57,7 +57,7 @@ type CollectionProps = {
   duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
   renderCollection: (collection: SidebarCollection, index: number) => any;
-  moveCollection: (dragIndex: number, hoverIndex: number, newParentId: number) => void;
+  moveCollection: (dragIndex: number, hoverIndex: number, newParentId?: number) => void;
   isCollectionDescendant: (collectionId: number, ancestorId: number) => boolean;
 };
 
@@ -83,29 +83,17 @@ function CollectionView({
   const toast = useToast();
 
   const moveRequest = useCallback(
-    async (id: number, newRank?: number, newCollectionId?: number) => {
+    async (id: number, newRank: number, newCollectionId: number) => {
       try {
-        // move inside the same collection
-        if (!newCollectionId && newRank !== undefined) {
-          dispatchCollections({
-            type: CollectionsActionType.MOVE_REQUEST,
-            id,
-            newRank,
-          });
-          const response = await api.moveRequest(id, newRank);
-          if (response.status !== 200) throw new Error();
-        } else {
-          if (!newCollectionId) throw new Error('newCollectionId is undefined');
-          dispatchCollections({
-            type: CollectionsActionType.CHANGE_REQUEST_COLLECTION,
-            id,
-            newCollectionId,
-          });
-          const res = await api.changeRequestCollection(id, newCollectionId);
-          if (res.status !== 200) throw new Error();
-
-          successToast('Request was moved.', toast);
-        }
+        dispatchCollections({
+          type: CollectionsActionType.MOVE_REQUEST,
+          id,
+          newRank,
+          newCollectionId,
+        });
+        const response = await api.moveRequest(id, newRank, newCollectionId);
+        if (response.status !== 200) throw new Error();
+        successToast('Request was moved.', toast);
       } catch (e) {
         console.error(e);
         errorToast('Could not move request.', toast);
@@ -121,6 +109,7 @@ function CollectionView({
           key={request.id}
           request={request}
           index={index}
+          depth={collection.depth}
           moveRequest={moveRequest}
           selected={currentRequstId === request.id}
           selectRequest={selectRequest}
@@ -143,7 +132,7 @@ function CollectionView({
   );
 
   return (
-    <div style={{ paddingLeft: '10px' }}>
+    <>
       <MoveableHeader
         collection={collection}
         currentCollectionId={currentCollectionId}
@@ -151,6 +140,7 @@ function CollectionView({
         selectRequest={selectRequest}
         index={index}
         moveCollection={moveCollection}
+        moveRequest={moveRequest}
         duplicateCollection={duplicateCollection}
         dispatchCollections={dispatchCollections}
         isCollectionDescendant={isCollectionDescendant}
@@ -167,7 +157,7 @@ function CollectionView({
           {collection.requests?.map((request, i) => renderRequest(request, i))}
         </div>
       )}
-    </div>
+    </>
   );
 }
 

@@ -26,6 +26,7 @@ type CollectionRequestProps = {
   request: SidebarRequest;
   selected: boolean;
   selectRequest: any;
+  depth: number;
   dispatchCollections: Dispatch<CollectionsAction>;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
@@ -46,6 +47,7 @@ function handleOnKeyDown(e: any, action: any) {
 const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
   request,
   selected,
+  depth,
   renameRequest,
   selectRequest,
   deleteRequest,
@@ -173,10 +175,11 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
       onKeyDown={(e) => handleOnKeyDown(e, () => selectRequest.current(request.id))}
       role="button"
       tabIndex={0}
+      style={{ paddingLeft: `${depth}rem` }}
     >
       <span
         className={cn(styles, 'requestMethod', [colorMode])}
-        style={getMethodColor(request.method)}
+        style={{ ...getMethodColor(request.method), marginLeft: '1.8rem' }}
       >
         {methodName}
       </span>

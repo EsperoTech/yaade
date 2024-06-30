@@ -64,16 +64,24 @@ function mapRequestToSidebarRequest(r: Request): SidebarRequest {
   };
 }
 
-function mapCollectionToSidebarCollection(c: Collection): SidebarCollection {
+function mapCollectionToSidebarCollection(
+  c: Collection,
+  index: number,
+  depth: number = 0,
+): SidebarCollection {
   return {
     id: c.id,
     name: c.data.name ?? '',
     open: c.open,
     selected: false,
+    index: index,
     parentId: c.data.parentId,
     groups: c.data.groups,
     requests: c.requests?.map(mapRequestToSidebarRequest) ?? [],
-    children: c.children?.map(mapCollectionToSidebarCollection) ?? [],
+    children:
+      c.children?.map((col, i) => mapCollectionToSidebarCollection(col, i, depth + 1)) ??
+      [],
+    depth,
   };
 }
 
@@ -120,7 +128,7 @@ function Dashboard() {
 
   const toast = useToast();
   const sidebarCollections: SidebarCollection[] = useMemo(() => {
-    return collections.map(mapCollectionToSidebarCollection);
+    return collections.map((col, i) => mapCollectionToSidebarCollection(col, i));
   }, [collections]);
 
   useEffect(() => {

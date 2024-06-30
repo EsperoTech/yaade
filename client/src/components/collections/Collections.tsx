@@ -38,36 +38,69 @@ function Collections({
 }: CollectionsProps) {
   const toast = useToast();
 
-  const dragCollection = async (id: number, newRank: number, newParentId: number) => {
-    dispatchCollections({
-      type: CollectionsActionType.MOVE_COLLECTION,
-      id,
-      newRank,
-      newParentId,
-    });
-    try {
-      const res = await api.moveCollection(id, newRank, newParentId);
-      if (res.status !== 200) throw new Error();
-      successToast('Collection was moved.', toast);
-    } catch (e) {
-      errorToast('Could not move collection.', toast);
-    }
-  };
+  const findCollection = useCallback(
+    (collections: SidebarCollection[], id: number): SidebarCollection | undefined => {
+      for (const collection of collections) {
+        if (collection.id === id) {
+          return collection;
+        }
+        if (collection.children) {
+          const res = findCollection(collection.children, id);
+          if (res) return res;
+        }
+      }
+      return undefined;
+    },
+    [],
+  );
+
+  const dragCollection = useCallback(
+    async (id: number, newRank: number, newParentId?: number) => {
+      const collection = findCollection(collections, id);
+      if (!collection) return;
+      if (collection.parentId === newParentId && collection.index === newRank) {
+        console.log('No change');
+        return;
+      }
+      dispatchCollections({
+        type: CollectionsActionType.MOVE_COLLECTION,
+        id,
+        newRank,
+        newParentId,
+      });
+      try {
+        const res = await api.moveCollection(id, newRank, newParentId);
+        if (res.status !== 200) throw new Error();
+        successToast('Collection was moved.', toast);
+      } catch (e) {
+        dispatchCollections({
+          type: CollectionsActionType.MOVE_COLLECTION,
+          id,
+          newRank: collection.index,
+          newParentId: collection.parentId,
+        });
+        errorToast('Could not move collection.', toast);
+      }
+    },
+    [collections, dispatchCollections, findCollection, toast],
+  );
 
   const isCollectionDescendant = useCallback(
     (ancestorId: number, descendantId: number): boolean => {
+      if (ancestorId === descendantId) return true;
+
       function isDescendant(cs: SidebarCollection[], visitedIds: number[] = []): boolean {
         for (const collection of cs) {
           if (collection.id === descendantId && visitedIds.includes(ancestorId)) {
             return true;
           }
-          return isDescendant(collection.children, [...visitedIds, collection.id]);
+          if (collection.children) {
+            return isDescendant(collection.children, [...visitedIds, collection.id]);
+          }
         }
 
         return false;
       }
-
-      if (ancestorId === descendantId) return true;
 
       for (const collection of collections) {
         if (isDescendant(collection.children, [collection.id])) return true;
@@ -78,24 +111,7 @@ function Collections({
     [collections],
   );
 
-  // const findCollection = useCallback(
-  //   (id: number): SidebarCollection | undefined => {
-  //     function find(cs: SidebarCollection[]): SidebarCollection | undefined {
-  //       for (const c of cs) {
-  //         if (c.id === id) {
-  //           return c;
-  //         }
-  //         return find(c.children);
-  //       }
-  //       return undefined;
-  //     }
-
-  //     return find(collections);
-  //   },
-  //   [collections],
-  // );
-
-  const renderCollection = (collection: SidebarCollection, index: number) => {
+  const renderCollection = (collection: SidebarCollection) => {
     return (
       <CollectionView
         key={collection.id}
@@ -103,7 +119,7 @@ function Collections({
         currentCollectionId={currentCollectionId}
         currentRequstId={currentRequstId}
         selectCollection={selectCollection}
-        index={index}
+        index={collection.index}
         moveCollection={dragCollection}
         selectRequest={selectRequest}
         renameRequest={renameRequest}
@@ -120,9 +136,7 @@ function Collections({
   return (
     <div className={styles.collections}>
       <DndProvider backend={HTML5Backend}>
-        {collections.map((collection: SidebarCollection, i) =>
-          renderCollection(collection, i),
-        )}
+        {collections.map(renderCollection)}
       </DndProvider>
     </div>
   );

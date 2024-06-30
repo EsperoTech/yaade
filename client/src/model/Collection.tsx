@@ -43,10 +43,12 @@ interface SidebarCollection {
   name: string;
   open: boolean;
   selected: boolean;
+  index: number;
   parentId?: number;
   groups?: string[];
   requests: SidebarRequest[];
   children: SidebarCollection[];
+  depth: number;
 }
 
 interface CurrentCollection {

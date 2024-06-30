@@ -32,6 +32,7 @@ import { parseCurlCommand } from '../../utils/curl';
 import { DragItem, DragTypes } from '../../utils/dnd';
 import BasicModal from '../basicModal';
 import styles from './MoveableHeader.module.css';
+import { RequestDragItem } from './MoveableRequest';
 
 type MoveableHeaderProps = {
   collection: SidebarCollection;
@@ -42,7 +43,8 @@ type MoveableHeaderProps = {
   index: number;
   duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
-  moveCollection: (dragIndex: number, hoverIndex: number, newParentId: number) => void;
+  moveCollection: (dragIndex: number, hoverIndex: number, newParentId?: number) => void;
+  moveRequest: (id: number, newRank: number, newCollectionId: number) => void;
   isCollectionDescendant: (collectionId: number, ancestorId: number) => boolean;
 };
 
@@ -53,6 +55,32 @@ type MoveableHeaderState = {
   currentModal: string;
 };
 
+function calculateTopHoveredRank(
+  hoverIndex: number,
+  dragIndex: number,
+  hoverParentId?: number,
+  dragParentId?: number,
+) {
+  if (hoverParentId !== dragParentId) {
+    return hoverIndex;
+  }
+
+  return hoverIndex < dragIndex ? hoverIndex : hoverIndex - 1;
+}
+
+function calculateBottomHoveredRank(
+  hoverIndex: number,
+  dragIndex: number,
+  hoverParentId?: number,
+  dragParentId?: number,
+) {
+  if (hoverParentId !== dragParentId) {
+    return hoverIndex + 1;
+  }
+
+  return hoverIndex < dragIndex ? hoverIndex + 1 : hoverIndex;
+}
+
 function MoveableHeader({
   collection,
   currentCollectionId,
@@ -62,6 +90,7 @@ function MoveableHeader({
   duplicateCollection,
   dispatchCollections,
   moveCollection,
+  moveRequest,
   isCollectionDescendant,
 }: MoveableHeaderProps) {
   const [state, setState] = useState<MoveableHeaderState>({
@@ -99,18 +128,10 @@ function MoveableHeader({
         return;
       }
 
-      const draggedCollectionId = monitor.getItem().id;
-      const hoveredCollectionId = id;
-
-      if (isCollectionDescendant(draggedCollectionId, hoveredCollectionId)) {
+      if (isCollectionDescendant(item.id, id)) {
         return;
       }
-      const dragIndex = item.index;
-      const hoverIndex = index;
-      if (dragIndex === hoverIndex) {
-        return;
-      }
-      if (!ref.current || !monitor || !monitor.getItem() || monitor.getItem().id === id) {
+      if (!ref.current || !monitor || !item || item.id === id) {
         return {
           handlerId: null,
           hoveredDownwards: false,
@@ -135,6 +156,42 @@ function MoveableHeader({
         hoverClientY >= hoverTopThirdBoundary && hoverClientY <= hoverBottomThirdBoundary;
       const hoveredBottom = hoverClientY > hoverBottomThirdBoundary;
 
+      if (hoveredTop) {
+        const newRank = calculateTopHoveredRank(
+          index,
+          item.index,
+          collection.parentId,
+          item.parentId,
+        );
+        if (newRank === item.index && item.parentId === collection.parentId) {
+          return;
+        }
+      }
+
+      if (hoveredMiddle) {
+        if (collection.id === item.parentId) {
+          return;
+        }
+      }
+
+      if (hoveredBottom) {
+        // NOTE: this is a small UX improvement, because in this position it
+        // looks like will be moved into the hovered collection when in reality
+        // it is moved below it.
+        if (collection.open) {
+          return;
+        }
+        const newRank = calculateBottomHoveredRank(
+          index,
+          item.index,
+          collection.parentId,
+          item.parentId,
+        );
+        if (newRank === item.index && item.parentId === collection.parentId) {
+          return;
+        }
+      }
+
       setIsTopHovered(hoveredTop);
       setIsMiddleHovered(hoveredMiddle);
       setIsBottomHovered(hoveredBottom);
@@ -157,26 +214,73 @@ function MoveableHeader({
         handlerId: monitor.getHandlerId(),
       };
     },
-    drop(item, monitor) {
+    drop(item) {
       if (item.index === index) {
         return;
       }
       if (isTopHovered) {
-        return moveCollection(item.id, index, monitor.getItem().id);
+        const newRank = calculateTopHoveredRank(
+          index,
+          item.index,
+          collection.parentId,
+          item.parentId,
+        );
+        if (newRank === item.index) {
+          return;
+        }
+        return moveCollection(item.id, newRank, collection.parentId);
+      } else if (isMiddleHovered) {
+        return moveCollection(item.id, 0, collection.id);
+      } else if (isBottomHovered) {
+        const newRank = calculateBottomHoveredRank(index, item.index);
+        if (newRank === item.index) {
+          return;
+        }
+        return moveCollection(item.id, newRank, collection.parentId);
       }
-      if (isMiddleHovered) {
-        return moveCollection(item.id, 0, monitor.getItem().id);
+    },
+  });
+
+  const [{ handlerId: requestHandlerId, hovered }, dropRequest] = useDrop<
+    RequestDragItem,
+    void,
+    { handlerId: Identifier | null; hovered: boolean }
+  >({
+    accept: [DragTypes.REQUEST],
+    collect(monitor) {
+      let hovered = false;
+      const item = monitor.getItem();
+      if (item && item.type === DragTypes.REQUEST) {
+        hovered = monitor.isOver() && item.collectionId !== collection.id;
       }
-      if (isBottomHovered) {
-        return moveCollection(item.id, index + 1, monitor.getItem().id);
+      return {
+        handlerId: monitor.getHandlerId(),
+        hovered,
+      };
+    },
+    drop(item: RequestDragItem) {
+      if (!ref.current || item.type !== DragTypes.REQUEST) {
+        return;
       }
+
+      // Don't do anything if it's the same collection
+      if (item.collectionId === collection.id) {
+        return;
+      }
+
+      moveRequest(item.id, 0, collection.id);
     },
   });
 
   const [{ isDragging }, drag] = useDrag({
     type: DragTypes.COLLECTION,
     item: () => {
-      return { id, index };
+      return {
+        id,
+        index,
+        parentId: collection.parentId,
+        isOpen: collection.open,
+      };
     },
     collect: (monitor: any) => ({
       isDragging: monitor.isDragging(),
@@ -192,12 +296,14 @@ function MoveableHeader({
       return '0 0 0 2px var(--chakra-colors-green-500)';
     }
     if (isTopHovered) {
-      return '0 -2px 0 var(--chakra-colors-green-500)';
+      return 'inset 0 2px 0 var(--chakra-colors-green-500)';
     }
     return 'none';
   }, [isBottomHovered, isMiddleHovered, isTopHovered]);
 
   drag(drop(ref));
+  dropRequest(ref);
+  const hoverClass = hovered ? styles.hovered : '';
 
   function handleArrowClick() {
     dispatchCollections({
@@ -395,16 +501,18 @@ function MoveableHeader({
     <div
       ref={ref}
       data-handler-id={handlerId}
-      className={cn(styles, 'header', [...headerVariants, colorMode])}
-      style={{ boxShadow, opacity }}
+      className={cn(styles, 'header', [...headerVariants, colorMode]) + ' ' + hoverClass}
+      style={{ boxShadow, opacity, paddingLeft: `${collection.depth}rem` }}
     >
       {iconVariants.includes('open') ? (
         <VscFolderOpened
+          style={{ marginLeft: '0.8rem' }}
           className={cn(styles, 'icon', [colorMode])}
           onClick={handleArrowClick}
         />
       ) : (
         <VscFolder
+          style={{ marginLeft: '0.8rem' }}
           className={cn(styles, 'icon', [colorMode])}
           onClick={handleArrowClick}
         />

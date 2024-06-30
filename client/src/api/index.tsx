@@ -61,23 +61,16 @@ const moveCollection = (
     }),
   });
 
-const moveRequest = (id: number, newRank: number): Promise<Response> =>
-  fetch(BASE_PATH + `api/request/${id}/move`, {
-    method: 'POST',
-    headers: DEFAULT_HEADERS,
-    body: JSON.stringify({
-      newRank,
-    }),
-  });
-
-const changeRequestCollection = (
+const moveRequest = (
   id: number,
-  newCollectionId: number,
+  newRank: number,
+  newCollectionId?: number,
 ): Promise<Response> =>
   fetch(BASE_PATH + `api/request/${id}/move`, {
     method: 'POST',
     headers: DEFAULT_HEADERS,
     body: JSON.stringify({
+      newRank,
       newCollectionId,
     }),
   });
@@ -128,7 +121,6 @@ const updateCollection = (
   });
 
 export default {
-  changeRequestCollection,
   createCollection,
   duplicateCollection,
   createRequest,

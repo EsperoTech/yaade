@@ -39,7 +39,6 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val result = ArrayList<JsonObject>()
 
         for (collection in collections) {
-            println("Collection: $collection")
             val parentId = collection.getJsonObject("data").getLong("parentId")
             if (parentId == null) {
                 result.add(collection)
@@ -130,7 +129,6 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val body = ctx.body().asJsonObject()
         val id = ctx.pathParam("id").toLong()
         val newParentId = body.getLong("newParentId")
-        // TODO: new parent id can be -1 -> move to root
         val collection = daoManager.collectionDao.getById(id)
             ?: throw RuntimeException("Collection not found")
         assertUserCanReadCollection(ctx, collection)
@@ -139,34 +137,37 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             val newParent = daoManager.collectionDao.getById(newParentId)
                 ?: throw RuntimeException("Parent collection not found")
             assertUserCanReadCollection(ctx, newParent)
-            collection.patchData(JsonObject().put("parentId", newParentId))
-            daoManager.collectionDao.update(collection)
         }
 
-        val children = daoManager.collectionDao
+        val oldParentId = collection.jsonData().getLong("parentId")
+
+        val newChildren = daoManager.collectionDao
             .getAll()
             .filter { it.jsonData().getLong("parentId") == newParentId }
             .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
-        val newChildren = children.toMutableList()
+            .toMutableList()
 
-        if (newParentId == null) {
-            val oldRank = children.indexOfFirst { it.id == id }
-            if (oldRank == -1) {
-                throw RuntimeException("Child not found in collection")
-            }
-
-            newChildren.removeAt(oldRank)
-        }
-
-        val newRank = if (newParentId == null) {
-            body.getInteger("newRank")
+        if (oldParentId == newParentId) {
+            newChildren.removeIf { c -> c.id == id }
         } else {
-            children.size
-        } ?: throw RuntimeException("Invalid new rank")
-        if (newRank < 0 || newRank > children.size) {
-            throw RuntimeException("Invalid new rank")
+            collection.patchData(JsonObject().put("parentId", newParentId))
+            daoManager.collectionDao.update(collection)
+            val oldChildren = daoManager.collectionDao
+                .getAll()
+                .filter {
+                    it.jsonData().getLong("parentId") == collection.jsonData()
+                        .getLong("parentId")
+                }
+                .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
+                .toMutableList()
+            oldChildren.removeIf { c -> c.id == id }
+            oldChildren.forEachIndexed { index, collectionDb ->
+                collectionDb.patchData(JsonObject().put("rank", index))
+                daoManager.collectionDao.update(collectionDb)
+            }
         }
 
+        val newRank = body.getInteger("newRank") ?: 0
         newChildren.add(newRank, collection)
         newChildren.forEachIndexed { index, collectionDb ->
             collectionDb.patchData(JsonObject().put("rank", index))
