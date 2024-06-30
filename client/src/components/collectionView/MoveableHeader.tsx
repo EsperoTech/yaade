@@ -228,9 +228,6 @@ function MoveableHeader({
       };
     },
     drop(item) {
-      if (item.index === index) {
-        return;
-      }
       if (isTopHovered) {
         const newRank = calculateTopHoveredRank(
           index,
@@ -238,15 +235,20 @@ function MoveableHeader({
           collection.parentId,
           item.parentId,
         );
-        if (newRank === item.index) {
+        if (newRank === item.index && item.parentId === collection.parentId) {
           return;
         }
         return moveCollection(item.id, newRank, collection.parentId);
       } else if (isMiddleHovered) {
         return moveCollection(item.id, 0, collection.id);
       } else if (isBottomHovered) {
-        const newRank = calculateBottomHoveredRank(index, item.index);
-        if (newRank === item.index) {
+        const newRank = calculateBottomHoveredRank(
+          index,
+          item.index,
+          collection.parentId,
+          item.parentId,
+        );
+        if (newRank === item.index && item.parentId === collection.parentId) {
           return;
         }
         return moveCollection(item.id, newRank, collection.parentId);
