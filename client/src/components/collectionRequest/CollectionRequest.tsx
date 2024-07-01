@@ -175,11 +175,11 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
       onKeyDown={(e) => handleOnKeyDown(e, () => selectRequest.current(request.id))}
       role="button"
       tabIndex={0}
-      style={{ paddingLeft: `${depth}rem` }}
     >
+      {Array(depth + 1).fill(<div className={styles.line} />)}
       <span
         className={cn(styles, 'requestMethod', [colorMode])}
-        style={{ ...getMethodColor(request.method), marginLeft: '1.8rem' }}
+        style={{ ...getMethodColor(request.method), marginLeft: '0.8rem' }}
       >
         {methodName}
       </span>

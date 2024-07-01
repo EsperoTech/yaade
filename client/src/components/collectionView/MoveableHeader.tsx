@@ -663,8 +663,9 @@ function MoveableHeader({
       ref={ref}
       data-handler-id={handlerId}
       className={cn(styles, 'header', [...headerVariants, colorMode]) + ' ' + hoverClass}
-      style={{ boxShadow, opacity, paddingLeft: `${collection.depth}rem` }}
+      style={{ boxShadow, opacity }}
     >
+      {Array(collection.depth).fill(<div className={styles.line} />)}
       {iconVariants.includes('open') ? (
         <div
           className={cn(styles, 'icon-wrapper', [colorMode])}

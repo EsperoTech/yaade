@@ -57,8 +57,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-left: 0.8rem;
-  padding-right: 0.8rem;
+  padding-left: 0.7rem;
+  padding-right: 0.7rem;
 }
 
 .icon {
@@ -83,4 +83,13 @@
 .hovered {
   outline: 1px solid var(--chakra-colors-green-500) !important;
   outline-offset: -1px;
+}
+
+.line {
+    width: 1rem;
+    min-width: 1rem;
+    max-width: 1rem;
+    height: 100%;
+    border-right: 1px solid var(--chakra-colors-gray-500);
+    opacity: 0.5;
 }

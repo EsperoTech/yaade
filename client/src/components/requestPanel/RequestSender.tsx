@@ -1,12 +1,17 @@
 import { Input, Select, useColorMode, useDisclosure, useToast } from '@chakra-ui/react';
-import { Dispatch, MutableRefObject, useRef, useState } from 'react';
+import { Dispatch, MutableRefObject, useMemo, useRef, useState } from 'react';
 
 import api from '../../api';
 import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import Request, { CurrentRequest } from '../../model/Request';
 import Response from '../../model/Response';
-import { CollectionsAction, CollectionsActionType } from '../../state/collections';
+import {
+  CollectionsAction,
+  CollectionsActionType,
+  findCollection,
+  findRequest,
+} from '../../state/collections';
 import {
   CurrentRequestAction,
   CurrentRequestActionType,
@@ -63,10 +68,10 @@ function RequestSender({
   function getEnv(collectionId: number, envName?: string) {
     if (!envName) return;
 
-    const i = collections.findIndex((c: Collection) => c.id === collectionId);
-    if (i === -1) return;
+    const c = findCollection(collections, collectionId);
+    if (!c) return;
 
-    const envs = collections[i].data?.envs;
+    const envs = c.data?.envs;
     if (!envs) return;
 
     return envs[envName];
@@ -124,10 +129,12 @@ function RequestSender({
     }
   }
 
-  const requestCollection = collections.find(
-    (c) => c.id === currentRequest?.collectionId,
-  );
-  const selectedEnv = requestCollection ? getSelectedEnv(requestCollection) : null;
+  const requestCollection = useMemo(() => {
+    return findCollection(collections, currentRequest?.collectionId);
+  }, [collections, currentRequest?.collectionId]);
+  const selectedEnv = useMemo(() => {
+    return requestCollection ? getSelectedEnv(requestCollection) : null;
+  }, [requestCollection]);
 
   if (collections.length > 0 && newReqForm.collectionId === -1) {
     setNewReqForm({ ...newReqForm, collectionId: collections[0].id });
@@ -145,10 +152,10 @@ function RequestSender({
     return (collections: Collection[], key: string): string => {
       if (!envName) return '';
 
-      const i = collections.findIndex((c: Collection) => c.id === collectionId);
-      if (i === -1) return '';
+      const c = findCollection(collections, collectionId);
+      if (!c) return '';
 
-      const envs = collections[i].data?.envs;
+      const envs = c.data?.envs;
       if (!envs) return '';
 
       const newEnv = envs[envName];
@@ -191,7 +198,7 @@ function RequestSender({
       throw Error('Exec loop detected in request script');
     }
 
-    const collection = collections.find((c) => c.id === request.collectionId);
+    const collection = findCollection(collections, request.collectionId);
 
     const enabledCollectionHeaders = collection?.data?.headers
       ? collection.data.headers.filter((h) => h.isEnabled !== false)
@@ -311,9 +318,7 @@ function RequestSender({
     const get = (key: string): string =>
       getEnvVar(request.collectionId, envName)(collections, key);
     const exec = async (requestId: number, envName?: string) => {
-      const request = collections
-        .flatMap((c) => c.requests)
-        .find((r) => r.id === requestId);
+      const request = findRequest(collections, requestId);
       if (!request) {
         throw Error(`Request with id ${requestId} not found`);
       }
@@ -387,7 +392,7 @@ function RequestSender({
       // TODO: check if this mutates the original request object
       let interpolatedRequest = { ...request };
       if (envName) {
-        const collection = collections.find((c) => c.id === request.collectionId);
+        const collection = findCollection(collections, request.collectionId);
         if (!collection) {
           throw Error('Collection not found for id: ' + request.collectionId);
         }
@@ -435,9 +440,8 @@ function RequestSender({
       data: { ...request.data },
     });
 
-    const i = collections.findIndex((c: Collection) => c.id === request.collectionId);
-    if (i === -1) return;
-    const collection = collections[i];
+    const collection = findCollection(collections, request.collectionId);
+    if (!collection) return;
 
     response = await api.updateCollection(collection);
     if (response.status !== 200)
@@ -449,7 +453,7 @@ function RequestSender({
     envName?: string,
   ): Promise<Response> {
     if (envName) {
-      const collection = collections.find((c) => c.id === request.collectionId);
+      const collection = findCollection(collections, request.collectionId);
       if (!collection) {
         throw Error('Collection not found for id: ' + request.collectionId);
       }
