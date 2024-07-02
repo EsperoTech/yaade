@@ -376,10 +376,7 @@ function Dashboard() {
   const renameRequest = useCallback(
     async (id: number, name: string) => {
       try {
-        const request = collections
-          .map((c) => c.requests)
-          .flat()
-          .find((r) => r.id === id);
+        const request = findRequest(collections, id);
         if (!request) return;
         const newRequest = { ...request, data: { ...request.data, name: name } };
         await api.updateRequest(newRequest);
@@ -428,10 +425,7 @@ function Dashboard() {
   const duplicateRequest = useCallback(
     async (id: number, newName: string) => {
       try {
-        const request = collections
-          .map((c) => c.requests)
-          .flat()
-          .find((r) => r.id === id);
+        const request = findRequest(collections, id);
         if (!request) return;
         const res = await api.createRequest(request.collectionId, {
           ...request.data,

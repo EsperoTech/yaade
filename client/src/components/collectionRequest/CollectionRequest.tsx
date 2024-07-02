@@ -106,7 +106,10 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
       initialRef={undefined}
       onClose={onCloseClear}
       heading={`Delete "${request.name}"`}
-      onClick={() => deleteRequest(request.id)}
+      onClick={() => {
+        deleteRequest(request.id);
+        onCloseClear();
+      }}
       buttonText="Delete"
       buttonColor="red"
       isButtonDisabled={false}

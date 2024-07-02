@@ -139,17 +139,6 @@ function mod(collections: Collection[], id: number, f: (c: Collection) => void) 
   }
 }
 
-function modifyRequest(collections: Collection[], id: number, f: (r: Request) => void) {
-  return modifyCollection(collections, id, (c) => {
-    for (let i = 0; i < c.requests.length; i++) {
-      if (c.requests[i].id === id) {
-        f(c.requests[i]);
-        return;
-      }
-    }
-  });
-}
-
 function set(collections: Collection[]): Collection[] {
   return collections;
 }
@@ -365,14 +354,18 @@ function moveCollectionFromOldParentToNewParent(
 }
 
 function addRequest(state: Collection[], request: Request): Collection[] {
+  console.log('addRequest', request.collectionId);
   return modifyCollection(state, request.collectionId, (c) => {
     if (!c.requests) c.requests = [];
-    c.requests.push(request);
+    c.open = true;
+    c.requests.splice(0, 0, request);
   });
 }
 
 function patchRequestData(state: Collection[], id: number, data: any): Collection[] {
-  return modifyCollection(state, id, (c) => {
+  const request = findRequest(state, id);
+  if (!request) return state;
+  return modifyCollection(state, request.collectionId, (c) => {
     if (!c.requests) return;
     for (const request of c.requests) {
       if (request.id === id) {
@@ -384,7 +377,9 @@ function patchRequestData(state: Collection[], id: number, data: any): Collectio
 }
 
 function deleteRequest(state: Collection[], id: number): Collection[] {
-  return modifyCollection(state, id, (c) => {
+  const request = findRequest(state, id);
+  if (!request) return state;
+  return modifyCollection(state, request.collectionId, (c) => {
     if (!c.requests) return;
     c.requests = c.requests.filter((r) => r.id !== id);
   });
