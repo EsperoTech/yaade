@@ -184,52 +184,32 @@ function moveCollection(
 ): Collection[] {
   const currentCollection = findCollection(state, id);
   if (!currentCollection) {
-    console.log('collection not found');
     return state;
   }
 
   const parentId = currentCollection.data.parentId;
   const rank = currentCollection.data.rank;
-  console.log('moveCollection', {
-    id,
-    rank,
-    newRank,
-    parentId,
-    newParentId,
-  });
 
   if (newParentId && parentId) {
-    console.log('moveCollectionFromOldParentToNewParent');
-    const x = moveCollectionFromOldParentToNewParent(
+    return moveCollectionFromOldParentToNewParent(
       state,
       id,
       newRank,
       parentId,
       newParentId,
     );
-    console.log('res', x);
-    return x;
   }
 
   if (newParentId && !parentId) {
-    console.log('moveCollectionFromTopToNewParent');
-    const x = moveCollectionFromTopToNewParent(state, id, newRank, newParentId);
-    console.log('res', x);
-    return x;
+    return moveCollectionFromTopToNewParent(state, id, newRank, newParentId);
   }
 
   if (!newParentId && !parentId) {
-    console.log('moveCollectionFromTopToTop');
-    const x = moveCollectionFromTopToTop(state, id, newRank);
-    console.log('res', x);
-    return x;
+    return moveCollectionFromTopToTop(state, id, newRank);
   }
 
   if (!newParentId && parentId) {
-    console.log('moveCollectionFromOldParentToTop');
-    const x = moveCollectionFromOldParentToTop(state, id, newRank, parentId);
-    console.log('res', x);
-    return x;
+    return moveCollectionFromOldParentToTop(state, id, newRank, parentId);
   }
 
   return state;
@@ -354,7 +334,6 @@ function moveCollectionFromOldParentToNewParent(
 }
 
 function addRequest(state: Collection[], request: Request): Collection[] {
-  console.log('addRequest', request.collectionId);
   return modifyCollection(state, request.collectionId, (c) => {
     if (!c.requests) c.requests = [];
     c.open = true;
@@ -394,14 +373,6 @@ function moveRequest(
   const currentRequest = findRequest(state, id);
   if (!currentRequest) return state;
 
-  console.log('moveRequest', {
-    id,
-    rank: currentRequest.data.rank,
-    newRank,
-    collectionId: currentRequest.collectionId,
-    newCollectionId,
-  });
-
   const result = modifyCollection(state, currentRequest.collectionId, (c) => {
     if (!c.requests) return;
     const i = c.requests.findIndex((r) => r.id === id);
@@ -425,26 +396,6 @@ function moveRequest(
   });
 }
 
-// function changeRequestCollection(
-//   state: Collection[],
-//   id: number,
-//   newCollectionId: number,
-// ): Collection[] {
-//   const oldCollectionIndex = state.findIndex((c) => c.requests.some((r) => r.id === id));
-//   if (oldCollectionIndex === -1) return state;
-
-//   const requestIndex = state[oldCollectionIndex].requests.findIndex((r) => r.id === id);
-
-//   const newCollectionIndex = state.findIndex((c) => c.id === newCollectionId);
-//   if (newCollectionIndex === -1) return state;
-
-//   const newState = [...state];
-//   const request = newState[oldCollectionIndex].requests.splice(requestIndex, 1)[0];
-//   newState[newCollectionIndex].requests.push(request);
-
-//   return newState;
-// }
-
 function closeAll(state: Collection[]): Collection[] {
   return state.map((c) => ({ ...c, open: false }));
 }
@@ -456,36 +407,15 @@ function toggleOpenCollection(state: Collection[], id: number): Collection[] {
 }
 
 function setEnvVar(state: Collection[], payload: SetEnvVarPayload): Collection[] {
-  const i = state.findIndex((c) => c.id === payload.collectionId);
-  if (i === -1) return state;
+  return modifyCollection(state, payload.collectionId, (c) => {
+    const envs = c.data?.envs;
+    if (!envs) return;
 
-  const newState = [...state];
-  const collection = newState[i];
+    const env = envs[payload.envName];
+    if (!env) return;
 
-  const envs = collection.data?.envs;
-  if (!envs) return state;
-
-  const newEnv = envs[payload.envName];
-  if (!newEnv) return state;
-
-  newEnv.data[payload.key] = payload.value;
-
-  const newCollection = {
-    ...collection,
-    data: {
-      ...collection.data,
-      envs: {
-        ...envs,
-        [payload.envName]: {
-          ...newEnv,
-        },
-      },
-    },
-  };
-
-  newState[i] = newCollection;
-
-  return newState;
+    env.data[payload.key] = payload.value;
+  });
 }
 
 type CollectionsAction =
