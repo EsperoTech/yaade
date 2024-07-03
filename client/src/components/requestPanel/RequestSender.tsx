@@ -207,22 +207,10 @@ function RequestSender({
       ? request.data.headers.filter((h) => h.isEnabled !== false)
       : [];
 
-    let body;
-    switch (request.data.contentType) {
-      case 'application/x-www-form-urlencoded':
-        if (request.data.formDataBody) {
-          body = encodeFormDataBody(request.data.formDataBody);
-        }
-        break;
-      default:
-        body = request.data.body;
-    }
-
     const injectedReq: Request = {
       ...request,
       data: {
         ...request.data,
-        body: body,
         // NOTE: this order is important because we want request headers to take precedence
         headers: [...enabledCollectionHeaders, ...enabledRequestHeaders],
       },
@@ -402,6 +390,14 @@ function RequestSender({
         interpolatedRequest = interpolateResult.result;
       }
 
+      switch (request.data.contentType) {
+        case 'application/x-www-form-urlencoded':
+          if (request.data.formDataBody) {
+            interpolatedRequest.data.body = encodeFormDataBody(request.data.formDataBody);
+          }
+          break;
+      }
+
       const url = appendHttpIfNoProtocol(interpolatedRequest.data.uri);
 
       const headers = kvRowsToMap(interpolatedRequest.data.headers ?? []);
@@ -462,6 +458,15 @@ function RequestSender({
       const interpolateResult = interpolate(request, selectedEnvData);
       request = interpolateResult.result;
     }
+
+    switch (request.data.contentType) {
+      case 'application/x-www-form-urlencoded':
+        if (request.data.formDataBody) {
+          request.data.body = encodeFormDataBody(request.data.formDataBody);
+        }
+        break;
+    }
+
     return api
       .invoke(request, envName ?? 'NO_ENV')
       .then((res) => {
