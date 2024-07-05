@@ -11,33 +11,45 @@ const importOpenApi = (
   groups: string[],
   data: FormData,
   parentId?: number,
-): Promise<Response> =>
-  fetch(
-    BASE_PATH +
-      `api/collection/importOpenApi?basePath=${basePath}&groups=${groupsArrayToStr(
-        groups,
-      )}&parentId=${parentId}`,
-    {
-      method: 'POST',
-      body: data,
-    },
-  );
+): Promise<Response> => {
+  const url = new URL(BASE_PATH + 'api/collection/importOpenApi');
+
+  url.searchParams.append('basePath', basePath);
+
+  if (groups.length > 0) {
+    url.searchParams.append('groups', groupsArrayToStr(groups));
+  }
+
+  if (parentId) {
+    url.searchParams.append('parentId', parentId.toString());
+  }
+
+  return fetch(url, {
+    method: 'POST',
+    body: data,
+  });
+};
 
 const importPostman = (
   groups: string[],
   data: FormData,
   parentId?: number,
-): Promise<Response> =>
-  fetch(
-    BASE_PATH +
-      `api/collection/importPostman?groups=${groupsArrayToStr(
-        groups,
-      )}&parentId=${parentId}`,
-    {
-      method: 'POST',
-      body: data,
-    },
-  );
+): Promise<Response> => {
+  const url = new URL(BASE_PATH + 'api/collection/importPostman');
+
+  if (groups.length > 0) {
+    url.searchParams.append('groups', groupsArrayToStr(groups));
+  }
+
+  if (parentId) {
+    url.searchParams.append('parentId', parentId.toString());
+  }
+
+  return fetch(url, {
+    method: 'POST',
+    body: data,
+  });
+};
 
 const createCollection = (
   name: string,
