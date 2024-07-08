@@ -115,6 +115,8 @@ const interpolate = function (
   oenv.$r = r;
   oenv.$t = DateTime;
   oenv.$env = oenv;
+  oenv.$btoa = btoa;
+  oenv.$atob = atob;
   let errors: any[] = [];
   let result = interpolate1(request, oenv, debug, errors) as Request;
   if (debug) {

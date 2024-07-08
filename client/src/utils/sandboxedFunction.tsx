@@ -16,7 +16,7 @@ const createSandboxedFunction = function (
 
   const blacklist = [
     ...Object.getOwnPropertyNames(window).filter(
-      (e) => e !== 'eval' && e !== 'arguments',
+      (e) => e !== 'eval' && e !== 'arguments' && e !== 'btoa' && e !== 'atob',
     ),
   ];
 
