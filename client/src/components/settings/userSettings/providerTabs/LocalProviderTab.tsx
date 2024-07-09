@@ -185,7 +185,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
           />
         </div>
       </HStack>
-      <TableContainer overflowY="scroll">
+      <TableContainer>
         <Table size="sm" whiteSpace="normal">
           <Thead>
             <Tr>
@@ -217,7 +217,7 @@ const LocalProviderTab: FunctionComponent<LocalProviderTabProps> = ({
                     <div
                       style={{
                         display: 'flex',
-                        justifyContent: 'end',
+                        justifyContent: 'start',
                       }}
                     >
                       <IconButton

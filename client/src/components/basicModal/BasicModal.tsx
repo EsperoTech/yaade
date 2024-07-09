@@ -55,7 +55,7 @@ const BasicModal: FunctionComponent<BasicModalProps> = ({
       <ModalContent>
         <ModalHeader>{heading}</ModalHeader>
         <ModalCloseButton />
-        <form onSubmit={handleSubmit}>
+        <form>
           <ModalBody>{children}</ModalBody>
           {hideButtonBar ? (
             <div style={{ marginBottom: '2rem' }} />
@@ -67,7 +67,7 @@ const BasicModal: FunctionComponent<BasicModalProps> = ({
               <Button
                 colorScheme={buttonColor}
                 disabled={isButtonDisabled}
-                type="submit"
+                onClick={handleSubmit}
                 ref={defaultRef}
               >
                 {buttonText}
