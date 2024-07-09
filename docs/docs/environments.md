@@ -115,6 +115,13 @@ Inside an interpolation operation you can access other variables from this envir
 
 `${$env.auth === "bearer" ? $env.bearerPrefix : "Basic"}` results in `Bearer`.
 
+#### Base64
+
+You can encode and decode strings to and from base64.
+
+- Encode to base64: `$btoa("hello:world")` results in `aGVsbG86d29ybGQ=`.
+- Decode a string from base64 use `$atob('aGVsbG86d29ybGQ=')` results in `hello:world`.
+
 ## Proxies
 
 A proxy executes the actual request. Yaade currently supports the browser extension (Extension) and the server inside the docker container (server) as proxies.
