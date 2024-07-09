@@ -30,6 +30,8 @@ function executeResponseScript(
     status: response.status,
   };
   args.jp = jpath;
+  args.btoa = btoa;
+  args.atob = atob;
   args.DateTime = DateTime;
   if (isCollectionLevel) {
     args.log = (...data: any[]) =>
@@ -67,6 +69,8 @@ async function executeRequestScript(
     headers: kvRowsToMap(request.data.headers ?? []),
   };
   args.jp = jpath;
+  args.btoa = window.btoa;
+  args.atob = window.atob;
   args.DateTime = DateTime;
   args.exec = exec;
   if (isCollectionLevel) {

@@ -111,6 +111,13 @@ const now = DateTime.utc().toISO()
 // result: 2023-03-26T12:43:37.956Z
 ```
 
+### Base64 encoding/decoding
+
+You can encode and decode strings to and from base64.
+
+- Encode to base64: `btoa("hello:world")` results in `aGVsbG86d29ybGQ=`.
+- Decode a string from base64 use `atob('aGVsbG86d29ybGQ=')` results in `hello:world`.
+
 ## Request Scripts
 
 Request scripts are executed before sending a request. Following are commands that can exclusively be used in request scripts.
