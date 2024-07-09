@@ -26,8 +26,8 @@ const GroupsInput: FunctionComponent<GroupsInputProps> = ({
 
   const { colorMode } = useColorMode();
 
-  function setNewGroupInput(value: string) {
-    if (value.endsWith(' ')) {
+  function setNewGroupInput(value: string, force = false) {
+    if (value.endsWith(' ') || force) {
       const removedDuplicates = Array.from(new Set([...groups, value.trim()]));
       if (value !== ' ') {
         setGroups(removedDuplicates);
@@ -52,6 +52,11 @@ const GroupsInput: FunctionComponent<GroupsInputProps> = ({
         value={newGroup}
         onChange={(e) => setNewGroupInput(e.target.value)}
         backgroundColor={colorMode === 'light' ? 'white' : undefined}
+        onKeyPress={(e) => {
+          if (e.key === 'Enter') {
+            setNewGroupInput(newGroup, true);
+          }
+        }}
       />
       <Wrap>
         {groups.map((group) => (
