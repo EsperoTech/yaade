@@ -1,6 +1,5 @@
 package com.jr.jasmine;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
@@ -8,11 +7,8 @@ import org.graalvm.polyglot.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -50,7 +46,7 @@ public class JasmineBuilder {
         createGlobalVariables(context);
 
         // this sets up the jasmine environment which becomes globally available as "jasmineEnv"
-        loadDependencies(context);
+        //loadDependencies(context);
         loadJasmine(context);
         loadJasmineBoot0(context);
         loadJasmineBoot1(context);
@@ -163,9 +159,14 @@ public class JasmineBuilder {
         logger.debug("Loading File: {}", scriptFile);
 
         try {
-            final File script = findFile(scriptFile);
-            final String test = FileUtils.readFileToString(script, StandardCharsets.UTF_8);
-            loadScriptString(context, scriptFile, test);
+            InputStream is = getClass().getResourceAsStream("/" + scriptFile);
+            if (is == null) {
+                throw new RuntimeException("JavaScript file not found");
+            }
+            try (Reader reader = new InputStreamReader(is)) {
+                final Source source = Source.newBuilder(JS, reader, scriptFile).cached(false).build();
+                context.eval(source);
+            }
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
@@ -225,7 +226,7 @@ public class JasmineBuilder {
         if (StringUtils.startsWith(filePath, "/")) {
             fileUrl = getClass().getResource(filePath);
         } else {
-            fileUrl = getClass().getClassLoader().getResource(filePath);
+            fileUrl = getClass().getResource("/" + filePath);
         }
 
         if (fileUrl == null) {

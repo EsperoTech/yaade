@@ -51,7 +51,8 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
 
     implementation("org.graalvm.polyglot:polyglot:$graalVMVersion")
-    implementation("org.graalvm.polyglot:js:$graalVMVersion")
+    implementation("org.graalvm.polyglot:js-community:$graalVMVersion")
+    implementation("org.graalvm.sdk:graal-sdk:$graalVMVersion")
 }
 
 tasks.test {
@@ -70,7 +71,7 @@ tasks.withType<Jar> {
     from({
         configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
     })
-    
+
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
