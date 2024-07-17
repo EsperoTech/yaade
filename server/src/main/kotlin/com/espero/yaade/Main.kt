@@ -3,6 +3,7 @@ package com.espero.yaade
 import com.espero.yaade.init.createDaoManager
 import com.espero.yaade.server.Server
 import com.espero.yaade.server.utils.configureDatabindCodec
+import com.jr.jasmine.JasmineRunner
 import io.vertx.core.Vertx
 
 val PORT = System.getenv("YAADE_PORT")?.toInt() ?: 9339
@@ -13,6 +14,10 @@ val ADMIN_USERNAME: String = System.getenv("YAADE_ADMIN_USERNAME") ?: ""
 val BASE_PATH: String = System.getenv("YAADE_BASE_PATH") ?: ""
 
 fun main() {
+    val scriptRunner = JasmineRunner()
+
+    scriptRunner.run("index.js")
+    scriptRunner.displayReport()
     configureDatabindCodec()
     val daoManager = createDaoManager(JDBC_URL, JDBC_USR, JDBC_PWD)
     val vertx = Vertx.vertx()

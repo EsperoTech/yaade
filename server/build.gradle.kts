@@ -5,10 +5,18 @@ plugins {
     id("java")
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+
 group = "com.espero"
 version = "1.0-SNAPSHOT"
 
 val vertxVersion = "4.5.1"
+val graalVMVersion = "24.0.1";
 
 repositories {
     mavenCentral()
@@ -41,6 +49,9 @@ dependencies {
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+
+    implementation("org.graalvm.polyglot:polyglot:$graalVMVersion")
+    implementation("org.graalvm.polyglot:js:$graalVMVersion")
 }
 
 tasks.test {
@@ -59,8 +70,10 @@ tasks.withType<Jar> {
     from({
         configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
     })
+    
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
 }
