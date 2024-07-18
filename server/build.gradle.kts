@@ -3,12 +3,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.6.21"
     id("java")
+    id("com.github.johnrengelman.shadow") version "1.2.3"
 }
 
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 
@@ -16,10 +16,11 @@ group = "com.espero"
 version = "1.0-SNAPSHOT"
 
 val vertxVersion = "4.5.1"
-val graalVMVersion = "24.0.1";
+val graalVMVersion = "23.1.1";
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 dependencies {
@@ -50,9 +51,11 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
 
+    implementation("org.graalvm.truffle:truffle-api:$graalVMVersion")
+    implementation("org.graalvm.truffle:truffle-runtime:$graalVMVersion")
+    implementation("org.graalvm.truffle:truffle-compiler:$graalVMVersion")
     implementation("org.graalvm.polyglot:polyglot:$graalVMVersion")
-    implementation("org.graalvm.polyglot:js-community:$graalVMVersion")
-    implementation("org.graalvm.sdk:graal-sdk:$graalVMVersion")
+    implementation("org.graalvm.polyglot:js:$graalVMVersion")
 }
 
 tasks.test {
@@ -72,7 +75,7 @@ tasks.withType<Jar> {
         configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
     })
 
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks.withType<KotlinCompile> {

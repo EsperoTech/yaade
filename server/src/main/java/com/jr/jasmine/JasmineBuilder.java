@@ -46,7 +46,7 @@ public class JasmineBuilder {
         createGlobalVariables(context);
 
         // this sets up the jasmine environment which becomes globally available as "jasmineEnv"
-        //loadDependencies(context);
+        loadDependencies(context);
         loadJasmine(context);
         loadJasmineBoot0(context);
         loadJasmineBoot1(context);
