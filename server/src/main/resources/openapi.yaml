@@ -649,6 +649,30 @@ paths:
           description: Success
       operationId: deleteCertificate
       summary: Delete a certificate
+  /api/oauth2/token:
+    post:
+      tags:
+        - Authentication
+      summary: Exchange authorization code for access token
+      operationId: exchangeToken
+      requestBody:
+        description: Authorization code and token URL
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tokenUrl
+                - data
+              properties:
+                tokenUrl:
+                  type: string
+                data:
+                  type: string
+      responses:
+        '200':
+          description: Success
 
 components:
   schemas:

@@ -151,6 +151,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .userCoroutineHandler(this, certificateRoute::createCertificate)
             routerBuilder.operation("deleteCertificate")
                 .userCoroutineHandler(this, certificateRoute::deleteCertificate)
+            routerBuilder.operation("exchangeToken")
+                .userCoroutineHandler(this, userRoute::exchangeOAuth2Code)
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())

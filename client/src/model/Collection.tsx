@@ -1,5 +1,5 @@
 import KVRow from './KVRow';
-import Request, { SidebarRequest } from './Request';
+import Request, { AuthData, SidebarRequest } from './Request';
 
 interface Collection {
   id: number;
@@ -24,6 +24,7 @@ interface CollectionData {
   responseScript?: string;
   settings?: CollectionSettings;
   parentId?: number;
+  auth?: AuthData;
 }
 
 interface CollectionSettings {
