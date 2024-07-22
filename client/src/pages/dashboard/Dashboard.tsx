@@ -276,7 +276,7 @@ function Dashboard() {
 
     const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
 
-    if (!tokenUrl || !clientId || !clientSecret || !grantType) {
+    if (!tokenUrl || !clientId || !grantType) {
       console.log('Required oauth2 parameters are missing.');
       return;
     }
@@ -287,7 +287,9 @@ function Dashboard() {
     const data = new URLSearchParams();
     data.append('code', code);
     data.append('client_id', clientId);
-    data.append('client_secret', clientSecret);
+    if (clientSecret) {
+      data.append('client_secret', clientSecret);
+    }
     data.append('redirect_uri', redirectUri);
     data.append('grant_type', grantType);
 
