@@ -1,4 +1,5 @@
 import { useColorMode } from '@chakra-ui/react';
+import { EditorState } from '@codemirror/state';
 import { drawSelection, EditorView } from '@codemirror/view';
 import ReactCodeMirror from '@uiw/react-codemirror';
 
@@ -59,6 +60,22 @@ type SingleRowEditorProps = {
   selectedEnv?: any;
 };
 
+const singleLineExtension = EditorState.transactionFilter.of((tr) =>
+  tr.newDoc.lines > 1
+    ? [
+        tr,
+        {
+          changes: {
+            from: 0,
+            to: tr.newDoc.length,
+            insert: tr.newDoc.sliceString(0, undefined, ' '),
+          },
+          sequential: true,
+        },
+      ]
+    : [tr],
+);
+
 export default function SingleRowEditor({
   value,
   onChange,
@@ -72,34 +89,8 @@ export default function SingleRowEditor({
     helpCursor,
     singleLine,
     yaade(colorMode),
+    singleLineExtension,
   ];
-
-  const eventHandlers = EditorView.domEventHandlers({
-    paste(event) {
-      if (!event.target || !event.clipboardData) {
-        return;
-      }
-      // differenciates between initial and synthetic event to prevent infinite loop
-      if (!event.isTrusted) {
-        return;
-      }
-      event.preventDefault();
-
-      const text = event.clipboardData.getData('text/plain');
-      const sanitized = text.replace(/(\r\n|\n|\r)/gm, '');
-
-      const data = new DataTransfer();
-      data.setData('text/plain', sanitized);
-      const sanitizedEvent = new ClipboardEvent('paste', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        clipboardData: data,
-      });
-
-      event.target?.dispatchEvent(sanitizedEvent);
-    },
-  });
 
   return (
     <ReactCodeMirror
@@ -109,7 +100,6 @@ export default function SingleRowEditor({
         colorMode === 'light' ? themeLight : themeDark,
         ...extensions,
         drawSelection(),
-        eventHandlers,
       ]}
       theme={colorMode === 'light' ? cmThemeLight : cmThemeDark}
       style={{ height: '30px' }}
