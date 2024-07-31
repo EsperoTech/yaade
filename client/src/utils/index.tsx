@@ -2,7 +2,7 @@ import beautify from 'beautify';
 import { Location } from 'react-router-dom';
 
 import KVRow from '../model/KVRow';
-import Request, { CurrentRequest } from '../model/Request';
+import Request, { AuthData, CurrentRequest } from '../model/Request';
 import { parseResponse } from './parseResponseEvent';
 
 const BASE_PATH =
@@ -165,6 +165,17 @@ function currentRequestToRequest(currentRequest: CurrentRequest): Request {
   };
 }
 
+function extractAuthorizationHeader(auth: AuthData): string | undefined {
+  if (!auth || !auth.enabled) return;
+
+  switch (auth.type) {
+    case 'basic':
+      return `Basic ${btoa(`${auth.basic?.username}:${auth.basic?.password}`)}`;
+    case 'oauth2':
+      return `Bearer ${auth.oauth2?.accessToken}`;
+  }
+}
+
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
@@ -173,6 +184,7 @@ export {
   createMessageId,
   currentRequestToRequest,
   errorToast,
+  extractAuthorizationHeader,
   getMethodColor,
   getMinorVersion,
   getRequestIdFromMessageId,

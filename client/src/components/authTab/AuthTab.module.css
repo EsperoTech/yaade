@@ -1,0 +1,17 @@
+.menu {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.grid {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  display: grid;
+  grid-template-columns: 100px 5fr;
+  grid-template-rows: 38px;
+  grid-gap: 20px 20px;
+  align-items: center;
+  justify-content: center;
+}

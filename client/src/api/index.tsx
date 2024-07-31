@@ -1,5 +1,5 @@
 import Collection, { CurrentCollection } from '../model/Collection';
-import Request from '../model/Request';
+import Request, { AuthData } from '../model/Request';
 import { BASE_PATH, groupsArrayToStr } from '../utils';
 
 const DEFAULT_HEADERS = {
@@ -148,7 +148,18 @@ const updateCollection = (
     body: JSON.stringify(collection),
   });
 
+const exchangeOAuthToken = (tokenUrl: string, data: string): Promise<Response> =>
+  fetch(BASE_PATH + 'api/oauth2/token', {
+    method: 'POST',
+    headers: DEFAULT_HEADERS,
+    body: JSON.stringify({
+      tokenUrl,
+      data,
+    }),
+  });
+
 export default {
+  exchangeOAuthToken,
   createCollection,
   duplicateCollection,
   createRequest,

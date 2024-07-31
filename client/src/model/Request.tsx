@@ -29,10 +29,32 @@ interface RequestData {
   rank?: number;
   formDataBody?: Array<KVRow>;
   contentType?: string;
+  auth?: AuthData;
   requestScript?: string;
   responseScript?: string;
   response?: Response;
   params?: Array<KVRow>;
+}
+
+interface AuthData {
+  enabled?: boolean;
+  type?: 'basic' | 'oauth2';
+  basic?: {
+    username?: string;
+    password?: string;
+  };
+  oauth2?: {
+    grantType?: 'authorization_code' | 'client_credentials' | 'password' | 'implicit';
+    accessToken?: string;
+    refreshToken?: string;
+    authUrl?: string;
+    tokenUrl?: string;
+    clientId?: string;
+    clientSecret?: string;
+    username?: string;
+    password?: string;
+    scope?: string;
+  };
 }
 
 interface SidebarRequest {
@@ -42,6 +64,6 @@ interface SidebarRequest {
   method: string;
 }
 
-export type { CurrentRequest, SidebarRequest };
+export type { AuthData, CurrentRequest, SidebarRequest };
 
 export default Request;

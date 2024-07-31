@@ -2,6 +2,7 @@ import { useColorMode } from '@chakra-ui/react';
 import { html } from '@codemirror/lang-html';
 import { xml } from '@codemirror/lang-xml';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { EditorView } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import { useEffect, useRef } from 'react';
 
@@ -9,6 +10,12 @@ import { helpCursor } from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { json } from '../../utils/codemirror/lang-json';
 import styles from './BodyEditor.module.css';
+
+const theme = EditorView.theme({
+  '&': {
+    height: 'calc(100% - 1rem)',
+  },
+});
 
 type BodyTextEditorProps = {
   content: string;
@@ -25,7 +32,12 @@ function BodyTextEditor({
 }: BodyTextEditorProps) {
   const { colorMode } = useColorMode();
 
-  const extensions = [cursorTooltipBaseTheme, wordHover(selectedEnv?.data), helpCursor];
+  const extensions = [
+    cursorTooltipBaseTheme,
+    wordHover(selectedEnv?.data),
+    helpCursor,
+    theme,
+  ];
   if (colorMode === 'light') {
     extensions.push(syntaxHighlighting(defaultHighlightStyle));
   }

@@ -14,6 +14,7 @@ import { VscSave } from 'react-icons/vsc';
 
 import { CollectionSettings, CurrentCollection } from '../../model/Collection';
 import KVRow from '../../model/KVRow';
+import { AuthData } from '../../model/Request';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import {
   CurrentCollectionAction,
@@ -22,6 +23,7 @@ import {
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
 import { getSelectedEnv } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
+import AuthTab from '../authTab';
 import Editor from '../editor';
 import KVEditor from '../kvEditor';
 import styles from './CollectionPanel.module.css';
@@ -127,6 +129,12 @@ export default function CollectionPanel({
       data: { settings },
     });
 
+  const setAuthData = (authData: AuthData) =>
+    dispatchCurrentCollection({
+      type: CurrentCollectionActionType.PATCH_DATA,
+      data: { auth: authData },
+    });
+
   useKeyPress(handleSaveCollection, 's', true);
 
   return (
@@ -165,6 +173,7 @@ export default function CollectionPanel({
           <Tab>Description</Tab>
           <Tab>Environments</Tab>
           <Tab>Headers</Tab>
+          <Tab>Auth</Tab>
           <Tab>Request Script</Tab>
           <Tab>Response Script</Tab>
           <Tab>Settings</Tab>
@@ -191,6 +200,14 @@ export default function CollectionPanel({
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
               env={selectedEnv}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <AuthTab
+              authData={currentCollection.data.auth}
+              setAuthData={setAuthData}
+              doSave={handleSaveCollection}
+              selectedEnv={selectedEnv}
             />
           </TabPanel>
           <TabPanel h="100%">
