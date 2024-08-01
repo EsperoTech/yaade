@@ -20,23 +20,21 @@ function parseResponse(res: any): Response {
   try {
     body = beautifyBody(body, contentType);
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
   const size = res.size ?? getSize(headers);
 
-
-  const options: Intl.DateTimeFormatOptions = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit', 
-    second: '2-digit', 
-    timeZoneName: 'short'
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZoneName: 'short',
   };
   const date = new Date().toLocaleString('en-GB', options);
-
 
   return {
     headers,

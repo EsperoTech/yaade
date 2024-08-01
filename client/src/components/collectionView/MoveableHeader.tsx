@@ -412,7 +412,6 @@ function MoveableHeader({
       successToast('A new collection was created and saved', toast);
       onCloseClear();
     } catch (e) {
-      console.log(e);
       errorToast('The collection could be not created', toast);
     }
   }
