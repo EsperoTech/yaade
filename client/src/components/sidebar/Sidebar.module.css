@@ -10,7 +10,7 @@
 }
 
 .searchContainer--light {
-  background-color: var(--chakra-colors-white);
+  background-color: var(--chakra-colors-gray-100);
   border-color: var(--chakra-colors-gray-300);
 }
 
