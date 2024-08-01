@@ -98,14 +98,18 @@ class RequestDb {
             collectionId: Long,
             method: String,
             headers: JsonArray,
-            body: String?
+            contentType: String?,
+            body: String?,
+            urlEncodedBody: JsonArray?
         ): RequestDb {
             val data = JsonObject()
                 .put("name", name)
                 .put("uri", url)
                 .put("method", method)
                 .put("headers", headers)
+                .put("contentType", contentType)
                 .put("body", body)
+                .put("formDataBody", urlEncodedBody)
             return RequestDb(collectionId, data)
         }
     }

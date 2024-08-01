@@ -35,7 +35,8 @@ dependencies {
     implementation("com.password4j:password4j:1.7.1")
     implementation("net.lingala.zip4j:zip4j:2.9.1")
     implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.19")
-
+    implementation("com.google.code.gson:gson:2.11.0")
+    
     implementation("org.apache.commons:commons-text:1.9")
 
     testImplementation(kotlin("test-junit5"))
