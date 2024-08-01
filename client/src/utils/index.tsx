@@ -176,6 +176,68 @@ function extractAuthorizationHeader(auth: AuthData): string | undefined {
   }
 }
 
+const reservedWords = new Set([
+  'await',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'debugger',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'enum',
+  'export',
+  'extends',
+  'false',
+  'finally',
+  'for',
+  'function',
+  'if',
+  'import',
+  'in',
+  'instanceof',
+  'let',
+  'new',
+  'null',
+  'return',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'typeof',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield',
+]);
+
+// checks if a string is a valid variable name. used to validate environment variables
+function isValidVariableName(value: string): boolean {
+  // Check if name is a reserved word
+  if (reservedWords.has(value)) {
+    return false;
+  }
+
+  // Check if the name starts with a letter, underscore, or dollar sign
+  if (!/^[a-zA-Z_$]/.test(value)) {
+    return false;
+  }
+
+  // Check if the name contains only letters, digits, underscores, or dollar signs
+  if (!/^[a-zA-Z0-9_$]*$/.test(value)) {
+    return false;
+  }
+
+  return true;
+}
+
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
@@ -190,6 +252,7 @@ export {
   getRequestIdFromMessageId,
   groupsArrayToStr,
   groupsStrToArray,
+  isValidVariableName,
   kvRowsToMap,
   mapToKvRows,
   parseLocation,

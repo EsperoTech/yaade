@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { MersenneTwister19937, Random } from 'random-js';
 
+import { isValidVariableName } from '.';
 import { sandboxedFunction } from './sandboxedFunction';
 
 type InterpolateError = {
@@ -39,7 +40,15 @@ const interpolate0 = function (
 
   let result;
   try {
-    result = sandboxedFunction(params, 'return `' + template + '`');
+    const sanitizedParams: Record<string, string> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (isValidVariableName(key)) {
+        sanitizedParams[key] = value;
+      } else {
+        console.error(`Invalid variable name: ${key}`);
+      }
+    }
+    result = sandboxedFunction(sanitizedParams, 'return `' + template + '`');
   } catch (err) {
     errors.push({
       key: template,

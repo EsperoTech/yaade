@@ -191,11 +191,11 @@ export default function AuthTab({
         break;
 
       case 'implicit':
-        console.log('implicit grant type is not supported in this example.');
+        console.error('implicit grant type is not supported in this example.');
         break;
 
       default:
-        console.log('Unsupported grant type.');
+        console.error('Unsupported grant type.');
         break;
     }
   }, [authData, doSave, location, selectedEnv, setAuthData, toast]);
