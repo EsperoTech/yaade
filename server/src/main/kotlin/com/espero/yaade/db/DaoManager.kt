@@ -1,6 +1,7 @@
 package com.espero.yaade.db
 
 import com.j256.ormlite.jdbc.DataSourceConnectionSource
+import com.j256.ormlite.misc.TransactionManager
 import com.j256.ormlite.support.ConnectionSource
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -34,5 +35,11 @@ class DaoManager {
         com.j256.ormlite.dao.DaoManager.clearCache()
         connectionSource.close()
         dataSource.close()
+    }
+
+    fun transaction(block: () -> Unit) {
+        TransactionManager.callInTransaction(connectionSource) {
+            block()
+        }
     }
 }

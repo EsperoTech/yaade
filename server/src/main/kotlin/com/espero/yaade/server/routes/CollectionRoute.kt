@@ -27,6 +27,11 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
                 ?: listOf()
         }
 
+        val result = createCollectionsResponse(rawCollections)
+        ctx.end(JsonArray(result).encode()).coAwait()
+    }
+
+    private fun createCollectionsResponse(rawCollections: List<CollectionDb>): ArrayList<JsonObject> {
         val collections = rawCollections.map {
             val requests = daoManager.requestDao
                 .getAllInCollection(it.id)
@@ -43,8 +48,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             if (parentId == null) {
                 result.add(collection)
             } else {
-                val parent =
-                    collections.find { it.getLong("id") == parentId }
+                val parent = collections.find { it.getLong("id") == parentId }
                 if (parent == null) {
                     // NOTE: we add orphaned collections to the root, to not make them invisible
                     // but this should never happen
@@ -56,7 +60,28 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             }
         }
 
-        ctx.end(JsonArray(result).encode()).coAwait()
+        return result
+    }
+
+    private fun findCollection(
+        collectionId: Long,
+        collections: JsonArray,
+    ): JsonObject? {
+        for (c in collections) {
+            val collection = c as JsonObject
+            if (collection.getLong("id") == collectionId) {
+                return collection
+            }
+            val children = collection.getJsonArray("children", JsonArray())
+            for (child in children) {
+                val result = findCollection(collectionId, children)
+                if (result != null) {
+                    return result
+                }
+            }
+        }
+
+        return null
     }
 
     suspend fun postCollection(ctx: RoutingContext) {
@@ -185,6 +210,10 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             .collectionDao.getAll()
             .sortedBy { it.jsonData().getInteger("rank") ?: 0 }
 
+        val collectionsWithChildren = createCollectionsResponse(collections)
+        val collectionToDelete = findCollection(id, JsonArray(collectionsWithChildren))
+            ?: throw RuntimeException("Collection not found")
+
         val oldRank = collections.indexOfFirst { it.id == id }
         if (oldRank == -1) {
             throw RuntimeException("Collection not found")
@@ -196,12 +225,22 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             daoManager.collectionDao.update(collectionDb)
         }
 
+
         TransactionManager.callInTransaction(daoManager.connectionSource) {
-            daoManager.collectionDao.delete(id)
-            daoManager.requestDao.deleteAllInCollection(id)
+            deleteCollectionAndChildren(collectionToDelete)
         }
 
         ctx.end().coAwait()
+    }
+
+    private fun deleteCollectionAndChildren(collection: JsonObject) {
+        val children = collection.getJsonArray("children", JsonArray())
+        for (child in children) {
+            deleteCollectionAndChildren(child as JsonObject)
+        }
+        val id = collection.getLong("id")
+        daoManager.collectionDao.delete(id)
+        daoManager.requestDao.deleteAllInCollection(id)
     }
 
     suspend fun importOpenApiCollection(ctx: RoutingContext) {
@@ -245,19 +284,18 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
         val rawContent = vertx.fileSystem().readFile(f.uploadedFileName()).coAwait()
         val postmanCollection = rawContent.toJsonObject()
-        val parser = PostmanParser(postmanCollection)
+        val parser = PostmanParser(postmanCollection, daoManager)
 
-        val collection = parser.parseCollection(userId, groups.split(","), parentId)
-        daoManager.collectionDao.create(collection)
-        val requests = parser.parseRequests(collection.id)
-        requests.forEach { daoManager.requestDao.create(it) }
-
-        val requestsJson = requests.map(RequestDb::toJson)
-        val collectionJson = collection.toJson().put("requests", requestsJson)
+        val collectionId = parser.parseCollection(userId, groups.split(","), parentId)
+        val collections = daoManager.collectionDao.getAll()
+        val collectionsWithChildren = createCollectionsResponse(collections)
+        val newCollection =
+            findCollection(collectionId, JsonArray(collectionsWithChildren))
+                ?: throw RuntimeException("Collection not found")
 
         vertx.fileSystem().delete(f.uploadedFileName()).coAwait()
 
-        ctx.end(collectionJson.encode()).coAwait()
+        ctx.end(newCollection.encode()).coAwait()
     }
 
     suspend fun createEnv(ctx: RoutingContext) {
