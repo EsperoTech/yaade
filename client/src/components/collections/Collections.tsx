@@ -59,7 +59,6 @@ function Collections({
       const collection = findCollection(collections, id);
       if (!collection) return;
       if (collection.parentId === newParentId && collection.index === newRank) {
-        console.log('No change');
         return;
       }
       dispatchCollections({

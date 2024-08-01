@@ -20,6 +20,7 @@ import { UserContext } from '../../context';
 import Collection, { SidebarCollection } from '../../model/Collection';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import { cn, errorToast, successToast } from '../../utils';
+import { saveSelectedEnv } from '../../utils/store';
 import BasicModal from '../basicModal';
 import Collections from '../collections';
 import GroupsInput from '../groupsInput';
@@ -119,10 +120,11 @@ function Sidebar({
         collection: newCollection,
       });
 
+      saveSelectedEnv(newCollection.id, 'default');
+
       successToast('A new collection was created and saved', toast);
       onCloseClear();
     } catch (e) {
-      console.log(e);
       errorToast('The collection could be not created', toast);
     }
   }
