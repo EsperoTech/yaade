@@ -19,7 +19,12 @@ fun String.envReplace(): String {
 class PostmanParser(val collection: JsonObject, val daoManager: DaoManager) {
 
     fun parseCollection(userId: Long, groups: List<String>, parentId: Long?): Long {
-        val pmc: Collection = Collection.pmcFactory(collection.encode())
+        val pmc: Collection
+        try {
+            pmc = Collection.pmcFactory(collection.encode())
+        } catch (e: Throwable) {
+            throw IllegalArgumentException("Invalid Postman collection")
+        }
         val data = JsonObject()
             .put("name", pmc.name ?: "Postman")
             .put("groups", groups)

@@ -435,6 +435,7 @@ public class Collection extends ItemGroup {
         gsonBuilder.registerTypeAdapter(Property.class, new com.postman.collection.adapter.PropertyDeserializer());
         gsonBuilder.registerTypeAdapter(Item.class, new com.postman.collection.adapter.ItemDeserializer());
         gsonBuilder.registerTypeAdapter(ItemGroup.class, new com.postman.collection.adapter.ItemGroupDeserializer());
+        gsonBuilder.registerTypeAdapter(Url.class, new Url());
         pmcRetVal = gsonBuilder.create().fromJson(json, Collection.class);
         pmcRetVal.init();
 
@@ -630,7 +631,6 @@ public class Collection extends ItemGroup {
      * - If this collection does not have a Postman ID, it will be created as a new collection, and the ID returned by Postman will be assigned to it.
      * - You can optionally include a workspace ID for a workspace to link a newly created collection to.
      *
-     * @param WorkspaceID Optional workspace ID to which to link a newly created collection.
      * @throws IOException                      If there is an error attempting to create or write to the specified path
      * @throws InterruptedException             If the HTTP request is interrupted
      * @throws CollectionNotFoundException      if the collection ID is not found in Postman
