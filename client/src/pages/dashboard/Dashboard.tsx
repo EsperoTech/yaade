@@ -274,9 +274,13 @@ function Dashboard() {
       return;
     }
 
+    if (!oauthConfig.grantType) {
+      oauthConfig.grantType = 'authorization_code';
+    }
+
     const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
 
-    if (!tokenUrl || !clientId || !grantType) {
+    if (!tokenUrl || !clientId) {
       console.log('Required oauth2 parameters are missing.');
       return;
     }
