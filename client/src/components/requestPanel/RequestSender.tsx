@@ -23,6 +23,7 @@ import {
   extractAuthorizationHeader,
   getMinorVersion,
   kvRowsToMap,
+  mergeParentEnvironments,
   parseResponse,
   successToast,
 } from '../../utils';
@@ -140,8 +141,11 @@ function RequestSender({
     return findCollection(collections, currentRequest?.collectionId);
   }, [collections, currentRequest?.collectionId]);
   const selectedEnv = useMemo(() => {
-    return requestCollection ? getSelectedEnv(requestCollection) : null;
-  }, [requestCollection]);
+    console.log('compuuting');
+    return requestCollection?.id
+      ? mergeParentEnvironments(requestCollection.id, collections)
+      : {};
+  }, [collections, requestCollection?.id]);
 
   if (collections.length > 0 && newReqForm.collectionId === -1) {
     setNewReqForm({ ...newReqForm, collectionId: collections[0].id });
@@ -390,16 +394,14 @@ function RequestSender({
       }, timeout * 1000);
 
       let interpolatedRequest = { ...request };
-      if (envName) {
-        const collection = findCollection(collections, request.collectionId);
-        if (!collection) {
-          throw Error('Collection not found for id: ' + request.collectionId);
-        }
-        const selectedEnv = collection.data?.envs?.[envName];
-        const selectedEnvData = selectedEnv?.data ?? {};
-        const interpolateResult = interpolate(request, selectedEnvData);
-        interpolatedRequest = interpolateResult.result;
+      const collection = findCollection(collections, request.collectionId);
+      if (!collection) {
+        throw Error('Collection not found for id: ' + request.collectionId);
       }
+      const e = mergeParentEnvironments(collection.id, collections);
+      console.log({ e });
+      const interpolateResult = interpolate(request, e);
+      interpolatedRequest = interpolateResult.result;
 
       if (interpolatedRequest.data.auth && interpolatedRequest.data.auth.enabled) {
         const authorizationHeader = extractAuthorizationHeader(

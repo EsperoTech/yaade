@@ -42,6 +42,8 @@ function UriBar({
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
 
+  console.log({ env });
+
   const eventHandlers = EditorView.domEventHandlers({
     paste(event) {
       if (!event.target || !event.clipboardData) {
@@ -76,7 +78,7 @@ function UriBar({
       yaade(colorMode),
       colorMode === 'light' ? baseThemeLight : baseThemeDark,
       singleLine,
-      wordHover(env?.data),
+      wordHover(env),
       helpCursor,
       cursorTooltipBaseTheme,
       drawSelection(),

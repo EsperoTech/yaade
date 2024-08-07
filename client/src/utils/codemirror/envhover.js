@@ -7,6 +7,7 @@ const wordHover = (env) => {
     let { from, to, text } = view.state.doc.lineAt(pos);
     const tree = view.state.tree;
     const node = tree.resolve(pos);
+    console.log('wordHover env', env);
     if (node && (node.name === 'Interpolation' || node.name === 'Env')) {
       let start = node.from;
       let end = node.to;

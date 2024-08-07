@@ -1,9 +1,11 @@
 import beautify from 'beautify';
 import { Location } from 'react-router-dom';
 
+import Collection from '../model/Collection';
 import KVRow from '../model/KVRow';
 import Request, { AuthData, CurrentRequest } from '../model/Request';
 import { parseResponse } from './parseResponseEvent';
+import { getSelectedEnvs } from './store';
 
 const BASE_PATH =
   import.meta.env.BASE_URL === '/'
@@ -238,6 +240,45 @@ function isValidVariableName(value: string): boolean {
   return true;
 }
 
+function findParentTree(
+  collectionId: number,
+  collections: Collection[],
+): Collection[] | undefined {
+  for (const collection of collections) {
+    if (collection.id === collectionId) {
+      return [collection];
+    } else if (collection.children) {
+      const res = findParentTree(collectionId, collection.children);
+      if (res) {
+        return [collection, ...res];
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function mergeParentEnvironments(
+  collectionId: number,
+  collections: Collection[],
+): Record<string, string> {
+  const parentTree = findParentTree(collectionId, collections);
+  if (!parentTree) {
+    return {};
+  }
+
+  const selectedEnvs = getSelectedEnvs();
+
+  const envs = parentTree.map((c) => {
+    if (!selectedEnvs[c.id]) {
+      return {};
+    }
+    return c.data?.envs?.[selectedEnvs[c.id]]?.data ?? {};
+  });
+
+  return envs.reduce((acc, env) => ({ ...acc, ...env }), {});
+}
+
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
@@ -255,6 +296,7 @@ export {
   isValidVariableName,
   kvRowsToMap,
   mapToKvRows,
+  mergeParentEnvironments,
   parseLocation,
   parseResponse,
   successToast,
