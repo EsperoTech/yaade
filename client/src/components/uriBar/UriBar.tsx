@@ -1,11 +1,15 @@
 import { Spinner, useColorMode } from '@chakra-ui/react';
+import { history } from '@codemirror/commands';
 import { drawSelection } from '@codemirror/view';
-import { EditorView } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import { FormEvent, useEffect, useRef } from 'react';
 
 import { cn } from '../../utils';
-import { helpCursor, singleLine } from '../../utils/codemirror';
+import {
+  helpCursor,
+  singleLineExtension,
+  singleLineSetupOptions,
+} from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { yaade } from '../../utils/codemirror/lang-yaade';
 import {
@@ -42,52 +46,25 @@ function UriBar({
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
 
-  const eventHandlers = EditorView.domEventHandlers({
-    paste(event) {
-      if (!event.target || !event.clipboardData) {
-        return;
-      }
-      // differenciates between initial and synthetic event to prevent infinite loop
-      if (!event.isTrusted) {
-        return;
-      }
-      event.preventDefault();
-
-      const text = event.clipboardData.getData('text/plain');
-      const sanitized = text.replace(/(\r\n|\n|\r)/gm, '');
-
-      const data = new DataTransfer();
-      data.setData('text/plain', sanitized);
-      const sanitizedEvent = new ClipboardEvent('paste', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        clipboardData: data,
-      });
-
-      event.target?.dispatchEvent(sanitizedEvent);
-    },
-  });
-
   const { setContainer } = useCodeMirror({
     container: ref.current,
     onChange: (value: string) => setUri(value),
     extensions: [
       yaade(colorMode),
       colorMode === 'light' ? baseThemeLight : baseThemeDark,
-      singleLine,
+      singleLineExtension,
+      history(),
       wordHover(env?.data),
       helpCursor,
       cursorTooltipBaseTheme,
       drawSelection(),
-      eventHandlers,
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: uri,
     style: { height: '100%' },
     placeholder: 'URL',
     indentWithTab: false,
-    basicSetup: false,
+    basicSetup: singleLineSetupOptions,
   });
 
   useEffect(() => {

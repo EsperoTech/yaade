@@ -1,9 +1,13 @@
 import { useColorMode } from '@chakra-ui/react';
-import { EditorState } from '@codemirror/state';
+import { history } from '@codemirror/commands';
 import { drawSelection, EditorView } from '@codemirror/view';
 import ReactCodeMirror from '@uiw/react-codemirror';
 
-import { helpCursor, singleLine } from '../../utils/codemirror';
+import {
+  helpCursor,
+  singleLineExtension,
+  singleLineSetupOptions,
+} from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { yaade } from '../../utils/codemirror/lang-yaade';
 import {
@@ -60,22 +64,6 @@ type SingleRowEditorProps = {
   selectedEnv?: any;
 };
 
-const singleLineExtension = EditorState.transactionFilter.of((tr) =>
-  tr.newDoc.lines > 1
-    ? [
-        tr,
-        {
-          changes: {
-            from: 0,
-            to: tr.newDoc.length,
-            insert: tr.newDoc.sliceString(0, undefined, ' '),
-          },
-          sequential: true,
-        },
-      ]
-    : [tr],
-);
-
 export default function SingleRowEditor({
   value,
   onChange,
@@ -87,25 +75,49 @@ export default function SingleRowEditor({
     cursorTooltipBaseTheme,
     wordHover(selectedEnv?.data),
     helpCursor,
-    singleLine,
     yaade(colorMode),
     singleLineExtension,
+    drawSelection(),
+    colorMode === 'light' ? themeLight : themeDark,
+    history(),
   ];
+
+  // {
+  //   lineNumbers?: boolean;
+  //   highlightActiveLineGutter?: boolean;
+  //   foldGutter?: boolean;
+  //   dropCursor?: boolean;
+  //   allowMultipleSelections?: boolean;
+  //   indentOnInput?: boolean;
+  //   bracketMatching?: boolean;
+  //   closeBrackets?: boolean;
+  //   autocompletion?: boolean;
+  //   rectangularSelection?: boolean;
+  //   crosshairCursor?: boolean;
+  //   highlightActiveLine?: boolean;
+  //   highlightSelectionMatches?: boolean;
+  //   closeBracketsKeymap?: boolean;
+  //   searchKeymap?: boolean;
+  //   foldKeymap?: boolean;
+  //   completionKeymap?: boolean;
+  //   lintKeymap?: boolean;
+  //   /**
+  //    * Facet for overriding the unit by which indentation happens. Should be a string consisting either entirely of spaces or entirely of tabs. When not set, this defaults to 2 spaces
+  //    * https://codemirror.net/docs/ref/#language.indentUnit
+  //    * @default 2
+  //    */
+  //   tabSize?: number;
 
   return (
     <ReactCodeMirror
       value={value}
       onChange={onChange}
-      extensions={[
-        colorMode === 'light' ? themeLight : themeDark,
-        ...extensions,
-        drawSelection(),
-      ]}
+      extensions={extensions}
       theme={colorMode === 'light' ? cmThemeLight : cmThemeDark}
-      style={{ height: '30px' }}
+      style={{ maxWidth: '100%', width: '100%', overflow: 'hidden' }}
       placeholder={placeholder}
       indentWithTab={false}
-      basicSetup={false}
+      basicSetup={singleLineSetupOptions}
     />
   );
 }

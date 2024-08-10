@@ -1,11 +1,16 @@
 import { DeleteIcon } from '@chakra-ui/icons';
 import { Checkbox, IconButton, useColorMode } from '@chakra-ui/react';
+import { history } from '@codemirror/commands';
 import { drawSelection, EditorView } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import React, { useEffect, useRef } from 'react';
 
 import { cn } from '../../utils';
-import { helpCursor, singleLine } from '../../utils/codemirror';
+import {
+  helpCursor,
+  singleLineExtension,
+  singleLineSetupOptions,
+} from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { yaade } from '../../utils/codemirror/lang-yaade';
 import {
@@ -138,8 +143,8 @@ function KVEditorRow({
   const leftref = useRef<HTMLDivElement>(null);
   const rightref = useRef<HTMLDivElement>(null);
 
-  const extensionKeys = [singleLine];
-  const extensionsValue = [singleLine];
+  const extensionKeys = [singleLineExtension, history()];
+  const extensionsValue = [singleLineExtension, history()];
 
   if (hasEnvSupport !== 'NONE') {
     const envExtensions = [];
@@ -155,33 +160,6 @@ function KVEditorRow({
     }
   }
 
-  const eventHandlers = EditorView.domEventHandlers({
-    paste(event) {
-      if (!event.target || !event.clipboardData) {
-        return;
-      }
-      // differenciates between initial and synthetic event to prevent infinite loop
-      if (!event.isTrusted) {
-        return;
-      }
-      event.preventDefault();
-
-      const text = event.clipboardData.getData('text/plain');
-      const sanitized = text.replace(/(\r\n|\n|\r)/gm, '');
-
-      const data = new DataTransfer();
-      data.setData('text/plain', sanitized);
-      const sanitizedEvent = new ClipboardEvent('paste', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        clipboardData: data,
-      });
-
-      event.target?.dispatchEvent(sanitizedEvent);
-    },
-  });
-
   const { setContainer: setLeftContainer } = useCodeMirror({
     container: leftref.current,
     onChange: (key: string) => onChangeRow.current(i, 'key', key),
@@ -189,14 +167,13 @@ function KVEditorRow({
       colorMode === 'light' ? kvThemeLeftLight : kvThemeLeftDark,
       ...extensionKeys,
       drawSelection(),
-      eventHandlers,
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: kKey,
     style: { height: '100%' },
     placeholder: 'Key',
     indentWithTab: false,
-    basicSetup: false,
+    basicSetup: singleLineSetupOptions,
   });
   const { setContainer: setRightContainer } = useCodeMirror({
     container: rightref.current,
@@ -205,14 +182,13 @@ function KVEditorRow({
       colorMode === 'light' ? kvThemeRightLight : kvThemeRightDark,
       ...extensionsValue,
       drawSelection(),
-      eventHandlers,
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value,
     style: { height: '100%' },
     placeholder: 'Value',
     indentWithTab: false,
-    basicSetup: false,
+    basicSetup: singleLineSetupOptions,
   });
 
   useEffect(() => {
