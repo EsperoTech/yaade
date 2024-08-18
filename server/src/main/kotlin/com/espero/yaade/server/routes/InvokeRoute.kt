@@ -1,5 +1,6 @@
 package com.espero.yaade.server.routes
 
+import com.espero.yaade.FILE_STORAGE_PATH
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.UserDb
@@ -15,9 +16,11 @@ import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.client.WebClient
 import io.vertx.ext.web.client.WebClientOptions
+import io.vertx.ext.web.multipart.MultipartForm
 import io.vertx.kotlin.core.json.json
 import io.vertx.kotlin.core.json.obj
 import io.vertx.kotlin.coroutines.coAwait
+import java.nio.file.Paths
 
 class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) {
 
@@ -62,7 +65,6 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
         val method = HttpMethod.valueOf(interpolated.getString("method"))
         val interpolatedUri = interpolated.getString("uri")
         val url = url(interpolatedUri)
-        val body: String? = interpolated.getString("body")
 
         val clientOptions =
             collection.jsonData().getJsonObject("settings")?.getJsonObject("webClientOptions")
@@ -93,10 +95,20 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
         val result = JsonObject()
         val t = System.currentTimeMillis()
         try {
-            val res = if (!body.isNullOrEmpty())
-                httpRequest.sendBuffer(Buffer.buffer(body.toByteArray())).coAwait()
-            else
-                httpRequest.send().coAwait()
+            val res = when (interpolated.getString("contentType", "")) {
+                "multipart/form-data" -> {
+                    val body = buildFormdataBody(interpolated.getJsonArray("formDataBody"))
+                    httpRequest.sendMultipartForm(body).coAwait()
+                }
+
+                else -> {
+                    val body = interpolated.getString("body")
+                    if (!body.isNullOrEmpty())
+                        httpRequest.sendBuffer(Buffer.buffer(body.toByteArray())).coAwait()
+                    else
+                        httpRequest.send().coAwait()
+                }
+            }
             result.put("body", res.bodyAsString() ?: "")
             result.put("status", res.statusCode())
             result.put("headers", jsonHeaders(res.headers()))
@@ -109,6 +121,41 @@ class InvokeRoute(private val vertx: Vertx, private val daoManager: DaoManager) 
         val duration = System.currentTimeMillis() - t
         result.put("time", duration)
 
+        return result
+    }
+
+    private fun buildFormdataBody(body: JsonArray?): MultipartForm {
+        val result = MultipartForm.create()
+        if (body == null) {
+            return result
+        }
+        for (it in body) {
+            val entry = it as JsonObject
+            val enabled = entry.getBoolean("enabled", true)
+            if (!enabled) {
+                continue
+            }
+            val key = entry.getString("key", "not-found")
+            when (entry.getString("type", "kv")) {
+                "kv" -> {
+                    val value = entry.getString("value", "")
+                    result.attribute(key, value)
+                }
+
+                "file" -> {
+                    val file = entry.getJsonObject("file") ?: continue
+                    val fileId = file.getString("id") ?: continue
+                    val filename = file.getString("name") ?: "unknown"
+                    val filePath = Paths.get(FILE_STORAGE_PATH, fileId)
+                    result.binaryFileUpload(
+                        key,
+                        filename,
+                        filePath.toString(),
+                        "application/octet-stream"
+                    )
+                }
+            }
+        }
         return result
     }
 

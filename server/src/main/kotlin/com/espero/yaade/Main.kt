@@ -11,6 +11,7 @@ val JDBC_USR = System.getenv("YAADE_JDBC_USERNAME") ?: "sa"
 val JDBC_PWD = System.getenv("YAADE_JDBC_PASSWORD") ?: ""
 val ADMIN_USERNAME: String = System.getenv("YAADE_ADMIN_USERNAME") ?: ""
 val BASE_PATH: String = System.getenv("YAADE_BASE_PATH") ?: ""
+val FILE_STORAGE_PATH: String = System.getenv("YAADE_FILE_STORAGE_PATH") ?: "./app/data/files"
 
 fun main() {
     configureDatabindCodec()
@@ -18,4 +19,3 @@ fun main() {
     val vertx = Vertx.vertx()
     vertx.deployVerticle(Server(PORT, daoManager))
 }
-

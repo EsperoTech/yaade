@@ -158,6 +158,19 @@ const exchangeOAuthToken = (tokenUrl: string, data: string): Promise<Response> =
     }),
   });
 
+const getFiles = (): Promise<Response> => fetch(BASE_PATH + 'api/files');
+
+const uploadFile = (data: FormData): Promise<Response> =>
+  fetch(BASE_PATH + 'api/files', {
+    method: 'POST',
+    body: data,
+  });
+
+const deleteFile = (id: number): Promise<Response> =>
+  fetch(BASE_PATH + `api/files/${id}`, {
+    method: 'DELETE',
+  });
+
 export default {
   exchangeOAuthToken,
   createCollection,
@@ -172,4 +185,7 @@ export default {
   updateRequest,
   invoke,
   updateCollection,
+  getFiles,
+  uploadFile,
+  deleteFile,
 };

@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import api from '../../api';
+import FileDescription from '../../model/FileDescription';
 import KVRow from '../../model/KVRow';
 import styles from './KVEditor.module.css';
 import KVEditorRow from './KVEditorRow';
@@ -12,10 +14,12 @@ type KVEditorProps = {
   canDisableRows?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
+  isMultiPart?: boolean;
 };
 
 const EMPTY_ROW = { key: '', value: '' };
-const isRowEmpty = (row: KVRow) => row.key === '' && row.value === '';
+const isRowEmpty = (row: KVRow) =>
+  row.key === '' && row.value === '' && row.file === undefined && row.type === undefined;
 
 function KVEditor({
   name,
@@ -25,6 +29,7 @@ function KVEditor({
   canDisableRows = false,
   hasEnvSupport,
   env,
+  isMultiPart,
 }: KVEditorProps) {
   // we copy the data so we can append an empty last row without
   // mutating the original data
@@ -36,19 +41,18 @@ function KVEditor({
     return result;
   }, [kvs, readOnly]);
 
-  const onChangeRowRef = useRef<
-    (i: number, param: string, value: string | boolean) => void
-  >((i: number, param: string, value: string | boolean) => {});
+  const onChangeRowRef = useRef<(i: number, param: string, value: any) => void>(
+    (i: number, param: string, value: any) => {},
+  );
   const onDeleteRowRef = useRef<(i: number) => void>((i: number) => {});
 
   useEffect(() => {
-    onChangeRowRef.current = (i: number, param: string, value: string | boolean) => {
+    onChangeRowRef.current = (i: number, param: string, value: any) => {
       let newKvs = [...displayKvs];
       const newRow = { ...newKvs[i] } as any;
       newRow[param] = value;
       newKvs[i] = newRow;
       newKvs = newKvs.filter((el) => !isRowEmpty(el));
-
       setKvs(newKvs);
     };
   }, [displayKvs, setKvs]);
@@ -64,7 +68,7 @@ function KVEditor({
 
   return (
     <div className={styles.container}>
-      {displayKvs.map(({ key, value, isEnabled }, i) => (
+      {displayKvs.map(({ key, value, isEnabled, type, file }, i) => (
         <KVEditorRow
           key={`${name}-${i}`}
           name={`${name}-${i}`}
@@ -75,11 +79,14 @@ function KVEditor({
           onChangeRow={onChangeRowRef}
           canDisableRow={canDisableRows}
           onDeleteRow={onDeleteRowRef}
-          isEnableDisabled={canDisableRows && !key && !value}
-          isDeleteDisabled={!key && !value ? true : readOnly}
+          isEnableDisabled={canDisableRows && !key && !value && !file}
+          isDeleteDisabled={!key && !file && !value ? true : readOnly}
           readOnly={readOnly}
           hasEnvSupport={hasEnvSupport}
           env={env}
+          isMultipart={isMultiPart ?? false}
+          type={type || 'kv'}
+          file={file}
         />
       ))}
     </div>
