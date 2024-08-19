@@ -413,10 +413,12 @@ function RequestSender({
         }
       }
 
-      switch (request.data.contentType) {
+      switch (interpolatedRequest.data.contentType) {
         case 'application/x-www-form-urlencoded':
-          if (request.data.formDataBody) {
-            interpolatedRequest.data.body = encodeFormDataBody(request.data.formDataBody);
+          if (interpolatedRequest.data.formDataBody) {
+            interpolatedRequest.data.body = encodeFormDataBody(
+              interpolatedRequest.data.formDataBody,
+            );
           }
           break;
       }
