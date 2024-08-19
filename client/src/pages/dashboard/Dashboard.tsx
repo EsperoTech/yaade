@@ -400,11 +400,11 @@ function Dashboard() {
         .updateCollection(collection)
         .then((res) => {
           if (res.status !== 200) throw new Error();
-          successToast('Request was saved.', toast);
+          successToast('Collection was saved.', toast);
         })
         .catch((e) => {
           console.error(e);
-          errorToast('Could not save request', toast);
+          errorToast('Could not save Collection', toast);
         }),
     [toast],
   );

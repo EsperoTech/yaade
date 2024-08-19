@@ -69,7 +69,6 @@ function FileSelectorModal({
         setState((state) => {
           return { ...state, files: body.files };
         });
-        console.log(body.files);
       } catch (e) {
         console.error(e);
       }
