@@ -76,7 +76,7 @@ class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         }
 
         val httpClient = WebClient.create(vertx)
-        
+
         val response = httpClient.postAbs(tokenUrl).sendForm(params).coAwait()
 
         if (response.statusCode() != 200) {

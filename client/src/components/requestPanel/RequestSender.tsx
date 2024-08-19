@@ -421,6 +421,11 @@ function RequestSender({
             );
           }
           break;
+        case 'multipart/form-data':
+          if (getMinorVersion(extVersion.current) < 9) {
+            throw Error(`Multipart form data is not supported in this version of the extension. 
+              Please update to the latest version or change to the Server proxy.`);
+          }
       }
 
       const url = appendHttpIfNoProtocol(interpolatedRequest.data.uri);
@@ -437,6 +442,7 @@ function RequestSender({
           url,
           type: 'send-request',
           options: options,
+          req: interpolatedRequest,
           metaData: {
             messageId,
             envName,

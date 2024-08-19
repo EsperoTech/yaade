@@ -6,9 +6,16 @@ type BodyKVEditorProps = {
   setContent: any;
   selectedEnv: any;
   contentType: string;
+  isMultipart?: boolean;
 };
 
-function BodyKVEditor({ content, setContent, selectedEnv }: BodyKVEditorProps) {
+function BodyKVEditor({
+  content,
+  setContent,
+  selectedEnv,
+  contentType,
+  isMultipart,
+}: BodyKVEditorProps) {
   return (
     <>
       <KVEditor
@@ -18,6 +25,7 @@ function BodyKVEditor({ content, setContent, selectedEnv }: BodyKVEditorProps) {
         canDisableRows={true}
         hasEnvSupport={'BOTH'}
         env={selectedEnv}
+        isMultiPart={isMultipart}
       />
     </>
   );
