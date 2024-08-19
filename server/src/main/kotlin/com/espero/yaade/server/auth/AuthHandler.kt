@@ -85,6 +85,15 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
             HttpResponseStatus.BAD_REQUEST.code(),
             "username-field must not be null"
         )
+
+        val groups = fields.getString("groups")
+        val defaultGroups = fields.getJsonArray("defaultGroups")
+        if (groups == null && defaultGroups == null) {
+            throw ServerError(
+                HttpResponseStatus.BAD_REQUEST.code(),
+                "either 'groups' or 'defaultGroups' must be set in fields"
+            )
+        }
     }
 
     private fun addAuthProvider(auth: OAuth2Auth, config: JsonObject, isTest: Boolean) {
@@ -315,16 +324,19 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
 
         val providerId = config.getString("id")
 
+        var groups = JsonArray()
         val groupsPointer = fields.getString("groups")
-            ?: throw RuntimeException("missing groups in fields in provider config")
-        val rawGroups: Any = JsonPointer.from(groupsPointer).queryJson(userInfo)
-            ?: JsonArray()
+        if (groupsPointer != null) {
+            val rawGroups: Any = JsonPointer.from(groupsPointer).queryJson(userInfo)
+                ?: JsonArray()
 
-        val groups = when (rawGroups) {
-            is String -> JsonArray().add(rawGroups)
-            is JsonArray -> rawGroups
-            else -> throw RuntimeException("Unexpected groups type: $rawGroups")
+            groups = when (rawGroups) {
+                is String -> JsonArray().add(rawGroups)
+                is JsonArray -> rawGroups
+                else -> throw RuntimeException("Unexpected groups type: $rawGroups")
+            }
         }
+
         val filterPattern =
             config.getJsonObject("params").getJsonObject("fields").getString("groupsFilter")
                 ?: ".*"
