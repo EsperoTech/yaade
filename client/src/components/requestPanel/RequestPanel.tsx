@@ -5,7 +5,7 @@ import { VscSave } from 'react-icons/vsc';
 
 import { UserContext } from '../../context';
 import KVRow from '../../model/KVRow';
-import Request, { CurrentRequest } from '../../model/Request';
+import Request, { AuthData, CurrentRequest } from '../../model/Request';
 import Response from '../../model/Response';
 import {
   CurrentRequestAction,
@@ -13,6 +13,7 @@ import {
 } from '../../state/currentRequest';
 import { currentRequestToRequest, errorToast } from '../../utils';
 import { getSelectedEnvs } from '../../utils/store';
+import AuthTab from '../authTab';
 import BodyEditor from '../bodyEditor';
 import OverviewTab from '../collectionPanel/OverviewTab';
 import Editor from '../editor';
@@ -93,7 +94,7 @@ type RequestPanelProps = {
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
   sendRequest(request: Request, envName?: string, n?: number): Promise<Response>;
   saveOnSend: (request: Request) => Promise<void>;
-  handleSaveRequestClick: () => void;
+  handleSaveRequestClick: () => Promise<void>;
   selectedEnv: Record<string, string>;
 };
 
@@ -185,6 +186,15 @@ function RequestPanel({
       dispatchCurrentRequest({
         type: CurrentRequestActionType.PATCH_DATA,
         data: { contentType },
+      }),
+    [dispatchCurrentRequest],
+  );
+
+  const setAuthData = useCallback(
+    (authData: AuthData) =>
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.PATCH_DATA,
+        data: { auth: authData },
       }),
     [dispatchCurrentRequest],
   );
@@ -307,6 +317,7 @@ function RequestPanel({
           <Tab>Parameters</Tab>
           <Tab>Headers</Tab>
           <Tab>Body</Tab>
+          <Tab>Auth</Tab>
           <Tab>Request Script</Tab>
           <Tab>Response Script</Tab>
           <Tab>Code</Tab>
@@ -351,6 +362,14 @@ function RequestPanel({
               contentType={contentType}
               setContentType={setContentType}
               setContentTypeHeader={setContentTypeHeader}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <AuthTab
+              authData={currentRequest.data.auth}
+              setAuthData={setAuthData}
+              doSave={handleSaveRequestClick}
+              selectedEnv={selectedEnv}
             />
           </TabPanel>
           <TabPanel h="100%">

@@ -1,11 +1,28 @@
 import { DeleteIcon } from '@chakra-ui/icons';
-import { Checkbox, IconButton, useColorMode } from '@chakra-ui/react';
+import {
+  Checkbox,
+  color,
+  IconButton,
+  Input,
+  InputLeftElement,
+  Select,
+  Spinner,
+  useColorMode,
+} from '@chakra-ui/react';
+import { history } from '@codemirror/commands';
 import { drawSelection, EditorView } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { VscClose, VscCloudUpload } from 'react-icons/vsc';
 
+import FileDescription from '../../model/FileDescription';
+import { KVRowFile } from '../../model/KVRow';
 import { cn } from '../../utils';
-import { helpCursor, singleLine } from '../../utils/codemirror';
+import {
+  helpCursor,
+  singleLineExtension,
+  singleLineSetupOptions,
+} from '../../utils/codemirror';
 import { cursorTooltipBaseTheme, wordHover } from '../../utils/codemirror/envhover';
 import { yaade } from '../../utils/codemirror/lang-yaade';
 import {
@@ -14,6 +31,7 @@ import {
   rawTheme,
   rawThemeDark,
 } from '../../utils/codemirror/themes';
+import FileSelectorModal from './FileSelectorModal';
 import styles from './KVEditorRow.module.css';
 
 const kvRowRawTheme = {
@@ -107,15 +125,17 @@ type KVEditorRowProps = {
   value: string;
   isEnabled?: boolean;
   canDisableRow: boolean;
-  onChangeRow: React.MutableRefObject<
-    (i: number, param: string, value: string | boolean) => void
-  >;
+  onChangeRow: React.MutableRefObject<(i: number, param: string, value: any) => void>;
   onDeleteRow: React.MutableRefObject<(i: number) => void>;
   isDeleteDisabled?: boolean;
   isEnableDisabled?: boolean;
   readOnly?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
   env?: any;
+  isMultipart: boolean;
+  type: 'kv' | 'file';
+  file?: KVRowFile;
+  files?: FileDescription[];
 };
 
 function KVEditorRow({
@@ -132,14 +152,18 @@ function KVEditorRow({
   readOnly,
   hasEnvSupport,
   env,
+  isMultipart,
+  type,
+  file,
 }: KVEditorRowProps) {
   const { colorMode } = useColorMode();
+  const [isFileSelectorOpen, setIsFileSelectorOpen] = useState(false);
 
   const leftref = useRef<HTMLDivElement>(null);
   const rightref = useRef<HTMLDivElement>(null);
 
-  const extensionKeys = [singleLine];
-  const extensionsValue = [singleLine];
+  const extensionKeys = [singleLineExtension, history()];
+  const extensionsValue = [singleLineExtension, history()];
 
   if (hasEnvSupport !== 'NONE') {
     const envExtensions = [];
@@ -155,33 +179,6 @@ function KVEditorRow({
     }
   }
 
-  const eventHandlers = EditorView.domEventHandlers({
-    paste(event) {
-      if (!event.target || !event.clipboardData) {
-        return;
-      }
-      // differenciates between initial and synthetic event to prevent infinite loop
-      if (!event.isTrusted) {
-        return;
-      }
-      event.preventDefault();
-
-      const text = event.clipboardData.getData('text/plain');
-      const sanitized = text.replace(/(\r\n|\n|\r)/gm, '');
-
-      const data = new DataTransfer();
-      data.setData('text/plain', sanitized);
-      const sanitizedEvent = new ClipboardEvent('paste', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        clipboardData: data,
-      });
-
-      event.target?.dispatchEvent(sanitizedEvent);
-    },
-  });
-
   const { setContainer: setLeftContainer } = useCodeMirror({
     container: leftref.current,
     onChange: (key: string) => onChangeRow.current(i, 'key', key),
@@ -189,14 +186,13 @@ function KVEditorRow({
       colorMode === 'light' ? kvThemeLeftLight : kvThemeLeftDark,
       ...extensionKeys,
       drawSelection(),
-      eventHandlers,
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value: kKey,
     style: { height: '100%' },
     placeholder: 'Key',
     indentWithTab: false,
-    basicSetup: false,
+    basicSetup: singleLineSetupOptions,
   });
   const { setContainer: setRightContainer } = useCodeMirror({
     container: rightref.current,
@@ -205,14 +201,13 @@ function KVEditorRow({
       colorMode === 'light' ? kvThemeRightLight : kvThemeRightDark,
       ...extensionsValue,
       drawSelection(),
-      eventHandlers,
     ],
     theme: colorMode === 'light' ? cmThemeLight : cmThemeDark,
     value,
     style: { height: '100%' },
     placeholder: 'Value',
     indentWithTab: false,
-    basicSetup: false,
+    basicSetup: singleLineSetupOptions,
   });
 
   useEffect(() => {
@@ -222,45 +217,116 @@ function KVEditorRow({
   }, [i, leftref, name, setLeftContainer]);
 
   useEffect(() => {
-    if (rightref.current) {
+    if ((!isMultipart || type === 'kv') && rightref.current) {
       setRightContainer(rightref.current);
+    } else if (type === 'file') {
+      setRightContainer(undefined);
     }
-  }, [i, name, rightref, setRightContainer]);
+  }, [i, name, rightref, setRightContainer, type, file, isMultipart]);
+
+  const onSelectFile = (f: FileDescription) => {
+    onChangeRow.current(i, 'file', { id: f.id, name: f.name });
+    setIsFileSelectorOpen(false);
+  };
+
+  const unsetFile = () => {
+    onChangeRow.current(i, 'file', undefined);
+  };
+
+  const unsetIfSame = (id: number) => {
+    if (id === file?.id) {
+      unsetFile();
+    }
+  };
 
   return (
     <div key={`${name}-${i}`} className={styles.row}>
       {!readOnly ? (
         <>
-          <div
-            className={`${styles.cm} ${
-              !isEnabled ? cn(styles, 'inputDisabled', [colorMode]) : ''
-            }`}
-            ref={leftref}
-          />
-          <div
-            className={`${styles.cm} ${
-              !isEnabled ? cn(styles, 'inputDisabled', [colorMode]) : ''
-            }`}
-            ref={rightref}
-          />
-          {canDisableRow && (
-            <Checkbox
-              className={cn(styles, 'checkbox', [colorMode])}
-              disabled={isEnableDisabled}
-              isChecked={isEnabled}
-              onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
-              colorScheme="green"
+          <div className={styles.lrcontainer}>
+            <div
+              className={`${styles.cm} ${
+                !isEnabled ? cn(styles, 'inputDisabled', [colorMode]) : ''
+              }`}
+              ref={leftref}
             />
-          )}
-          <IconButton
-            aria-label="delete-row"
-            isRound
-            variant="ghost"
-            disabled={isDeleteDisabled}
-            onClick={() => onDeleteRow.current(i)}
-            colorScheme="red"
-            icon={<DeleteIcon />}
-          />
+            {!isMultipart || type === 'kv' ? (
+              <div
+                className={`${styles.cm} ${
+                  !isEnabled ? cn(styles, 'inputDisabled', [colorMode]) : ''
+                }`}
+                ref={rightref}
+              />
+            ) : (
+              <div
+                className={cn(styles, 'fileSelector', [colorMode])}
+                onClick={() => setIsFileSelectorOpen(true)}
+                role="button"
+                tabIndex={0}
+                onKeyPress={() => setIsFileSelectorOpen(true)}
+              >
+                <div
+                  className={styles.fileSelectorTextContainer}
+                  style={{
+                    color: isEnabled
+                      ? (colorMode === 'light' && 'var(--chakra-colors-gray-600)') ||
+                        'var(--chakra-colors-gray-400)'
+                      : (colorMode === 'light' && 'rgba(0, 0, 0, 0.25)') ||
+                        'rgba(255, 255, 255, 0.25)',
+                  }}
+                >
+                  {file?.name ?? 'Select a File...'}
+                </div>
+                {file && (
+                  <IconButton
+                    marginRight="1rem"
+                    size="xs"
+                    aria-label="clear-file"
+                    variant="ghost"
+                    isRound
+                    icon={<VscClose />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      unsetFile();
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+          <div className={styles.btnContainer}>
+            {isMultipart && (
+              <Select
+                ml="1rem"
+                size="xs"
+                width={75}
+                minWidth={75}
+                onChange={(e) => onChangeRow.current(i, 'type', e.target.value)}
+                value={type}
+              >
+                <option value="kv">Text</option>
+                <option value="file">File</option>
+              </Select>
+            )}
+            {canDisableRow && (
+              <Checkbox
+                className={cn(styles, 'checkbox', [colorMode])}
+                disabled={isEnableDisabled}
+                isChecked={isEnabled}
+                onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
+                colorScheme="green"
+              />
+            )}
+            <IconButton
+              aria-label="delete-row"
+              isRound
+              variant="ghost"
+              disabled={isDeleteDisabled}
+              onClick={() => onDeleteRow.current(i)}
+              colorScheme="red"
+              icon={<DeleteIcon />}
+            />
+          </div>
         </>
       ) : (
         <>
@@ -281,6 +347,14 @@ function KVEditorRow({
             readOnly={readOnly}
           />
         </>
+      )}
+      {isFileSelectorOpen && (
+        <FileSelectorModal
+          isOpen={isFileSelectorOpen}
+          onClose={() => setIsFileSelectorOpen(false)}
+          onSelectFile={onSelectFile}
+          unsetIfSame={unsetIfSame}
+        />
       )}
     </div>
   );

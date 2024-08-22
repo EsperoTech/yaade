@@ -1,5 +1,5 @@
 import Collection, { CurrentCollection } from '../model/Collection';
-import Request from '../model/Request';
+import Request, { AuthData } from '../model/Request';
 import { BASE_PATH, groupsArrayToStr } from '../utils';
 
 const DEFAULT_HEADERS = {
@@ -12,19 +12,19 @@ const importOpenApi = (
   data: FormData,
   parentId?: number,
 ): Promise<Response> => {
-  const url = new URL(BASE_PATH + 'api/collection/importOpenApi');
+  const params = new URLSearchParams();
 
-  url.searchParams.append('basePath', basePath);
+  params.append('basePath', basePath);
 
   if (groups.length > 0) {
-    url.searchParams.append('groups', groupsArrayToStr(groups));
+    params.append('groups', groupsArrayToStr(groups));
   }
 
   if (parentId) {
-    url.searchParams.append('parentId', parentId.toString());
+    params.append('parentId', parentId.toString());
   }
 
-  return fetch(url, {
+  return fetch(BASE_PATH + 'api/collection/importOpenApi?' + params.toString(), {
     method: 'POST',
     body: data,
   });
@@ -35,17 +35,17 @@ const importPostman = (
   data: FormData,
   parentId?: number,
 ): Promise<Response> => {
-  const url = new URL(BASE_PATH + 'api/collection/importPostman');
+  const params = new URLSearchParams();
 
   if (groups.length > 0) {
-    url.searchParams.append('groups', groupsArrayToStr(groups));
+    params.append('groups', groupsArrayToStr(groups));
   }
 
   if (parentId) {
-    url.searchParams.append('parentId', parentId.toString());
+    params.append('parentId', parentId.toString());
   }
 
-  return fetch(url, {
+  return fetch(BASE_PATH + 'api/collection/importPostman?' + params.toString(), {
     method: 'POST',
     body: data,
   });
@@ -148,7 +148,31 @@ const updateCollection = (
     body: JSON.stringify(collection),
   });
 
+const exchangeOAuthToken = (tokenUrl: string, data: string): Promise<Response> =>
+  fetch(BASE_PATH + 'api/oauth2/token', {
+    method: 'POST',
+    headers: DEFAULT_HEADERS,
+    body: JSON.stringify({
+      tokenUrl,
+      data,
+    }),
+  });
+
+const getFiles = (): Promise<Response> => fetch(BASE_PATH + 'api/files');
+
+const uploadFile = (data: FormData): Promise<Response> =>
+  fetch(BASE_PATH + 'api/files', {
+    method: 'POST',
+    body: data,
+  });
+
+const deleteFile = (id: number): Promise<Response> =>
+  fetch(BASE_PATH + `api/files/${id}`, {
+    method: 'DELETE',
+  });
+
 export default {
+  exchangeOAuthToken,
   createCollection,
   duplicateCollection,
   createRequest,
@@ -161,4 +185,7 @@ export default {
   updateRequest,
   invoke,
   updateCollection,
+  getFiles,
+  uploadFile,
+  deleteFile,
 };

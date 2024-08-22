@@ -40,8 +40,45 @@ function BodyEditor({
     }
   }
 
+  let editor = null;
+  switch (contentType) {
+    case 'application/x-www-form-urlencoded':
+      editor = (
+        <BodyKVEditor
+          content={formDataContent ?? []}
+          setContent={setFormDataContent}
+          selectedEnv={selectedEnv}
+          contentType={contentType}
+          isMultipart={false}
+        />
+      );
+      break;
+    case 'multipart/form-data':
+      editor = (
+        <BodyKVEditor
+          content={formDataContent ?? []}
+          setContent={setFormDataContent}
+          selectedEnv={selectedEnv}
+          contentType={contentType}
+          isMultipart={true}
+        />
+      );
+      break;
+    default:
+      editor = (
+        <BodyTextEditor
+          content={content ?? ''}
+          setContent={setContent}
+          selectedEnv={selectedEnv}
+          contentType={contentType}
+        />
+      );
+  }
+
   const isKVEditor = useMemo(() => {
-    return ['application/x-www-form-urlencoded'].includes(contentType);
+    return ['application/x-www-form-urlencoded', 'multipart/form-data'].includes(
+      contentType,
+    );
   }, [contentType]);
 
   return (
@@ -61,6 +98,7 @@ function BodyEditor({
           <option value="application/x-www-form-urlencoded">
             application/x-www-form-urlencoded
           </option>
+          <option value="multipart/form-data">multipart/form-data</option>
           <option value="none">none</option>
         </Select>
         <Button
@@ -95,21 +133,7 @@ function BodyEditor({
           </div>
         )}
       </div>
-      {isKVEditor ? (
-        <BodyKVEditor
-          content={formDataContent ?? []}
-          setContent={setFormDataContent}
-          selectedEnv={selectedEnv}
-          contentType={contentType}
-        />
-      ) : (
-        <BodyTextEditor
-          content={content ?? ''}
-          setContent={setContent}
-          selectedEnv={selectedEnv}
-          contentType={contentType}
-        />
-      )}
+      {editor}
     </>
   );
 }

@@ -6,10 +6,34 @@
   align-items: center;
 }
 
-.cm {
-  height: 100%;
-  width: 100%;
+.lrcontainer {
+  display: flex;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  display: flex;
   overflow: hidden;
+}
+
+.cm {
+  flex: 1;
+  overflow: hidden;
+}
+
+.fileSelector {
+  outline: 1px solid var(--chakra-colors-gray-700) !important;
+  outline-offset: -1px;
+  border-radius: 0 20px 20px 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  overflow: hidden;
+  box-sizing: content-box;
 }
 
 .input {
@@ -21,26 +45,25 @@
   box-sizing: border-box;
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
+  flex: 1;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .input--left {
   border-radius: 20px 0 0 20px;
-  border-right: 1px solid var(--chakra-colors-gray-100);
 }
 
 .input--right {
   border-radius: 0 20px 20px 0;
-  border-left: 1px solid var(--chakra-colors-gray-100);
 }
 
 .inputcmleft {
   border-radius: 20px 0 0 20px;
-  border-right: 1px solid var(--chakra-colors-gray-100);
 }
 
 .inputcmright {
   border-radius: 0 20px 20px 0;
-  border-left: 1px solid var(--chakra-colors-gray-100);
 }
 
 .input--light {
@@ -73,4 +96,34 @@
 
 .inputDisabled--dark * {
   color: rgba(255, 255, 255, 0.25);
+}
+
+.fileSelector--dark {
+  background-color: var(--chakra-colors-gray-900);
+  border-color: var(--chakra-colors-gray-700);
+}
+
+.fileSelector--light {
+  background-color: var(--chakra-colors-white);
+  border-color: var(--chakra-colors-gray-100);
+}
+
+.fileSelector:hover {
+  cursor: pointer;
+}
+
+.fileSelectorTextContainer {
+  padding-left: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btnContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

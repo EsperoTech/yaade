@@ -52,13 +52,18 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val adminRoute = AdminRoute(daoManager, vertx, authHandler::testAuthConfig, this)
             val invokeRoute = InvokeRoute(vertx, daoManager)
             val certificateRoute = CertificateRoute(daoManager, vertx)
+            val fileRoute = FileRoute(daoManager)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
             routerBuilder.rootHandler(
                 SessionHandler.create(sessionStore).setSessionTimeout(sessionTimeout)
             )
-            routerBuilder.rootHandler(BodyHandler.create().setUploadsDirectory("/tmp"))
+            routerBuilder.rootHandler(
+                BodyHandler
+                    .create()
+                    .setUploadsDirectory("/tmp")
+            )
             val loggerHandler = LoggerHandler.create(LoggerFormat.DEFAULT)
             // NOTE: customized loggerHandler to not log health or ping requests
             routerBuilder.rootHandler {
@@ -151,6 +156,16 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .userCoroutineHandler(this, certificateRoute::createCertificate)
             routerBuilder.operation("deleteCertificate")
                 .userCoroutineHandler(this, certificateRoute::deleteCertificate)
+            routerBuilder.operation("exchangeToken")
+                .userCoroutineHandler(this, userRoute::exchangeOAuth2Code)
+            routerBuilder.operation("getFiles")
+                .userCoroutineHandler(this, fileRoute::getFiles)
+            routerBuilder.operation("uploadFile")
+                .userCoroutineHandler(this, fileRoute::uploadFile)
+            routerBuilder.operation("downloadFile")
+                .userCoroutineHandler(this, fileRoute::downloadFile)
+            routerBuilder.operation("deleteFile")
+                .userCoroutineHandler(this, fileRoute::deleteFile)
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())

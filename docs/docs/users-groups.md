@@ -145,7 +145,7 @@ This provider connects to Keycloak.
 
 ```json
 "params": {
-    "site": "https://keycloak.example.com/auth/realms/test",
+    "site": "https://keycloak.example.com/realms/test",
     ...
 },
 "scopes": ["openid"],

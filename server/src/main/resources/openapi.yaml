@@ -649,6 +649,101 @@ paths:
           description: Success
       operationId: deleteCertificate
       summary: Delete a certificate
+  /api/oauth2/token:
+    post:
+      tags:
+        - Authentication
+      summary: Exchange authorization code for access token
+      operationId: exchangeToken
+      requestBody:
+        description: Authorization code and token URL
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tokenUrl
+                - data
+              properties:
+                tokenUrl:
+                  type: string
+                data:
+                  type: string
+      responses:
+        '200':
+          description: Success
+  /api/files:
+    get:
+      tags:
+        - Files
+      summary: Get a list of file descriptions.
+      operationId: getFiles
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileDescription"
+    post:
+      tags:
+        - Files
+      summary: Upload a file
+      operationId: uploadFile
+      requestBody:
+        description: The file to upload
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UploadFileRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: string
+  /api/files/{id}:
+    get:
+      tags:
+        - Files
+      summary: Download a file
+      operationId: downloadFile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+    delete:
+      tags:
+        - Files
+      summary: Delete a file
+      operationId: deleteFile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
 
 components:
   schemas:
@@ -830,3 +925,35 @@ components:
           type: string
         pemKey:
           type: string
+    UploadFileRequest:
+      type: object
+      properties:
+        file:
+          type: string
+        groups:
+          type: string
+    FileDescription:
+      type: object
+      required:
+        - files
+      properties:
+        files:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - data
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              data:
+                type: object
+                properties:
+                  groups:
+                    type: array
+                    items:
+                      type: string

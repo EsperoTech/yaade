@@ -160,6 +160,10 @@ function Dashboard() {
         if (loc.requestId && loc.collectionId) {
           const r = findRequest(collections, loc.requestId);
           if (r) {
+            const code = new URLSearchParams(window.location.search).get('code');
+            if (code) {
+              await getRequestAccessTokenFromCode(code, r);
+            }
             dispatchCurrentRequest({
               type: CurrentRequestActionType.SET,
               request: r,
@@ -172,6 +176,10 @@ function Dashboard() {
         } else if (loc.collectionId) {
           const c = findCollection(collections, loc.collectionId);
           if (c) {
+            const code = new URLSearchParams(window.location.search).get('code');
+            if (code) {
+              await getCollectionAccessTokenFromCode(code, c);
+            }
             dispatchCurrentCollection({
               type: CurrentCollectionActionType.SET,
               collection: c,
@@ -192,6 +200,142 @@ function Dashboard() {
     };
     getCollections();
   }, []);
+
+  async function getRequestAccessTokenFromCode(code: string, request: Request) {
+    const oauthConfig = request.data.auth?.oauth2;
+    if (!oauthConfig) {
+      errorToast('Auth data not found for request.', toast);
+      return;
+    }
+
+    const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
+
+    if (!tokenUrl || !clientId || !grantType) {
+      console.log('Required oauth2 parameters are missing.');
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    let redirectUri = `${url.protocol}//${url.host}/#/${request.collectionId}/${request.id}`;
+
+    const data = new URLSearchParams();
+    data.append('code', code);
+    data.append('client_id', clientId);
+    if (clientSecret) {
+      data.append('client_secret', clientSecret);
+    }
+    data.append('redirect_uri', redirectUri);
+    data.append('grant_type', grantType);
+
+    try {
+      const res = await api.exchangeOAuthToken(tokenUrl, data.toString());
+      if (!res.ok) {
+        throw new Error('Failed to exchange code for token');
+      }
+      const body: any = await res.json();
+
+      const newData = {
+        ...request.data,
+        auth: {
+          ...request.data.auth,
+          oauth2: {
+            ...oauthConfig,
+            accessToken: body.access_token,
+            refreshToken: body.refresh_token,
+            tokenType: body.token_type,
+            expiresIn: body.expires_in,
+            scope: body.scope,
+          },
+        },
+      };
+      const newRequest = {
+        ...request,
+        data: newData,
+      };
+      await api.updateRequest(newRequest);
+      dispatchCollections({
+        type: CollectionsActionType.PATCH_REQUEST_DATA,
+        id: request.id,
+        data: newData,
+      });
+      successToast('Token was successfully generated.', toast);
+    } catch (e) {
+      console.error(e);
+      errorToast('Failed to fetch token: ' + e, toast);
+    } finally {
+      history.pushState({}, '', `/#/${request.collectionId}/${request.id}`);
+    }
+  }
+
+  async function getCollectionAccessTokenFromCode(code: string, collection: Collection) {
+    const oauthConfig = collection.data.auth?.oauth2;
+    if (!oauthConfig) {
+      errorToast('Auth data not found for collection.', toast);
+      return;
+    }
+
+    if (!oauthConfig.grantType) {
+      oauthConfig.grantType = 'authorization_code';
+    }
+
+    const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
+
+    if (!tokenUrl || !clientId) {
+      console.log('Required oauth2 parameters are missing.');
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    let redirectUri = `${url.protocol}//${url.host}/#/${collection.id}`;
+
+    const data = new URLSearchParams();
+    data.append('code', code);
+    data.append('client_id', clientId);
+    if (clientSecret) {
+      data.append('client_secret', clientSecret);
+    }
+    data.append('redirect_uri', redirectUri);
+    data.append('grant_type', grantType);
+
+    try {
+      const res = await api.exchangeOAuthToken(tokenUrl, data.toString());
+      if (!res.ok) {
+        throw new Error('Failed to exchange code for token');
+      }
+      const body: any = await res.json();
+
+      const newData = {
+        ...collection.data,
+        auth: {
+          ...collection.data.auth,
+          oauth2: {
+            ...oauthConfig,
+            accessToken: body.access_token,
+            refreshToken: body.refresh_token,
+            tokenType: body.token_type,
+            expiresIn: body.expires_in,
+            scope: body.scope,
+          },
+        },
+      };
+      const newCollection = {
+        ...collection,
+        data: newData,
+      };
+      await api.updateCollection(newCollection);
+      dispatchCollections({
+        type: CollectionsActionType.PATCH_COLLECTION_DATA,
+        id: collection.id,
+        data: newData,
+      });
+      successToast('Token was successfully generated.', toast);
+    } catch (e) {
+      console.error(e);
+      errorToast('Failed to fetch token: ' + e, toast);
+    } finally {
+      history.pushState({}, '', `/#/${collection.id}`);
+    }
+  }
 
   const handlePongMessage = (event: MessageEvent<any>) => {
     if (event.data.type === 'pong') {
@@ -256,11 +400,11 @@ function Dashboard() {
         .updateCollection(collection)
         .then((res) => {
           if (res.status !== 200) throw new Error();
-          successToast('Request was saved.', toast);
+          successToast('Collection was saved.', toast);
         })
         .catch((e) => {
           console.error(e);
-          errorToast('Could not save request', toast);
+          errorToast('Could not save Collection', toast);
         }),
     [toast],
   );

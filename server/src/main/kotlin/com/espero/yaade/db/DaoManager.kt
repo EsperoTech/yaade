@@ -1,6 +1,7 @@
 package com.espero.yaade.db
 
 import com.j256.ormlite.jdbc.DataSourceConnectionSource
+import com.j256.ormlite.misc.TransactionManager
 import com.j256.ormlite.support.ConnectionSource
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -14,6 +15,7 @@ class DaoManager {
     lateinit var certificatesDao: CertificatesDao
     lateinit var dataSource: HikariDataSource
     lateinit var connectionSource: ConnectionSource
+    lateinit var fileDao: FileDao
 
     fun init(jdbcUrl: String, jdbcUsr: String, jdbcPwd: String) {
         val hikariConfig = HikariConfig()
@@ -28,11 +30,18 @@ class DaoManager {
         userDao = UserDao(connectionSource)
         configDao = ConfigDao(connectionSource)
         certificatesDao = CertificatesDao(connectionSource)
+        fileDao = FileDao(connectionSource)
     }
 
     fun close() {
         com.j256.ormlite.dao.DaoManager.clearCache()
         connectionSource.close()
         dataSource.close()
+    }
+
+    fun transaction(block: () -> Unit) {
+        TransactionManager.callInTransaction(connectionSource) {
+            block()
+        }
     }
 }

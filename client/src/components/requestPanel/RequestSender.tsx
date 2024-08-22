@@ -20,6 +20,7 @@ import {
   appendHttpIfNoProtocol,
   createMessageId,
   errorToast,
+  extractAuthorizationHeader,
   getMinorVersion,
   kvRowsToMap,
   parseResponse,
@@ -80,7 +81,7 @@ function RequestSender({
   // from request panel
   useKeyPress(handleSaveRequestClick, 's', true);
 
-  async function handleSaveRequestClick() {
+  async function handleSaveRequestClick(preventSuccessToast = false) {
     try {
       if (currentRequest.id === -1 && currentRequest.collectionId === -1) {
         onOpen();
@@ -96,7 +97,9 @@ function RequestSender({
           type: CurrentRequestActionType.SET_IS_CHANGED,
           isChanged: false,
         });
-        successToast('The request was successfully saved.', toast);
+        if (!preventSuccessToast) {
+          successToast('The request was successfully saved.', toast);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -119,6 +122,10 @@ function RequestSender({
       });
       dispatchCurrentRequest({
         type: CurrentRequestActionType.SET,
+        request: newRequest,
+      });
+      dispatchCollections({
+        type: CollectionsActionType.ADD_REQUEST,
         request: newRequest,
       });
 
@@ -206,11 +213,16 @@ function RequestSender({
     const enabledRequestHeaders = request.data.headers
       ? request.data.headers.filter((h) => h.isEnabled !== false)
       : [];
+    let auth = collection?.data?.auth;
+    if (request.data.auth && request.data.auth.enabled) {
+      auth = request.data.auth;
+    }
 
     const injectedReq: Request = {
       ...request,
       data: {
         ...request.data,
+        auth,
         // NOTE: this order is important because we want request headers to take precedence
         headers: [...enabledCollectionHeaders, ...enabledRequestHeaders],
       },
@@ -377,7 +389,6 @@ function RequestSender({
         reject(new Error('Timeout wating for response from: ' + request.id));
       }, timeout * 1000);
 
-      // TODO: check if this mutates the original request object
       let interpolatedRequest = { ...request };
       if (envName) {
         const collection = findCollection(collections, request.collectionId);
@@ -390,12 +401,31 @@ function RequestSender({
         interpolatedRequest = interpolateResult.result;
       }
 
-      switch (request.data.contentType) {
+      if (interpolatedRequest.data.auth && interpolatedRequest.data.auth.enabled) {
+        const authorizationHeader = extractAuthorizationHeader(
+          interpolatedRequest.data.auth,
+        );
+        if (authorizationHeader) {
+          interpolatedRequest.data.headers = [
+            ...(interpolatedRequest.data.headers ?? []),
+            { key: 'Authorization', value: authorizationHeader, isEnabled: true },
+          ];
+        }
+      }
+
+      switch (interpolatedRequest.data.contentType) {
         case 'application/x-www-form-urlencoded':
-          if (request.data.formDataBody) {
-            interpolatedRequest.data.body = encodeFormDataBody(request.data.formDataBody);
+          if (interpolatedRequest.data.formDataBody) {
+            interpolatedRequest.data.body = encodeFormDataBody(
+              interpolatedRequest.data.formDataBody,
+            );
           }
           break;
+        case 'multipart/form-data':
+          if (getMinorVersion(extVersion.current) < 9) {
+            throw Error(`Multipart form data is not supported in this version of the extension. 
+              Please update to the latest version or change to the Server proxy.`);
+          }
       }
 
       const url = appendHttpIfNoProtocol(interpolatedRequest.data.uri);
@@ -412,6 +442,7 @@ function RequestSender({
           url,
           type: 'send-request',
           options: options,
+          req: interpolatedRequest,
           metaData: {
             messageId,
             envName,
@@ -457,6 +488,16 @@ function RequestSender({
       const selectedEnvData = selectedEnv?.data ?? {};
       const interpolateResult = interpolate(request, selectedEnvData);
       request = interpolateResult.result;
+    }
+
+    if (request.data.auth && request.data.auth.enabled) {
+      const authorizationHeader = extractAuthorizationHeader(request.data.auth);
+      if (authorizationHeader) {
+        request.data.headers = [
+          ...(request.data.headers ?? []),
+          { key: 'Authorization', value: authorizationHeader, isEnabled: true },
+        ];
+      }
     }
 
     switch (request.data.contentType) {
