@@ -294,37 +294,39 @@ function KVEditorRow({
               </div>
             )}
           </div>
-          {isMultipart && (
-            <Select
-              ml="1rem"
-              size="xs"
-              width={75}
-              minWidth={75}
-              onChange={(e) => onChangeRow.current(i, 'type', e.target.value)}
-              value={type}
-            >
-              <option value="kv">Text</option>
-              <option value="file">File</option>
-            </Select>
-          )}
-          {canDisableRow && (
-            <Checkbox
-              className={cn(styles, 'checkbox', [colorMode])}
-              disabled={isEnableDisabled}
-              isChecked={isEnabled}
-              onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
-              colorScheme="green"
+          <div className={styles.btnContainer}>
+            {isMultipart && (
+              <Select
+                ml="1rem"
+                size="xs"
+                width={75}
+                minWidth={75}
+                onChange={(e) => onChangeRow.current(i, 'type', e.target.value)}
+                value={type}
+              >
+                <option value="kv">Text</option>
+                <option value="file">File</option>
+              </Select>
+            )}
+            {canDisableRow && (
+              <Checkbox
+                className={cn(styles, 'checkbox', [colorMode])}
+                disabled={isEnableDisabled}
+                isChecked={isEnabled}
+                onChange={(e) => onChangeRow.current(i, 'isEnabled', e.target.checked)}
+                colorScheme="green"
+              />
+            )}
+            <IconButton
+              aria-label="delete-row"
+              isRound
+              variant="ghost"
+              disabled={isDeleteDisabled}
+              onClick={() => onDeleteRow.current(i)}
+              colorScheme="red"
+              icon={<DeleteIcon />}
             />
-          )}
-          <IconButton
-            aria-label="delete-row"
-            isRound
-            variant="ghost"
-            disabled={isDeleteDisabled}
-            onClick={() => onDeleteRow.current(i)}
-            colorScheme="red"
-            icon={<DeleteIcon />}
-          />
+          </div>
         </>
       ) : (
         <>
