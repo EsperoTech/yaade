@@ -21,7 +21,6 @@ public class JasmineRunner {
     private final Value jasmineEnv;
 
     public JasmineRunner() {
-
         context = Context.newBuilder().allowAllAccess(true).build();
         globalBindings = context.getBindings(JS);
         globalBindings.putMember("javaFunction", new JavaInteropTest());

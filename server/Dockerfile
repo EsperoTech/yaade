@@ -1,8 +1,15 @@
-FROM amazoncorretto:11
+FROM amazoncorretto:18
 RUN mkdir /app
-
-ADD /build/libs/yaade-server-1.0-SNAPSHOT.jar /app/yaade.jar
 
 EXPOSE 9339
 
-CMD [ "java", "-jar", "/app/yaade.jar"]
+COPY /build/libs/dependencies/*.jar /app/libs/
+COPY /build/resources/main /app/resources
+COPY /build/classes/kotlin/main /app/classes
+COPY /build/classes/java/main /app/classes
+COPY /build/libs/*.jar /app/libs/
+
+ENV CLASSPATH=/app/classes:/app/resources:/app/libs/*
+
+# Entry point to start the application
+ENTRYPOINT ["java", "com.espero.yaade.MainKt"]

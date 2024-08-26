@@ -122,7 +122,7 @@ public class JasmineBuilder {
 
         logger.info("Loading Dependencies");
 
-        loadScriptString(context, "jp.js");
+        loadScriptString(context, "bundle.js");
 
         logger.info("Loaded Dependencies");
     }
@@ -172,6 +172,10 @@ public class JasmineBuilder {
         }
 
         logger.debug("Loaded File");
+    }
+
+    public void evalScript(final Context context, final String script) {
+        context.eval(JS, script);
     }
 
     void createGlobalVariables(final Context context) {

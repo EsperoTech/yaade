@@ -16,6 +16,7 @@ class DaoManager {
     lateinit var dataSource: HikariDataSource
     lateinit var connectionSource: ConnectionSource
     lateinit var fileDao: FileDao
+    lateinit var cronScriptDao: CronScriptDao
 
     fun init(jdbcUrl: String, jdbcUsr: String, jdbcPwd: String) {
         val hikariConfig = HikariConfig()
@@ -31,6 +32,7 @@ class DaoManager {
         configDao = ConfigDao(connectionSource)
         certificatesDao = CertificatesDao(connectionSource)
         fileDao = FileDao(connectionSource)
+        cronScriptDao = CronScriptDao(connectionSource)
     }
 
     fun close() {

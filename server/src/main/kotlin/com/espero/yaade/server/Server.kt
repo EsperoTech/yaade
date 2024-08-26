@@ -11,6 +11,7 @@ import com.espero.yaade.server.routes.*
 import com.espero.yaade.server.utils.adminCoroutineHandler
 import com.espero.yaade.server.utils.coroutineHandler
 import com.espero.yaade.server.utils.userCoroutineHandler
+import com.espero.yaade.services.RequestSender
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServer
 import io.vertx.core.impl.logging.LoggerFactory
@@ -45,14 +46,16 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             }
             sessionStore = LocalSessionStore.create(vertx)
             val authHandler = AuthHandler(vertx, daoManager)
+            val requestSender = RequestSender(vertx, daoManager)
 
             val collectionRoute = CollectionRoute(daoManager, vertx)
             val requestRoute = RequestRoute(daoManager)
             val userRoute = UserRoute(daoManager, vertx)
             val adminRoute = AdminRoute(daoManager, vertx, authHandler::testAuthConfig, this)
-            val invokeRoute = InvokeRoute(vertx, daoManager)
+            val invokeRoute = InvokeRoute(daoManager, requestSender)
             val certificateRoute = CertificateRoute(daoManager, vertx)
             val fileRoute = FileRoute(daoManager)
+            val scriptRoute = ScriptRoute(daoManager, vertx)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
@@ -166,6 +169,10 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .userCoroutineHandler(this, fileRoute::downloadFile)
             routerBuilder.operation("deleteFile")
                 .userCoroutineHandler(this, fileRoute::deleteFile)
+            routerBuilder.operation("createScript")
+                .adminCoroutineHandler(this, scriptRoute::createScript)
+            routerBuilder.operation("deleteScript")
+                .adminCoroutineHandler(this, scriptRoute::deleteScript)
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())

@@ -3,7 +3,10 @@ package com.espero.yaade
 import com.espero.yaade.init.createDaoManager
 import com.espero.yaade.server.Server
 import com.espero.yaade.server.utils.configureDatabindCodec
-import com.jr.jasmine.JasmineRunner
+import com.espero.yaade.services.CronScriptRunner
+import com.espero.yaade.services.RequestSender
+import io.vertx.core.DeploymentOptions
+import io.vertx.core.ThreadingModel
 import io.vertx.core.Vertx
 
 val PORT = System.getenv("YAADE_PORT")?.toInt() ?: 9339
@@ -15,12 +18,12 @@ val BASE_PATH: String = System.getenv("YAADE_BASE_PATH") ?: ""
 val FILE_STORAGE_PATH: String = System.getenv("YAADE_FILE_STORAGE_PATH") ?: "./app/data/files"
 
 fun main() {
-    val scriptRunner = JasmineRunner()
-
-    scriptRunner.run("index.js")
-    scriptRunner.displayReport()
     configureDatabindCodec()
     val daoManager = createDaoManager(JDBC_URL, JDBC_USR, JDBC_PWD)
     val vertx = Vertx.vertx()
+    val requestSender = RequestSender(vertx, daoManager)
     vertx.deployVerticle(Server(PORT, daoManager))
+    val options = DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
+
+    vertx.deployVerticle(CronScriptRunner(daoManager, requestSender), options)
 }

@@ -744,6 +744,34 @@ paths:
       responses:
         '200':
           description: Success
+  /api/scripts:
+    post:
+      tags:
+        - Scripts
+      summary: Create a new script
+      operationId: createScript
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Script"
+  /api/scripts/{id}:
+    delete:
+      tags:
+        - Scripts
+      summary: Delete a script
+      operationId: deleteScript
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
 
 components:
   schemas:
@@ -957,3 +985,12 @@ components:
                     type: array
                     items:
                       type: string
+    Script:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        data:
+          type: object
