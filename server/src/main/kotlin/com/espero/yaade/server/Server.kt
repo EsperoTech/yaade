@@ -22,6 +22,8 @@ import io.vertx.ext.web.sstore.LocalSessionStore
 import io.vertx.ext.web.sstore.SessionStore
 import io.vertx.kotlin.coroutines.CoroutineVerticle
 import io.vertx.kotlin.coroutines.coAwait
+import io.vertx.core.http.HttpServerOptions
+
 
 class Server(private val port: Int, private val daoManager: DaoManager) : CoroutineVerticle() {
 
@@ -62,6 +64,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             routerBuilder.rootHandler(
                 BodyHandler
                     .create()
+                    .setBodyLimit(-1)
                     .setUploadsDirectory("/tmp")
             )
             val loggerHandler = LoggerHandler.create(LoggerFormat.DEFAULT)
@@ -204,7 +207,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 log.error("Bad auth config: $e")
             }
 
-            server = vertx.createHttpServer()
+            val options: HttpServerOptions = HttpServerOptions().setMaxHeaderSize(1000000)
+            server = vertx.createHttpServer(options)
                 .requestHandler(mainRouter)
                 .listen(port)
                 .coAwait()
@@ -218,4 +222,3 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
         server?.close()?.coAwait()
     }
 }
-
