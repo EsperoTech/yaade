@@ -1,5 +1,6 @@
 package com.espero.yaade.db
 
+import com.j256.ormlite.dao.DaoManager
 import com.j256.ormlite.jdbc.DataSourceConnectionSource
 import com.j256.ormlite.misc.TransactionManager
 import com.j256.ormlite.support.ConnectionSource
@@ -36,7 +37,7 @@ class DaoManager {
     }
 
     fun close() {
-        com.j256.ormlite.dao.DaoManager.clearCache()
+        DaoManager.clearCache()
         connectionSource.close()
         dataSource.close()
     }

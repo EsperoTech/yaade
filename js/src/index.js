@@ -81,12 +81,14 @@ const atob = function (b64) {
   return data;
 };
 
-global.jp = jsonpath;
+const jpath = function (expr, value) {
+  let json = value;
+  if (typeof value === 'string') json = JSON.parse(value);
+  return jsonpath.value(json, expr);
+};
+
+global.jp = jpath;
 global.DateTime = DateTime;
 global.rand = new Random(MersenneTwister19937.autoSeed());
 global.btoa = btoa;
 global.atob = atob;
-
-global.greet = function (name) {
-  return `Hello, ${name}! Welcome to ES2024.`;
-};

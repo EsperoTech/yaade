@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.10"
+    kotlin("jvm") version "1.9.20"
     application
     java
 }
@@ -44,6 +44,7 @@ dependencies {
     implementation("net.lingala.zip4j:zip4j:2.9.1")
     implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.19")
     implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.cronutils:cron-utils:9.2.0")
 
     implementation("org.apache.commons:commons-text:1.9")
 

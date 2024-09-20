@@ -126,12 +126,21 @@ function mapToKvRows(map: Record<string, string>): KVRow[] {
   });
 }
 
-function parseLocation(location: Location): { requestId: number; collectionId: number } {
+function parseLocation(location: Location): {
+  requestId: number;
+  collectionId: number;
+  scriptId: number;
+} {
   const split = location.pathname.split('/');
-  const res = { requestId: -1, collectionId: -1 };
+  const res = { requestId: 0, collectionId: 0, scriptId: 0 };
   try {
     res.collectionId = parseInt(split[1]);
-    res.requestId = parseInt(split[2]);
+    if (split[2].startsWith('s-')) {
+      res.scriptId = parseInt(split[2].substring(2));
+    } else {
+      res.requestId = parseInt(split[2]);
+    }
+
     return res;
   } catch (e) {
     return res;
@@ -238,6 +247,13 @@ function isValidVariableName(value: string): boolean {
   return true;
 }
 
+function validateCronExpression(cronExpression: string): boolean {
+  if (!cronExpression) return true;
+  const cronRegex =
+    /^((((\d+,)+\d+|(\d+(\/|-|#)\d+)|\d+L?|\*(\/\d+)?|L(-\d+)?|\?|[A-Z]{3}(-[A-Z]{3})?) ?){5,7})$/;
+  return cronRegex.test(cronExpression);
+}
+
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
@@ -258,4 +274,5 @@ export {
   parseLocation,
   parseResponse,
   successToast,
+  validateCronExpression,
 };

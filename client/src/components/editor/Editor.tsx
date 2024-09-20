@@ -1,6 +1,7 @@
 import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 import { IconButton, useColorMode, useToast } from '@chakra-ui/react';
 import { javascript } from '@codemirror/lang-javascript';
+import { indentUnit } from '@codemirror/language';
 import { EditorView } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import beautify from 'beautify';
@@ -23,7 +24,7 @@ type EditorProps = {
 function Editor({ content, setContent }: EditorProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const extensions = [javascript(), theme];
+  const extensions = [javascript(), theme, indentUnit.of('    ')];
 
   const ref = useRef<HTMLDivElement>(null);
 

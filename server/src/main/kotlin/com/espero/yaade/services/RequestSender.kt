@@ -4,7 +4,6 @@ import com.espero.yaade.FILE_STORAGE_PATH
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.UserDb
-import io.vertx.core.Context
 import io.vertx.core.MultiMap
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -21,28 +20,51 @@ import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import org.graalvm.polyglot.HostAccess.Export
+import org.graalvm.polyglot.Value
+import org.graalvm.polyglot.proxy.ProxyObject
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
+import java.util.function.BiConsumer
 import kotlin.coroutines.CoroutineContext
 
 class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager) : CoroutineScope {
 
-    private val interpolator = SecretInterpolator(daoManager)
-    private lateinit var context: Context
-    override val coroutineContext: CoroutineContext by lazy { context.dispatcher() + SupervisorJob() }
+    private val secretInterpolator = SecretInterpolator(daoManager)
+    override val coroutineContext: CoroutineContext by lazy { vertx.dispatcher() + SupervisorJob() }
 
-    fun exec(requestId: Long, envName: String?): CompletableFuture<Map<String, Any>> {
-        val request = daoManager.requestDao.getById(requestId)
-            ?: throw IllegalArgumentException("Request not found")
-        val collection = daoManager.collectionDao.getById(request.collectionId)
-            ?: throw IllegalArgumentException("Collection not found")
+    class CompletableFutureWrapper(val future: CompletableFuture<Map<String, Any>>) {
+
+        @Export
+        fun whenComplete(v: Value) {
+            // TODO: figure out how to map js-function to bi-consumer when using constrained host access
+            val action = BiConsumer<Map<String, Any>, Throwable> { map, throwable ->
+                if (throwable != null) {
+                    v.execute(null, throwable)
+                } else {
+                    v.execute(ProxyObject.fromMap(map))
+                }
+            }
+            future.whenComplete(action)
+        }
+
+    }
+
+    fun exec(
+        request: JsonObject,
+        collection: CollectionDb,
+        envName: String?,
+    ): CompletableFutureWrapper {
         val future = CompletableFuture<Map<String, Any>>()
         launch {
-            val res = send(request.toJson(), collection, envName, null)
-            future.complete(res.map)
+            try {
+                val res = send(request, collection, envName, null)
+                future.complete(res.map)
+            } catch (e: Throwable) {
+                future.completeExceptionally(e)
+            }
         }
-        // TODO: not sure if this will actually work
-        return future
+        return CompletableFutureWrapper(future)
     }
 
     suspend fun send(
@@ -53,7 +75,7 @@ class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager
     ): JsonObject {
         val requestData = request.getJsonObject("data")
         val interpolated = if (envName != null)
-            interpolator.interpolate(requestData, collection.id, envName)
+            secretInterpolator.interpolate(requestData, collection.id, envName)
         else
             requestData
 

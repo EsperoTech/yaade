@@ -750,6 +750,13 @@ paths:
         - Scripts
       summary: Create a new script
       operationId: createScript
+      requestBody:
+        description: The script to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScriptRequest"
       responses:
         '200':
           description: Success
@@ -757,7 +764,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Script"
+    put:
+      tags:
+        - Scripts
+      summary: Update a script
+      operationId: updateScript
+      requestBody:
+        description: The updated script
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Script"
+      responses:
+        '200':
+          description: Success
   /api/scripts/{id}:
+    get:
+      tags:
+        - Scripts
+      summary: Get a script
+      operationId: getScript
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Script"
     delete:
       tags:
         - Scripts
@@ -769,6 +809,19 @@ paths:
           required: true
           schema:
             type: string
+      responses:
+        '200':
+          description: Success
+  /api/run-script:
+    post:
+      tags:
+        - Scripts
+      summary: Run a script
+      operationId: runScript
+      requestBody:
+        content:
+          application/json: { }
+        required: true
       responses:
         '200':
           description: Success
@@ -985,12 +1038,24 @@ components:
                     type: array
                     items:
                       type: string
+    CreateScriptRequest:
+      type: object
+      required:
+        - name
+        - collectionId
+      properties:
+        name:
+          type: string
+        collectionId:
+          type: integer
     Script:
       type: object
       required:
         - id
       properties:
         id:
-          type: string
+          type: integer
+        collectionId:
+          type: integer
         data:
           type: object

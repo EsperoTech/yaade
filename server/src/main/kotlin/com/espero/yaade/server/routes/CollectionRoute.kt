@@ -33,12 +33,18 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
     private fun createCollectionsResponse(rawCollections: List<CollectionDb>): ArrayList<JsonObject> {
         val collections = rawCollections.map {
+            it.hideSecrets()
             val requests = daoManager.requestDao
                 .getAllInCollection(it.id)
                 .map(RequestDb::toJson)
                 .sortedBy { el -> el.getJsonObject("data").getInteger("rank") ?: 0 }
-            it.hideSecrets()
-            it.toJson().put("requests", requests)
+            val scripts = daoManager.cronScriptDao
+                .getAllInCollection(it.id)
+                .map { script -> script.toJson() }
+                .sortedBy { el -> el.getJsonObject("data").getInteger("rank") ?: 0 }
+            it.toJson()
+                .put("requests", requests)
+                .put("scripts", scripts)
         }.sortedBy { it.getJsonObject("data").getInteger("rank") ?: 0 }
 
         val result = ArrayList<JsonObject>()

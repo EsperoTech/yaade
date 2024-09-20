@@ -8584,14 +8584,12 @@ getJasmineRequireObj().Runner = function(j$) {
         totalSpecsDefined,
         order: order
       }).
-      then(function(value) {console.log("Jasmine Started");}).
       catch(function(reason) {throw new Error("Runner.Reporter did not start: " + reason);});
 
       this.currentlyExecutingSuites_.push(this.topSuite_);
 
       // TODO: GRAALVM: Added then() and catch() to ensure Processor Executed successfully
       await processor.execute().
-      then(function(value) {console.log("Runner.Processor executed successfully");}).
       catch(function(reason) {throw new Error("Runner.Processor executed unsuccessfully: " + reason)});
 
       if (this.topSuite_.hadBeforeAllFailure) {
@@ -8643,7 +8641,6 @@ getJasmineRequireObj().Runner = function(j$) {
 
       // TODO: GRAALVM: Added then() and catch() to ensure Jasmine is done.
       await this.reporter_.jasmineDone(jasmineDoneInfo).
-      then(function(value) {console.log("Jasmine Done Success: " + value);}).
       catch(function(reason) {console.log("Jasmine Done Rejected: " + reason);});
       return jasmineDoneInfo;
     }

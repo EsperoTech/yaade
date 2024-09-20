@@ -55,7 +55,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val invokeRoute = InvokeRoute(daoManager, requestSender)
             val certificateRoute = CertificateRoute(daoManager, vertx)
             val fileRoute = FileRoute(daoManager)
-            val scriptRoute = ScriptRoute(daoManager, vertx)
+            val scriptRoute = ScriptRoute(daoManager, vertx, requestSender)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
@@ -173,6 +173,12 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .adminCoroutineHandler(this, scriptRoute::createScript)
             routerBuilder.operation("deleteScript")
                 .adminCoroutineHandler(this, scriptRoute::deleteScript)
+            routerBuilder.operation("updateScript")
+                .adminCoroutineHandler(this, scriptRoute::updateScript)
+            routerBuilder.operation("getScript")
+                .adminCoroutineHandler(this, scriptRoute::getScript)
+            routerBuilder.operation("runScript")
+                .adminCoroutineHandler(this, scriptRoute::runScript)
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())

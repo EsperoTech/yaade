@@ -1,66 +1,108 @@
 # Scripts
 
-Yaade provides the ability to execute scripts written in a sandboxed version of JavaScript. It is sandboxed because most JavaScript functionality is deactivated, like calls to `window` or `document` to prevent potentially malicious code.
+Yaade provides the ability to execute scripts written in JavaScript. There are three types of
+scripts:
 
-Some valid functionality includes:
+1. Request Scripts
+   - Run before a request is executed
+2. Response Scripts
+   - Run after a request is executed
+3. Job Scripts
+   - Can be scheduled periodically or run manually
+
+While these three types of scripts share most of their functionality, there are some differences in the context in which they are executed. The following sections will provide an overview of the available commands and the execution order of the scripts.
+
+## Request Scripts
+
+Request scripts are run before a request is executed. This makes them useful if you need
+to build your environment before executing a request. For example when a request needs a
+fresh access token you can use the request script to fetch the access token and put it
+into the environment to be used by the request. Check the `Execute another Request` section
+for more infos. Request scripts are always executed in the browser of the calling user.
+
+### Access the Request
+
+The `req` object exposes the request that will be sent. The request itself is immutable though and can only be changed by changing the environment.
+The request script is executed **before** the interpolation step, therefore the `req` object won't contain the resolved environment variables.
 
 ```javascript
-const x = 2 * 5
-let y = "hello world"
-const s = y.split(" ")
-if (s.length === 2) {
-    y = `foo=${s[0]}`
+const uri = req.uri // string of the request URI
+const headers = req.headers // map of key value pairs
+const body = req.body // body as string
+const method = req.method // string of the request method for REST requests
+```
+
+## Response Scripts
+
+Response scripts are run after a request is executed. They are usually used to extract
+information from the response and validate it. You could for example use the response
+script to check if the status code was 200 or else throw an error. Response scripts are 
+always executed in the browser of the calling user.
+
+### Access the Response
+
+The `res` object exposes the response received when executing the request. It contains the body as a string, headers as an object with keys and values and status code as integer.
+
+```javascript
+const headers = res.headers
+const contentType = headers["Content-Type"]
+const body = res.body
+const status = res.status
+if (status === 200) {
+    env.set("type", contentType)
 }
-const j = s.join("_")
 ```
 
-But the following commands are not valid:
+## Job Scripts
 
-```javascript
-import "..."
-window.localStorage
-console.log("hello world")
-const cookies = document.cookie
+Job Scripts are server-side scripts that are executed in an isolated GraalVM JavaScript environment on the server. This allows for script execution without user interaction. Job
+scripts can be scheduled using cron expressions for recurring tasks such as smoke tests, cleanup jobs, or data processing.
+
+Each run of a job script creates a result that contains the set of logs generated during the execution as well as a test suite. The result can be viewed in the job history.
+
+### Create a new Job Script
+
+Just like a request, a job script is always part of a collection. To create a new job script, click on the **•••** button in the collection sidebar and select `New Job Script`. Enter the name
+of your script and click `Create`.
+
+### Manual Run
+
+You can manually run a job script by clicking the `RUN` button in the top right corner of the
+script panel. This will execute the script and show the result in the job history.
+
+### Cron Scheduling
+
+Job scripts can be scheduled using cron expressions. We use **UNIX cron expressions** to define the schedule of a job. The cron expression consists of five fields that represent the following:
+
+1. Seconds (0-59)
+2. Minutes (0-59)
+3. Hours (0-23)
+4. Day of the month (1-31)
+5. Month (1-12)
+
+The following cron expression runs the job every day at 3:30 AM:
+
+```plaintext
+30 3 * * *
 ```
 
-::: warning
-Because Yaade uses JavaScript template literals to interpolate environment variables, template literals inside your scripts might be overwritten by your environment if keys match. It is therefore generally discouraged to use them in scripts.
-:::
+The following cron expression runs the job every Monday at 3:30 AM:
 
-## Execution Order
-
-There are four types of scripts that are executed in the following order:
-
-1. Collection-level Request Script
-2. Request Script
-3. Response Script
-4. Collection-level Response Script
-
-As other requests can be executed in the request scripts, the scripts are executed in a depth-first manner. This means that if a request script executes another request, the request script of the target request is executed before the response script of the source request.
-
-Example:
-    
-```javascript
-// Request Script of Request 1
-await exec(2)
-// ... more code
+```plaintext
+30 3 * * 1
 ```
 
-Now if request 1 is executed, the execution order is as follows:
+The following cron expression runs the job every 15 minutes:
 
-1. Collection-level Request Script of Request 1
-2. First part of Request Script of Request 1
-3. Collection-level Request Script of Request 2
-4. Request Script of Request 2
-5. Response Script of Request 2
-6. Collection--level Response Script of Request 2
-7. The rest of Request Script of Request 1
-8. Response Script of Request 1
-9. Collection-level Response Script of Request 1
+```plaintext
+*/15 * * * *
+```
+
+To enable a scheduled job, click the `▶` play button. To disable the job, click the `⏸` pause button. Select the environment in which the job should be executed. Choose `NO_ENV` if you don't need an environment.
 
 ## Special Commands
 
-Listed below are special commands available in scripts run in Yaade.
+Listed below are special commands available in different scripts.
 
 ### Set Environment Variables
 
@@ -118,19 +160,16 @@ You can encode and decode strings to and from base64.
 - Encode to base64: `btoa("hello:world")` results in `aGVsbG86d29ybGQ=`.
 - Decode a string from base64 use `atob('aGVsbG86d29ybGQ=')` results in `hello:world`.
 
-## Request Scripts
-
-Request scripts are executed before sending a request. Following are commands that can exclusively be used in request scripts.
-
-:::warning
-Request scripts require version 1.4 of the extension and currently only support the extension proxy.
-:::
-
 ### Execute another Request
 
 Request scripts allow you to execute other requests before the actual request is sent. This provides a powerful tool to chain requests.
-The signature of the command is very simple: `const exec: (requestId: number, envName?: string) => Promise<unknown>`. Because `exec` is asynchronous
-one can use `await` to wait for the result of the command.
+The signature of the command is very simple: 
+
+```javascript
+const exec: (requestId: number, envName?: string) => Promise<unknown>
+```
+
+Because `exec` is asynchronous one can use `await` to wait for the result of the command.
 
 ```javascript
 // A simple example to extract a JWT from the response of another request
@@ -165,36 +204,151 @@ if (status === 200) {
 }
 ```
 
-:::warning
-The exec command will execute all request using the proxy of the original request's selected environment. This is because switching proxies between requests could result in secret leaking. This means that if the source request uses the Extension proxy, all calls to exec, even the ones in subsequent request scripts, cannot make use of secrets. Vice versa if the proxy is set to Server, then no request can be made against localhost.
-:::
+### Tests
 
-### Access the Request
-
-The `req` object exposes the request that will be sent. The request itself is immutable though and can only be changed by changing the environment.
-The request script is executed **before** the interpolation step, therefore the `req` object won't contain the resolved environment variables.
+We use Jasmine to define test suites in scripts. The following example shows how to write a simple test suite:
 
 ```javascript
-const uri = req.uri // string of the request URI
-const headers = req.headers // map of key value pairs
-const body = req.body // body as string
-const method = req.method // string of the request method for REST requests
+describe('Create and retrieve an entity', function() {
+    it('should create an entity', async function() {
+        // post entity request
+        const res = await exec(1783, env.name);
+        expect(res.status).toBe(201);
+        const id = jp("$.id", res.body)
+        env.set("id", id);
+    });
+
+    it('should retrieve the entity', async function() {
+        // get entity request (id is injected from the environment)
+        const res = await exec(1784, env.name);
+        expect(res.status).toBe(200);
+        const resId = jp("$.id", res.body)
+        const envId = env.get("id")
+        expect(resId).toBe(envId)
+    });
+});
 ```
 
-## Response Scripts
-
-Response scripts are executed after a request has been sent. Following are commands that can exclusively be used in response scripts.
-
-### Access the Response
-
-The `res` object exposes the response received when executing the request. It contains the body as a string, headers as an object with keys and values and status code as integer.
+Here are some basic Jasmine operations that you can use. If you want to use more advanced features, please refer to the [Jasmine documentation](https://jasmine.github.io/).
 
 ```javascript
-const headers = res.headers
-const contentType = headers["Content-Type"]
-const body = res.body
-const status = res.status
-if (status === 200) {
-    env.set("type", contentType)
+describe("Basic Jasmine Test Suite", function() {
+
+  // 1. Simple Expectations
+  it("should check if true is true", function() {
+    expect(true).toBe(true);
+  });
+
+  it("should check if a number equals another number", function() {
+    var a = 10;
+    expect(a).toBe(10);
+  });
+
+  it("should check if two objects are equal", function() {
+    var obj1 = { name: "John", age: 30 };
+    var obj2 = { name: "John", age: 30 };
+    expect(obj1).toEqual(obj2);
+  });
+
+  // 2. Matchers
+  it("should check if a value is truthy", function() {
+    var a = true;
+    expect(a).toBeTruthy();
+  });
+
+  it("should check if a value is null", function() {
+    var a = null;
+    expect(a).toBeNull();
+  });
+
+  it("should check if an array contains a specific item", function() {
+    var fruits = ["apple", "banana", "mango"];
+    expect(fruits).toContain("banana");
+  });
+
+  // 3. Setup and Teardown
+  var value;
+  
+  beforeEach(function() {
+    value = 42;
+  });
+
+  afterEach(function() {
+    value = 0;
+  });
+
+  it("should use the value set in beforeEach", function() {
+    expect(value).toBe(42);
+  });
+
+  it("should reset value after test runs", function() {
+    value = 100;
+    expect(value).toBe(100);
+  });
+
+  it("should reset value after the test has been run", function() {
+    expect(value).toBe(42);  // Value should be reset by afterEach
+  });
+});
+```
+
+## Execution Order of Request and Response Scripts
+
+There are four types of scripts that are executed in the following order:
+
+1. Collection-level Request Script
+2. Request Script
+3. Response Script
+4. Collection-level Response Script
+
+As other requests can be executed in the request scripts, the scripts are executed in a depth-first manner. This means that if a request script executes another request, the request script of the target request is executed before the response script of the source request.
+
+Example:
+    
+```javascript
+// Request Script of Request 1
+await exec(2)
+// ... more code
+```
+
+Now if request 1 is executed, the execution order is as follows:
+
+1. Collection-level Request Script of Request 1
+2. First part of Request Script of Request 1
+3. Collection-level Request Script of Request 2
+4. Request Script of Request 2
+5. Response Script of Request 2
+6. Collection--level Response Script of Request 2
+7. The rest of Request Script of Request 1
+8. Response Script of Request 1
+9. Collection-level Response Script of Request 1
+
+## JavaScript for Scripts
+
+Scripts are always executed in a sandboxed JavaScript environment. It is sandboxed because most JavaScript functionality is deactivated, like calls to `window` or `document` to prevent potentially malicious code.
+
+Some valid functionality includes:
+
+```javascript
+const x = 2 * 5
+let y = "hello world"
+const s = y.split(" ")
+if (s.length === 2) {
+    y = `foo=${s[0]}`
 }
+const j = s.join("_")
 ```
+
+But the following commands are not valid:
+
+```javascript
+import "..."
+window.localStorage
+console.log("hello world")
+const cookies = document.cookie
+```
+
+::: warning
+Because Yaade uses JavaScript template literals to interpolate environment variables, template literals inside your scripts might be overwritten by your environment if keys match. It is therefore generally discouraged to use them in request and response scripts. Job scripts are
+not interpolated and are therefore not effected by this.
+:::
