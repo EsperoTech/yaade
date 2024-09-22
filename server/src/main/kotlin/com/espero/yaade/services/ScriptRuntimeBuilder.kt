@@ -43,8 +43,8 @@ class ScriptRuntimeBuilder(context: Context) {
         return context.getBindings("js")
     }
 
-    fun evalScript(context: Context, script: String) {
-        context.eval("js", script)
+    fun evalScript(context: Context, script: String): Value {
+        return context.eval("js", script)
     }
 
 }

@@ -50,6 +50,8 @@ class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager
 
     }
 
+    // TODO: the problem is that request sender is in coroutine context, but
+    // the script runner is not, so this will not work
     fun exec(
         request: JsonObject,
         collection: CollectionDb,

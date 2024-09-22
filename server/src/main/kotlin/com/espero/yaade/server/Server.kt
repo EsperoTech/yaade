@@ -55,7 +55,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val invokeRoute = InvokeRoute(daoManager, requestSender)
             val certificateRoute = CertificateRoute(daoManager, vertx)
             val fileRoute = FileRoute(daoManager)
-            val scriptRoute = ScriptRoute(daoManager, vertx, requestSender)
+            val scriptRoute = ScriptRoute(daoManager, vertx)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 

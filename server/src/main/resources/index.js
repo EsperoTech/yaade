@@ -36,7 +36,7 @@ async function exec(requestId, envName) {
     });
 }
 
-(async function() {
+await (async function() {
 try {
     // ------- THE SCRIPT -------
     %s

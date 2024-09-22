@@ -6,8 +6,6 @@ import com.cronutils.parser.CronParser
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CronScriptDb
 import com.espero.yaade.server.errors.ServerError
-import com.espero.yaade.services.RequestSender
-import com.espero.yaade.services.ScriptRunner
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Vertx
 import io.vertx.core.json.JsonArray
@@ -18,10 +16,7 @@ import io.vertx.kotlin.coroutines.coAwait
 class ScriptRoute(
     private val daoManager: DaoManager,
     private val vertx: Vertx,
-    requestSender: RequestSender
 ) {
-
-    private val scriptRunner = ScriptRunner(requestSender, daoManager)
 
     private val cronParser =
         CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
@@ -79,7 +74,7 @@ class ScriptRoute(
         ctx.end().coAwait()
     }
 
-    suspend fun deleteScript(ctx: RoutingContext) {
+    fun deleteScript(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
         val script = daoManager.cronScriptDao.getById(id)
             ?: throw ServerError(HttpResponseStatus.NOT_FOUND.code(), "Script does not exist")
@@ -105,7 +100,11 @@ class ScriptRoute(
             ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No script provided")
         var res: JsonObject? = null
         try {
-            res = scriptRunner.run(scriptString, collection, envName)
+            val msg = JsonObject()
+                .put("script", scriptString)
+                .put("collectionId", collection.id)
+                .put("envName", envName)
+            res = vertx.eventBus().request<JsonObject>("script.run", msg).coAwait().body()
         } catch (e: Throwable) {
             res = JsonObject()
                 .put("success", false)

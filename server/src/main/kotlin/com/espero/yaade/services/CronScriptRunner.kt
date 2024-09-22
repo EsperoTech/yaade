@@ -17,24 +17,19 @@ import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.optionals.getOrElse
 
-class CronScriptRunner(
-    private val daoManager: DaoManager,
-    requestSender: RequestSender
-) :
-    CoroutineVerticle() {
+class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
 
     private var stopped = false
     private val cronParser =
         CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
 
     private val cronScripts = ConcurrentHashMap<Long, CronScriptDb>()
-    private val scriptRunner: ScriptRunner = ScriptRunner(requestSender, daoManager)
     private val runningScripts = ConcurrentHashMap<Long, Boolean>()
 
     public override suspend fun start() {
         initCronScripts()
-        vertx.eventBus().consumer("cronjob.add", this::addCronScript);
-        vertx.eventBus().consumer("cronjob.remove", this::removeCronScript);
+        vertx.eventBus().consumer("cronjob.add", this::addCronScript)
+        vertx.eventBus().consumer("cronjob.remove", this::removeCronScript)
         while (!stopped) {
             try {
                 for (cronScript in cronScripts.values) {
@@ -58,7 +53,6 @@ class CronScriptRunner(
         }
     }
 
-    // TODO: make this function suspendable
     private suspend fun runCronScript(cronScript: CronScriptDb) {
         if (runningScripts[cronScript.id] == true) {
             return
@@ -92,7 +86,11 @@ class CronScriptRunner(
         var res: JsonObject? = null
         try {
             runningScripts[cronScript.id] = true
-            res = scriptRunner.run(script, collection, envName)
+            val msg = JsonObject()
+                .put("script", script)
+                .put("collectionId", collection.id)
+                .put("envName", envName)
+            res = vertx.eventBus().request<JsonObject>("script.run", msg).coAwait().body()
         } catch (e: Throwable) {
             e.printStackTrace()
         } finally {

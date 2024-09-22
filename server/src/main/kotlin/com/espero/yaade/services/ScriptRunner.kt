@@ -2,12 +2,11 @@ package com.espero.yaade.services
 
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
+import io.vertx.core.AbstractVerticle
+import io.vertx.core.Future
+import io.vertx.core.Promise
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.HostAccess
 import org.graalvm.polyglot.HostAccess.Export
@@ -17,20 +16,20 @@ import org.openapitools.codegen.examples.Environment
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.util.concurrent.Executors
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import java.util.concurrent.Callable
+import java.util.concurrent.atomic.AtomicBoolean
 
-class ScriptRunner(private val requestSender: RequestSender, private val daoManager: DaoManager) {
+class ScriptRunner(private val daoManager: DaoManager) : AbstractVerticle() {
 
-    val executor = Executors.newFixedThreadPool(3)
+    private lateinit var requestSender: RequestSender
 
-    class ContinuationWrapper(private val continuation: Continuation<Boolean>) {
+    class ContinuationWrapper {
+
+        var finished = AtomicBoolean(false)
 
         @Export
         fun resume() {
-            continuation.resume(true)
+            finished.set(true)
         }
 
     }
@@ -76,43 +75,73 @@ class ScriptRunner(private val requestSender: RequestSender, private val daoMana
         interpolateFile = interpolateStream.bufferedReader().use { it.readText() }
     }
 
-    suspend fun run(script: String, collection: CollectionDb, envName: String?): JsonObject {
-        val out = ByteArrayOutputStream()
-        return try {
-            withTimeout(5_000) {
-                withContext(Dispatchers.IO) {
-                    newContext(out).use { context ->
-                        val globalBindings = createGlobalBindings(context, collection, envName)
-                        val builder = ScriptRuntimeBuilder(context)
-                        suspendCoroutine { continuation ->
-                            globalBindings.putMember(
-                                "__continuation",
-                                ContinuationWrapper(continuation)
-                            )
-                            builder.evalScript(context, indexFile.format(script))
-                        }
-                        println(out.toString())
-                        val res = createResult(globalBindings, envName ?: "")
-                        globalBindings.getMember("__doCallback").execute(res.encode())
-                        return@withContext res
-                    }
+    override fun start() {
+        requestSender = RequestSender(vertx, daoManager)
+        vertx.eventBus().consumer<JsonObject>("script.run") { msg ->
+            val script = msg.body().getString("script")
+            val collectionId = msg.body().getLong("collectionId")
+            val envName = msg.body().getString("envName")
+            val collection = daoManager.collectionDao.getById(collectionId)
+                ?: throw IllegalArgumentException("Collection not found for id: $collectionId")
+            run(script, collection, envName).onComplete { result ->
+                if (result.failed()) {
+                    msg.fail(500, result.cause().message)
+                } else {
+                    msg.reply(result.result())
                 }
             }
-        } catch (e: TimeoutCancellationException) {
-            println("Script execution timed out")
-            JsonObject()
-                .put("success", false)
-                .put("executionTime", System.currentTimeMillis())
-                .put("error", e.message)
-                .put("envName", envName)
-        } catch (e: Throwable) {
-            println("An error occured while running the script: ${e.message}")
-            JsonObject()
-                .put("success", false)
-                .put("executionTime", System.currentTimeMillis())
-                .put("error", e.message)
-                .put("envName", envName)
         }
+    }
+
+    fun run(
+        script: String,
+        collection: CollectionDb,
+        envName: String?
+    ): Future<JsonObject> {
+        val out = ByteArrayOutputStream()
+        val callable = Callable {
+            newContext(out).use { context ->
+                try {
+                    val continuation = ContinuationWrapper()
+                    val startTime = System.currentTimeMillis()
+                    val globalBindings = createGlobalBindings(context, collection, envName)
+                    globalBindings.putMember(
+                        "__continuation",
+                        continuation
+                    )
+                    val builder = ScriptRuntimeBuilder(context)
+                    builder.evalScript(context, indexFile.format(script))
+                    while (!continuation.finished.get() && System.currentTimeMillis() - startTime < 30000) {
+                        Thread.sleep(10)
+                    }
+                    if (!continuation.finished.get()) {
+                        throw RuntimeException("Script execution timed out")
+                    }
+                    println(out.toString())
+                    val result = createResult(globalBindings, envName ?: "")
+                    result
+                } catch (e: Throwable) {
+                    JsonObject()
+                        .put("success", false)
+                        .put("executionTime", System.currentTimeMillis())
+                        .put("error", e.message)
+                        .put("envName", envName)
+                }
+            }
+        }
+        val future = vertx.executeBlocking(callable)
+        val resultPromise = Promise.promise<JsonObject>()
+
+        val timerId = vertx.setTimer(30500) {
+            resultPromise.tryFail(RuntimeException("Script execution timed out"))
+        }
+
+        future.onComplete {
+            vertx.cancelTimer(timerId)
+            resultPromise.tryComplete(it.result())
+        }
+
+        return resultPromise.future()
     }
 
     private fun interpolate(
