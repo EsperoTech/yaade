@@ -1,10 +1,12 @@
 package com.espero.yaade.services
 
+import com.espero.yaade.SCRIPT_RUNNER_TIMEOUT
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
-import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
 import io.vertx.core.Promise
+import io.vertx.core.eventbus.EventBus
+import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.graalvm.polyglot.Context
@@ -12,16 +14,17 @@ import org.graalvm.polyglot.HostAccess
 import org.graalvm.polyglot.HostAccess.Export
 import org.graalvm.polyglot.SandboxPolicy
 import org.graalvm.polyglot.Value
+import org.graalvm.polyglot.proxy.ProxyObject
 import org.openapitools.codegen.examples.Environment
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.util.concurrent.Callable
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 
-class ScriptRunner(private val daoManager: DaoManager) : AbstractVerticle() {
+class ScriptRunner(private val daoManager: DaoManager, private val eventBus: EventBus) {
 
-    private lateinit var requestSender: RequestSender
+    private val executor: ExecutorService = Executors.newCachedThreadPool()
 
     class ContinuationWrapper {
 
@@ -34,9 +37,28 @@ class ScriptRunner(private val daoManager: DaoManager) : AbstractVerticle() {
 
     }
 
+    class FutureWrapper(val future: Future<Map<String, Any>>) {
+
+        @Export
+        fun whenComplete(v: Value) {
+            future.onComplete {
+                if (!v.canExecute()) {
+                    return@onComplete
+                }
+                if (it.succeeded()) {
+                    v.execute(ProxyObject.fromMap(it.result()))
+                } else {
+                    v.execute(null, it.cause())
+                }
+            }.onFailure {
+                v.execute(null, it)
+            }
+        }
+
+    }
+
     class Exec(
-        private val daoManager: DaoManager,
-        private val requestSender: RequestSender,
+        private val eventBus: EventBus,
         private val scriptRunner: ScriptRunner
     ) {
 
@@ -44,22 +66,28 @@ class ScriptRunner(private val daoManager: DaoManager) : AbstractVerticle() {
         fun exec(
             requestId: Long,
             envName: String?
-        ): RequestSender.CompletableFutureWrapper {
-            val request = daoManager.requestDao.getById(requestId)
-                ?: throw IllegalArgumentException("Request not found: ${requestId}}")
-            val collection = daoManager.collectionDao.getById(request.collectionId)
-                ?: throw IllegalArgumentException("Collection not found: ${request.collectionId}")
-            try {
-                val res = scriptRunner.interpolate(request.toJson(), collection, envName)
-                val result = res.getJsonObject("result")
-                val errors = res.getJsonArray("errors") ?: JsonArray()
-                if (errors.size() > 0) {
-                    throw IllegalArgumentException("Failed to interpolate request: $requestId")
+        ): FutureWrapper {
+            val promise = Promise.promise<Map<String, Any>>()
+            val f = scriptRunner.prepareExec(requestId, envName)
+            f.orTimeout(30, TimeUnit.SECONDS)
+                .whenComplete { res, err ->
+                    if (err != null) {
+                        f.cancel(true)
+                        promise.fail(err)
+                        return@whenComplete
+                    }
+                    eventBus
+                        .request<JsonObject>("request.send", res).onComplete {
+                            if (it.succeeded()) {
+                                promise.complete(it.result().body().map)
+                            } else {
+                                promise.fail(it.cause())
+                            }
+                        }.onFailure {
+                            promise.fail(it)
+                        }
                 }
-                return requestSender.exec(result, collection, envName)
-            } catch (e: Throwable) {
-                throw IllegalArgumentException("Failed to interpolate request: $requestId")
-            }
+            return FutureWrapper(promise.future())
         }
     }
 
@@ -73,75 +101,70 @@ class ScriptRunner(private val daoManager: DaoManager) : AbstractVerticle() {
         val interpolateStream: InputStream = javaClass.getResourceAsStream("/interpolate.js")
             ?: throw IllegalArgumentException("File not found in resources")
         interpolateFile = interpolateStream.bufferedReader().use { it.readText() }
+        eventBus.consumer("script.run", this::run)
     }
 
-    override fun start() {
-        requestSender = RequestSender(vertx, daoManager)
-        vertx.eventBus().consumer<JsonObject>("script.run") { msg ->
-            val script = msg.body().getString("script")
-            val collectionId = msg.body().getLong("collectionId")
-            val envName = msg.body().getString("envName")
-            val collection = daoManager.collectionDao.getById(collectionId)
-                ?: throw IllegalArgumentException("Collection not found for id: $collectionId")
-            run(script, collection, envName).onComplete { result ->
-                if (result.failed()) {
-                    msg.fail(500, result.cause().message)
-                } else {
-                    msg.reply(result.result())
-                }
-            }
-        }
-    }
-
-    fun run(
-        script: String,
-        collection: CollectionDb,
-        envName: String?
-    ): Future<JsonObject> {
+    fun run(msg: Message<JsonObject>) {
+        val script = msg.body().getString("script")
+        val collectionId = msg.body().getLong("collectionId")
+        val envName = msg.body().getString("envName")
+        val collection = daoManager.collectionDao.getById(collectionId)
+            ?: throw IllegalArgumentException("Collection not found for id: $collectionId")
         val out = ByteArrayOutputStream()
-        val callable = Callable {
-            newContext(out).use { context ->
-                try {
-                    val continuation = ContinuationWrapper()
-                    val startTime = System.currentTimeMillis()
-                    val globalBindings = createGlobalBindings(context, collection, envName)
-                    globalBindings.putMember(
-                        "__continuation",
-                        continuation
+        val context = newContext(out)
+        val continuation = ContinuationWrapper()
+        val startTime = System.currentTimeMillis()
+        val globalBindings = createGlobalBindings(context, collection, envName)
+        globalBindings.putMember(
+            "__continuation",
+            continuation
+        )
+        val builder = ScriptRuntimeBuilder(context)
+        val f = CompletableFuture.supplyAsync({
+            builder.evalScript(context, indexFile.format(script))
+            while (!continuation.finished.get() && System.currentTimeMillis() - startTime < SCRIPT_RUNNER_TIMEOUT) {
+                Thread.sleep(10)
+            }
+            if (!continuation.finished.get()) {
+                throw RuntimeException("Script execution timed out")
+            }
+            val result = createResult(globalBindings, envName ?: "")
+            result
+        }, executor)
+        f.orTimeout(SCRIPT_RUNNER_TIMEOUT + 500, TimeUnit.MILLISECONDS)
+            .whenComplete { result: JsonObject?, ex: Throwable? ->
+                println(out.toString())
+                out.close()
+                if (ex != null) {
+                    context.close(true)
+                    f.cancel(true)
+                    val errorMessage = when (ex) {
+                        is TimeoutException -> "Script execution timed out"
+                        else -> ex.message
+                    }
+                    msg.reply(
+                        JsonObject()
+                            .put("success", false)
+                            .put("executionTime", System.currentTimeMillis())
+                            .put("error", errorMessage)
+                            .put("envName", envName)
                     )
-                    val builder = ScriptRuntimeBuilder(context)
-                    builder.evalScript(context, indexFile.format(script))
-                    while (!continuation.finished.get() && System.currentTimeMillis() - startTime < 30000) {
-                        Thread.sleep(10)
-                    }
-                    if (!continuation.finished.get()) {
-                        throw RuntimeException("Script execution timed out")
-                    }
-                    println(out.toString())
-                    val result = createResult(globalBindings, envName ?: "")
-                    result
-                } catch (e: Throwable) {
-                    JsonObject()
-                        .put("success", false)
-                        .put("executionTime", System.currentTimeMillis())
-                        .put("error", e.message)
-                        .put("envName", envName)
+                } else {
+                    context.close()
+                    msg.reply(result)
                 }
             }
-        }
-        val future = vertx.executeBlocking(callable)
-        val resultPromise = Promise.promise<JsonObject>()
+    }
 
-        val timerId = vertx.setTimer(30500) {
-            resultPromise.tryFail(RuntimeException("Script execution timed out"))
-        }
-
-        future.onComplete {
-            vertx.cancelTimer(timerId)
-            resultPromise.tryComplete(it.result())
-        }
-
-        return resultPromise.future()
+    private fun prepareExec(requestId: Long, envName: String?): CompletableFuture<JsonObject> {
+        val request = daoManager.requestDao.getById(requestId)
+            ?: throw IllegalArgumentException("Request not found for id: $requestId")
+        val collection = daoManager.collectionDao.getById(request.collectionId)
+            ?: throw IllegalArgumentException("Collection not found for id: ${request.collectionId}")
+        return CompletableFuture.supplyAsync(
+            { interpolate(request.jsonData(), collection, envName) },
+            executor
+        )
     }
 
     private fun interpolate(
@@ -163,7 +186,15 @@ class ScriptRunner(private val daoManager: DaoManager) : AbstractVerticle() {
                 globalBindings.getMember("interpolate").execute(request.encode(), envData.encode())
                     .asString()
             println(out.toString())
-            return JsonObject(res)
+            val result = JsonObject(res)
+            val errors = result.getJsonArray("errors", JsonArray())
+            if (errors.size() > 0) {
+                throw RuntimeException(errors.encode())
+            }
+            return JsonObject()
+                .put("data", result.getJsonObject("result"))
+                .put("collectionId", collection.id)
+                .put("envName", envName)
         }
     }
 
@@ -183,7 +214,7 @@ class ScriptRunner(private val daoManager: DaoManager) : AbstractVerticle() {
         envName: String?
     ): Value {
         val globalBindings: Value = context.getBindings("js")
-        globalBindings.putMember("__exec", Exec(daoManager, requestSender, this))
+        globalBindings.putMember("__exec", Exec(eventBus, this))
         globalBindings.putMember(
             "env",
             Environment(

@@ -1,6 +1,6 @@
 const __internalLogs = [];
 let __internalError = null;
-console = null;
+//console = null;
 let __callback = function() {}
 
 function registerCallback(callback) {
@@ -17,6 +17,7 @@ function __getInternalLogs() {
 }
 
 function log(...messages) {
+    console.log(messages)
     const time = Date.now();
     __internalLogs.push({
         time,
@@ -36,7 +37,7 @@ async function exec(requestId, envName) {
     });
 }
 
-await (async function() {
+(async function() {
 try {
     // ------- THE SCRIPT -------
     %s

@@ -28,8 +28,12 @@ class InvokeRoute(private val daoManager: DaoManager, private val requestSender:
                 "User is not allowed to read this collection"
             )
         val envName: String? = ctx.body().asJsonObject().getString("envName")
+        val data = request.getJsonObject("data") ?: throw ServerError(
+            HttpResponseStatus.BAD_REQUEST.code(),
+            "No data provided"
+        )
 
-        val result = requestSender.send(request, collection, envName, user)
+        val result = requestSender.send(data, collection, envName, user)
         ctx.end(result.encode()).coAwait()
     }
 

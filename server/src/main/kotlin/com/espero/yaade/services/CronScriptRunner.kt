@@ -6,6 +6,7 @@ import com.cronutils.model.time.ExecutionTime
 import com.cronutils.parser.CronParser
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CronScriptDb
+import io.vertx.core.eventbus.DeliveryOptions
 import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
@@ -90,7 +91,9 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
                 .put("script", script)
                 .put("collectionId", collection.id)
                 .put("envName", envName)
-            res = vertx.eventBus().request<JsonObject>("script.run", msg).coAwait().body()
+            res = vertx.eventBus()
+                .request<JsonObject>("script.run", msg, DeliveryOptions().setSendTimeout(6000))
+                .coAwait().body()
         } catch (e: Throwable) {
             e.printStackTrace()
         } finally {

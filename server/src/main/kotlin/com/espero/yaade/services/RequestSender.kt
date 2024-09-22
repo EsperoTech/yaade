@@ -33,6 +33,26 @@ class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager
     private val secretInterpolator = SecretInterpolator(daoManager)
     override val coroutineContext: CoroutineContext by lazy { vertx.dispatcher() + SupervisorJob() }
 
+    init {
+        vertx.eventBus().consumer<JsonObject>("request.send") { msg ->
+            launch {
+                try {
+                    val requestData = msg.body().getJsonObject("data")
+                    val collectionId = msg.body().getLong("collectionId")
+                    val envName = msg.body().getString("envName")
+                    val collection = daoManager.collectionDao.getById(collectionId)
+                        ?: throw RuntimeException("Collection not found")
+                    val res = send(requestData, collection, envName, null)
+                    msg.reply(res)
+                } catch (e: Throwable) {
+                    msg.fail(500, e.message)
+                }
+
+            }
+
+        }
+    }
+
     class CompletableFutureWrapper(val future: CompletableFuture<Map<String, Any>>) {
 
         @Export
@@ -47,35 +67,14 @@ class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager
             }
             future.whenComplete(action)
         }
-
-    }
-
-    // TODO: the problem is that request sender is in coroutine context, but
-    // the script runner is not, so this will not work
-    fun exec(
-        request: JsonObject,
-        collection: CollectionDb,
-        envName: String?,
-    ): CompletableFutureWrapper {
-        val future = CompletableFuture<Map<String, Any>>()
-        launch {
-            try {
-                val res = send(request, collection, envName, null)
-                future.complete(res.map)
-            } catch (e: Throwable) {
-                future.completeExceptionally(e)
-            }
-        }
-        return CompletableFutureWrapper(future)
     }
 
     suspend fun send(
-        request: JsonObject,
+        requestData: JsonObject,
         collection: CollectionDb,
         envName: String?,
         user: UserDb?
     ): JsonObject {
-        val requestData = request.getJsonObject("data")
         val interpolated = if (envName != null)
             secretInterpolator.interpolate(requestData, collection.id, envName)
         else

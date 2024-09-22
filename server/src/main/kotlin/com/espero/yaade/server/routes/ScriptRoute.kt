@@ -8,6 +8,7 @@ import com.espero.yaade.model.db.CronScriptDb
 import com.espero.yaade.server.errors.ServerError
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Vertx
+import io.vertx.core.eventbus.DeliveryOptions
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
@@ -104,7 +105,9 @@ class ScriptRoute(
                 .put("script", scriptString)
                 .put("collectionId", collection.id)
                 .put("envName", envName)
-            res = vertx.eventBus().request<JsonObject>("script.run", msg).coAwait().body()
+            res = vertx.eventBus()
+                .request<JsonObject>("script.run", msg, DeliveryOptions().setSendTimeout(6000))
+                .coAwait().body()
         } catch (e: Throwable) {
             res = JsonObject()
                 .put("success", false)

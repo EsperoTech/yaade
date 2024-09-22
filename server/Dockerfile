@@ -1,4 +1,4 @@
-FROM amazoncorretto:18
+FROM amazoncorretto:17
 RUN mkdir /app
 
 EXPOSE 9339

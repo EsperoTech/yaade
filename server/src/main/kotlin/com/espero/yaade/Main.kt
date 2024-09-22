@@ -17,6 +17,7 @@ val ADMIN_USERNAME: String = System.getenv("YAADE_ADMIN_USERNAME") ?: ""
 val BASE_PATH: String = System.getenv("YAADE_BASE_PATH") ?: ""
 val FILE_STORAGE_PATH: String = System.getenv("YAADE_FILE_STORAGE_PATH") ?: "./app/data/files"
 val SCRIPT_RUNNER_TIMEOUT: Long = System.getenv("YAADE_SCRIPT_RUNNTER_TIMEOUT")?.toLong() ?: 5000
+val SCRIPT_RUNNER_POOL_SIZE = System.getenv("YAADE_SCRIPT_RUNNER_POOL_SIZE")?.toInt() ?: 1
 
 fun main() {
     configureDatabindCodec()
@@ -26,5 +27,5 @@ fun main() {
     val options = DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
 
     vertx.deployVerticle(CronScriptRunner(daoManager), options)
-    vertx.deployVerticle(ScriptRunner(daoManager), options)
+    ScriptRunner(daoManager, vertx.eventBus())
 }
