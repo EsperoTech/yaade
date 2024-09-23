@@ -12,97 +12,42 @@ scripts:
 
 While these three types of scripts share most of their functionality, there are some differences in the context in which they are executed. The following sections will provide an overview of the available commands and the execution order of the scripts.
 
-## Request Scripts
+## Script Syntax
 
-Request scripts are run before a request is executed. This makes them useful if you need
-to build your environment before executing a request. For example when a request needs a
-fresh access token you can use the request script to fetch the access token and put it
-into the environment to be used by the request. Check the `Execute another Request` section
-for more infos. Request scripts are always executed in the browser of the calling user.
-
-### Access the Request
-
-The `req` object exposes the request that will be sent. The request itself is immutable though and can only be changed by changing the environment.
-The request script is executed **before** the interpolation step, therefore the `req` object won't contain the resolved environment variables.
+Scripts are defined in regular JavaScript. This means you can use all the features of JavaScript like variables, loops, and functions.
 
 ```javascript
-const uri = req.uri // string of the request URI
-const headers = req.headers // map of key value pairs
-const body = req.body // body as string
-const method = req.method // string of the request method for REST requests
-```
-
-## Response Scripts
-
-Response scripts are run after a request is executed. They are usually used to extract
-information from the response and validate it. You could for example use the response
-script to check if the status code was 200 or else throw an error. Response scripts are 
-always executed in the browser of the calling user.
-
-### Access the Response
-
-The `res` object exposes the response received when executing the request. It contains the body as a string, headers as an object with keys and values and status code as integer.
-
-```javascript
-const headers = res.headers
-const contentType = headers["Content-Type"]
-const body = res.body
-const status = res.status
-if (status === 200) {
-    env.set("type", contentType)
+// valid commands
+const x = 2 * 5
+let y = "hello world"
+const s = y.split(" ")
+if (s.length === 2) {
+    y = `foo=${s[0]}`
+}
+const j = s.join("_")
+for (let i = 0; i < 10; i++) {
+    x += i
 }
 ```
 
-## Job Scripts
+But there are some commands that are blocked on purpose to prevent malicious behavior:
 
-Job Scripts are server-side scripts that are executed in an isolated GraalVM JavaScript environment on the server. This allows for script execution without user interaction. Job
-scripts can be scheduled using cron expressions for recurring tasks such as smoke tests, cleanup jobs, or data processing.
-
-Each run of a job script creates a result that contains the set of logs generated during the execution as well as a test suite. The result can be viewed in the job history.
-
-### Create a new Job Script
-
-Just like a request, a job script is always part of a collection. To create a new job script, click on the **•••** button in the collection sidebar and select `New Job Script`. Enter the name
-of your script and click `Create`.
-
-### Manual Run
-
-You can manually run a job script by clicking the `RUN` button in the top right corner of the
-script panel. This will execute the script and show the result in the job history.
-
-### Cron Scheduling
-
-Job scripts can be scheduled using cron expressions. We use **UNIX cron expressions** to define the schedule of a job. The cron expression consists of five fields that represent the following:
-
-1. Seconds (0-59)
-2. Minutes (0-59)
-3. Hours (0-23)
-4. Day of the month (1-31)
-5. Month (1-12)
-
-The following cron expression runs the job every day at 3:30 AM:
-
-```plaintext
-30 3 * * *
+```javascript
+// invalid commands
+import "..."
+window.localStorage
+console.log("hello world")
+const cookies = document.cookie
+alert("hello world")
 ```
 
-The following cron expression runs the job every Monday at 3:30 AM:
-
-```plaintext
-30 3 * * 1
-```
-
-The following cron expression runs the job every 15 minutes:
-
-```plaintext
-*/15 * * * *
-```
-
-To enable a scheduled job, click the `▶` play button. To disable the job, click the `⏸` pause button. Select the environment in which the job should be executed. Choose `NO_ENV` if you don't need an environment.
+::: warning
+Because Yaade uses JavaScript template literals to interpolate environment variables, template literals inside your scripts might be overwritten by your environment if keys match. It is therefore generally discouraged to use them in scripts.
+:::
 
 ## Special Commands
 
-Listed below are special commands available in different scripts.
+Yaade Scripts provide some special commands to interact with the environment, the request, and the response. The following sections will provide an overview of the available commands.
 
 ### Set Environment Variables
 
@@ -136,11 +81,11 @@ env.set("token", jp("$.access_token", res.body))
 ### Logging
 
 The `log` function provides a basic way for logging. It logs into the console and prepends some information about execution environment, like
-request id and environment name. The structure of this info is `[<script type>: <request id> - <environment>] <logging-content>`.
+request id and environment name. The structure of this info is `[<script type>: <request id> - <environment>] <logging-content>`. When logging in job scripts, the logs are stored in the job history.
 
 ```javascript
 const o = {"foo": "bar"}
-log("hello world")
+log("hello world", o)
 // output: [Request Script: 2 - dev] hello world {foo: 'bar'}
 ```
 
@@ -153,6 +98,20 @@ const now = DateTime.utc().toISO()
 // result: 2023-03-26T12:43:37.956Z
 ```
 
+#### random-js
+
+We support `random-js` by referencing `$r`. You can read the full random-js docs [here](https://github.com/ckknight/random-js). Below are some useful commands taken from their documentation.
+
+- `$r.integer(min, max)`: Produce an integer within the inclusive range [`min`, `max`]. `min` can be at its minimum -9007199254740992 (2 ** 53). `max` can be at its maximum 9007199254740992 (2 ** 53). The special number `-0` is never returned.
+- `$r.real(min, max, inclusive)`: Produce a floating point number within the range [`min`, `max`) or [`min`, `max`]. Uses 53 bits of randomness.
+- `$r.die(sideCount)`: Same as `r.integer(1, sideCount)`
+- `$r.uuid4()`: Produce a [Universally Unique Identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier) Version 4.
+- `$r.string(length)`: Produce a random string using numbers, uppercase and lowercase letters, `_`, and `-` of length `length`.
+- `$r.string(length, pool)`: Produce a random string using the provided string `pool` as the possible characters to choose from of length `length`.
+- `$r.hex(length)` or `r.hex(length, false)`: Produce a random string comprised of numbers or the characters `abcdef` of length `length`.
+- `$r.hex(length, true)`: Produce a random string comprised of numbers or the characters `ABCDEF` of length `length`.
+- `$r.date(start, end)`: Produce a random `Date` within the inclusive range of [`start`, `end`]. `start` and `end` must both be `Date`s.
+
 ### Base64 encoding/decoding
 
 You can encode and decode strings to and from base64.
@@ -162,7 +121,7 @@ You can encode and decode strings to and from base64.
 
 ### Execute another Request
 
-Request scripts allow you to execute other requests before the actual request is sent. This provides a powerful tool to chain requests.
+A very powerful tool is to execute other requests from within a script. This gives you the ability to chain requests and build complex workflows.
 The signature of the command is very simple: 
 
 ```javascript
@@ -191,13 +150,13 @@ Note that to prevent exec loops, a max. depth of **5 requests** is supported bef
 environment of the target request via the response script of the target request.
 :::
 
-The result of a successful exec call is the response of the target request. It contains the body as a string, headers as an object with keys and values and status code as integer.
+The result of a successful exec call is the response of the target request. It is the same object as the `res` object in response scripts.
 
 ```javascript
 const res = await exec(12)
 const headers = res.headers
 const contentType = headers["Content-Type"]
-const body = res.body
+const body = res.body // is of type string
 const status = res.status
 if (status === 200) {
     env.set("type", contentType)
@@ -206,7 +165,9 @@ if (status === 200) {
 
 ### Tests
 
-We use Jasmine to define test suites in scripts. The following example shows how to write a simple test suite:
+We use Jasmine to define test suites in scripts. Tests can only be used in response and job scripts.
+
+The following example shows how to write a simple test suite:
 
 ```javascript
 describe('Create and retrieve an entity', function() {
@@ -292,6 +253,46 @@ describe("Basic Jasmine Test Suite", function() {
 });
 ```
 
+## Request Scripts
+
+Request scripts are run before a request is executed. This makes them useful if you need
+to build your environment before executing a request. For example when a request needs a
+fresh access token you can use the request script to fetch the access token and put it
+into the environment to be used by the request. Request scripts are always executed in the browser of the calling user. To add a request script, select a request and go to the `Request Script` tab.
+
+### Access the Request
+
+The `req` object exposes the request that will be sent. The request itself is immutable though and can only be changed by changing the environment.
+The request script is executed **before** the interpolation step, therefore the `req` object won't contain the resolved environment variables.
+
+```javascript
+const uri = req.uri // string of the request URI
+const headers = req.headers // map of key value pairs
+const body = req.body // body as string
+const method = req.method // string of the request method for REST requests
+```
+
+## Response Scripts
+
+Response scripts are run after a request is executed. They are usually used to extract
+information from the response and validate it. You could for example use the response
+script to check if the status code was 200 or else throw an error. Response scripts are 
+always executed in the browser of the calling user. To add a response script, select a request and go to the `Response Script` tab.
+
+### Access the Response
+
+The `res` object exposes the response received when executing the request. It contains the body as a string, headers as an object with keys and values and status code as integer.
+
+```javascript
+const headers = res.headers
+const contentType = headers["Content-Type"]
+const body = res.body
+const status = res.status
+if (status === 200) {
+    env.set("type", contentType)
+}
+```
+
 ## Execution Order of Request and Response Scripts
 
 There are four types of scripts that are executed in the following order:
@@ -323,32 +324,126 @@ Now if request 1 is executed, the execution order is as follows:
 8. Response Script of Request 1
 9. Collection-level Response Script of Request 1
 
-## JavaScript for Scripts
+## Job Scripts
 
-Scripts are always executed in a sandboxed JavaScript environment. It is sandboxed because most JavaScript functionality is deactivated, like calls to `window` or `document` to prevent potentially malicious code.
+Job Scripts are server-side scripts that are executed in an isolated GraalVM JavaScript environment on the server. This allows for script execution without user interaction. Job
+scripts can be scheduled using cron expressions for recurring tasks such as smoke tests, cleanup jobs, or data processing.
 
-Some valid functionality includes:
+Each run of a job script creates a result that contains the set of logs generated during the execution as well as a test suite. The result can be viewed in the job history.
 
-```javascript
-const x = 2 * 5
-let y = "hello world"
-const s = y.split(" ")
-if (s.length === 2) {
-    y = `foo=${s[0]}`
-}
-const j = s.join("_")
+### Create a new Job Script
+
+Just like a request, a job script is always part of a collection. To create a new job script, click on the **•••** button in the collection sidebar and select `New Job Script`. Enter the name
+of your script and click `Create`.
+
+### Manual Run
+
+You can manually run a job script by clicking the `RUN` button in the top right corner of the
+script panel. This will execute the script and show the result in the job history.
+
+### Cron Scheduling
+
+Job scripts can be scheduled using cron expressions. We use **UNIX cron expressions** to define the schedule of a job. The cron expression consists of five fields that represent the following:
+
+1. Seconds (0-59)
+2. Minutes (0-59)
+3. Hours (0-23)
+4. Day of the month (1-31)
+5. Month (1-12)
+
+The following cron expression runs the job every day at 3:30 AM:
+
+```plaintext
+30 3  *  *  *
+┬  ┬  ┬  ┬  ┬
+│  │  │  │  └───── Day of the week (any)
+│  │  │  └─────────── Month (any)
+│  │  └───────────────── Day of the month (any)
+│  └─────────────────────── Hour (3 AM)
+└───────────────────────────── Minute (30)
 ```
 
-But the following commands are not valid:
+The following cron expression runs the job every Monday at 3:30 AM:
 
-```javascript
-import "..."
-window.localStorage
-console.log("hello world")
-const cookies = document.cookie
+```plaintext
+30 3 * * 1
 ```
 
-::: warning
-Because Yaade uses JavaScript template literals to interpolate environment variables, template literals inside your scripts might be overwritten by your environment if keys match. It is therefore generally discouraged to use them in request and response scripts. Job scripts are
-not interpolated and are therefore not effected by this.
-:::
+The following cron expression runs the job every 15 minutes:
+
+```plaintext
+*/15 * * * *
+```
+
+To enable a scheduled job, click the `▶` play button. To disable the job, click the `⏸` pause button. Select the environment in which the job should be executed. Choose `NO_ENV` if you don't need an environment.
+
+### Callback
+
+You can register a callback that is executed after the job script has finished. This is useful when automating workflows. The callback function has access to all the test results of the job script.
+
+```javascript
+registerCallback(async (res) => {
+    env.set("res", res)
+    if (!res.success || res.jasmineReport?.status === "failed") {
+        // you can execute another request here, for example
+        // have a request that sends a notification to a slack channel
+        await exec(12)
+    }
+})
+```
+
+```typescript
+type JasmineExpectation = {
+  matcherName: string;
+  message: string;
+  stack: string;
+  passed: boolean;
+};
+
+type JasmineSpec = {
+  id: string;
+  description: string;
+  fullName: string;
+  parentSuiteId: string | null;
+  failedExpectations: JasmineExpectation[];
+  passedExpectations: JasmineExpectation[];
+  deprecationWarnings: any[];
+  pendingReason: string;
+  duration: number;
+  properties: any | null;
+  debugLogs: any | null;
+  status: string;
+};
+
+type JasmineSuite = {
+  id: string;
+  description: string;
+  fullName: string;
+  parentSuiteId: string | null;
+  failedExpectations: any[];
+  deprecationWarnings: any[];
+  duration: number;
+  properties: any | null;
+  status: string;
+  specs: JasmineSpec[];
+};
+
+type JasmineReport = {
+  suites: JasmineSuite[];
+  status: string;
+};
+
+type Log = {
+  message: string;
+  timestamp: string;
+};
+
+type TestReport = {
+  success: boolean;
+  executionTime: number;
+  jasmineReport: JasmineReport;
+  logs: Log[];
+  error: string | null;
+  envName: string;
+};
+```

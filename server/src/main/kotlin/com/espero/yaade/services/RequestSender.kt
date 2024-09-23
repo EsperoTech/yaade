@@ -20,12 +20,8 @@ import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import org.graalvm.polyglot.HostAccess.Export
-import org.graalvm.polyglot.Value
-import org.graalvm.polyglot.proxy.ProxyObject
+import java.net.URLEncoder
 import java.nio.file.Paths
-import java.util.concurrent.CompletableFuture
-import java.util.function.BiConsumer
 import kotlin.coroutines.CoroutineContext
 
 class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager) : CoroutineScope {
@@ -47,25 +43,8 @@ class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager
                 } catch (e: Throwable) {
                     msg.fail(500, e.message)
                 }
-
             }
 
-        }
-    }
-
-    class CompletableFutureWrapper(val future: CompletableFuture<Map<String, Any>>) {
-
-        @Export
-        fun whenComplete(v: Value) {
-            // TODO: figure out how to map js-function to bi-consumer when using constrained host access
-            val action = BiConsumer<Map<String, Any>, Throwable> { map, throwable ->
-                if (throwable != null) {
-                    v.execute(null, throwable)
-                } else {
-                    v.execute(ProxyObject.fromMap(map))
-                }
-            }
-            future.whenComplete(action)
         }
     }
 
@@ -119,6 +98,11 @@ class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager
                     httpRequest.sendMultipartForm(body).coAwait()
                 }
 
+                "application/x-www-form-urlencoded" -> {
+                    val body = buildFormUrlencodedBody(interpolated)
+                    httpRequest.sendBuffer(Buffer.buffer(body)).coAwait()
+                }
+
                 else -> {
                     val body = interpolated.getString("body")
                     if (!body.isNullOrEmpty())
@@ -140,6 +124,19 @@ class RequestSender(private val vertx: Vertx, private val daoManager: DaoManager
         result.put("time", duration)
 
         return result
+    }
+
+    private fun buildFormUrlencodedBody(request: JsonObject): String {
+        if (request.getJsonArray("formDataBody") == null) {
+            return request.getString("body", "")
+        }
+        return request.getJsonArray("formDataBody", JsonArray()).map { it as JsonObject }
+            .filter { it.getBoolean("enabled", true) }
+            .joinToString("&") {
+                val key = it.getString("key", "not-found")
+                val value = it.getString("value", "")
+                "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
+            }
     }
 
     private fun buildFormdataBody(body: JsonArray?): MultipartForm {

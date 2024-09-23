@@ -4,6 +4,7 @@ import com.cronutils.model.CronType
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.model.time.ExecutionTime
 import com.cronutils.parser.CronParser
+import com.espero.yaade.SCRIPT_RUNNER_TIMEOUT
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CronScriptDb
 import io.vertx.core.eventbus.DeliveryOptions
@@ -80,7 +81,7 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
 
         val script = cronScript.jsonData().getString("script")
         val collectionId = cronScript.collectionId
-        val envName = cronScript.jsonData().getString("envName") ?: ""
+        val envName = cronScript.jsonData().getString("selectedEnvName") ?: ""
         val collection = daoManager.collectionDao.getById(collectionId) ?: throw RuntimeException(
             "Collection not found for id: $collectionId"
         )
@@ -92,7 +93,11 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
                 .put("collectionId", collection.id)
                 .put("envName", envName)
             res = vertx.eventBus()
-                .request<JsonObject>("script.run", msg, DeliveryOptions().setSendTimeout(6000))
+                .request<JsonObject>(
+                    "script.run", msg, DeliveryOptions().setSendTimeout(
+                        SCRIPT_RUNNER_TIMEOUT + 1000
+                    )
+                )
                 .coAwait().body()
         } catch (e: Throwable) {
             e.printStackTrace()

@@ -1,15 +1,19 @@
 const __internalLogs = [];
 let __internalError = null;
-//console = null;
+console = null;
 let __callback = function() {}
 
 function registerCallback(callback) {
     __callback = callback;
 }
 
-function __doCallback(resString) {
+async function __doCallback(resString) {
     const res = JSON.parse(resString);
-    __callback(res);
+    try {
+        await __callback(res);
+    } finally {
+        __continuation.resume();
+    }
 }
 
 function __getInternalLogs() {
@@ -17,7 +21,6 @@ function __getInternalLogs() {
 }
 
 function log(...messages) {
-    console.log(messages)
     const time = Date.now();
     __internalLogs.push({
         time,

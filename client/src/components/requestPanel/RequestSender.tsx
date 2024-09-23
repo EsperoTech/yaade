@@ -283,22 +283,24 @@ function RequestSender({
     }
 
     if (injectedReq.data.responseScript) {
-      doResponseScript(
+      await doResponseScript(
         injectedReq,
         response,
         injectedReq.data.responseScript,
         false,
         envName,
+        n,
       );
     }
 
     if (collection?.data?.responseScript) {
-      doResponseScript(
+      await doResponseScript(
         injectedReq,
         response,
         collection?.data?.responseScript,
         true,
         envName,
+        n,
       );
     }
 
@@ -336,24 +338,34 @@ function RequestSender({
     );
   }
 
-  function doResponseScript(
+  async function doResponseScript(
     request: Request,
     response: Response,
     responseScript: string,
     isCollectionLevel: boolean,
     envName?: string,
+    n?: number,
   ) {
     // NOTE: cannot pass state on top level because it does not use most current state
     const set = (key: string, value: string) =>
       setEnvVar(request.collectionId, key, value, envName);
     const get = (key: string): string =>
       getEnvVar(request.collectionId, envName)(collections, key);
-    executeResponseScript(
+    const exec = async (requestId: number, envName?: string) => {
+      const request = findRequest(collections, requestId);
+      if (!request) {
+        throw Error(`Request with id ${requestId} not found`);
+      }
+      if (!n) n = 0;
+      return await sendRequest(request, envName, n + 1);
+    };
+    await executeResponseScript(
       request,
       response,
       responseScript,
       set,
       get,
+      exec,
       toast,
       isCollectionLevel,
       envName,

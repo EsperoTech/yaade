@@ -73,7 +73,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
                 .whenComplete { res, err ->
                     if (err != null) {
                         f.cancel(true)
-                        promise.fail(err)
+                        promise.fail(err.cause?.message ?: err.message ?: "Unknown error")
                         return@whenComplete
                     }
                     eventBus
@@ -129,11 +129,23 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
                 throw RuntimeException("Script execution timed out")
             }
             val result = createResult(globalBindings, envName ?: "")
+            continuation.finished.set(false)
+            globalBindings.getMember("__doCallback").execute(result.encode())
+            while (!continuation.finished.get() && System.currentTimeMillis() - startTime < SCRIPT_RUNNER_TIMEOUT) {
+                Thread.sleep(10)
+            }
+            if (!continuation.finished.get()) {
+                throw RuntimeException("Script execution timed out")
+            }
             result
         }, executor)
+        // NOTE: we add a little extra timeout to better differentiate which timeout happened
         f.orTimeout(SCRIPT_RUNNER_TIMEOUT + 500, TimeUnit.MILLISECONDS)
             .whenComplete { result: JsonObject?, ex: Throwable? ->
-                println(out.toString())
+                val outPrint = out.toString()
+                if (outPrint.trimIndent().isNotEmpty()) {
+                    println(outPrint)
+                }
                 out.close()
                 if (ex != null) {
                     context.close(true)
@@ -161,6 +173,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
             ?: throw IllegalArgumentException("Request not found for id: $requestId")
         val collection = daoManager.collectionDao.getById(request.collectionId)
             ?: throw IllegalArgumentException("Collection not found for id: ${request.collectionId}")
+        // TODO: close context on timeout
         return CompletableFuture.supplyAsync(
             { interpolate(request.jsonData(), collection, envName) },
             executor
@@ -185,7 +198,10 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
             val res =
                 globalBindings.getMember("interpolate").execute(request.encode(), envData.encode())
                     .asString()
-            println(out.toString())
+            val outString = out.toString()
+            if (outString.trimIndent().isNotEmpty()) {
+                println(outString)
+            }
             val result = JsonObject(res)
             val errors = result.getJsonArray("errors", JsonArray())
             if (errors.size() > 0) {
@@ -203,8 +219,9 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
             .sandbox(SandboxPolicy.CONSTRAINED)
             .`in`(ByteArrayInputStream(ByteArray(0)))
             .out(out)
-            .err(ByteArrayOutputStream())
+            .err(out)
             .allowHostAccess(HostAccess.CONSTRAINED)
+            .option("engine.WarnInterpreterOnly", "false")
             .build()
     }
 
@@ -262,6 +279,8 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
                 suite.put("specs", newSpecs)
             }
 
+            var overallStatus = "passed"
+
             for (suite in suites) {
                 val sortedSpecs = suite.getJsonArray("specs", JsonArray()).map { it as JsonObject }
                     .sortedBy { it.getString("id") }
@@ -273,6 +292,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
                     val specStatus = spec.getString("status", "passed")
                     if (specStatus == "failed") {
                         status = "failed"
+                        overallStatus = "failed"
                         break
                     }
                 }
@@ -289,7 +309,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
 
             val sortedResult = result.map { it as JsonObject }.sortedBy { it.getString("id") }
 
-            return JsonObject().put("suites", sortedResult)
+            return JsonObject().put("suites", sortedResult).put("status", overallStatus)
         } catch (e: Exception) {
             e.printStackTrace()
         }

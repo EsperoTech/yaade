@@ -1204,7 +1204,7 @@ getJasmineRequireObj().Env = function(j$) {
        * @type Boolean
        * @default true
        */
-      random: true,
+      random: false,
       /**
        * Seed to use as the basis of randomization.
        * Null causes the seed to be determined randomly at the start of execution.
@@ -1221,7 +1221,7 @@ getJasmineRequireObj().Env = function(j$) {
        * @type Boolean
        * @default false
        */
-      stopOnSpecFailure: false,
+      stopOnSpecFailure: true,
       /**
        * Whether to fail the spec if it ran no expectations. By default
        * a spec that ran no expectations is reported as passed. Setting this

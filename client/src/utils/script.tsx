@@ -1,10 +1,13 @@
 import jp from 'jsonpath';
 import { DateTime } from 'luxon';
+import { MersenneTwister19937, Random } from 'random-js';
 
 import Request from '../model/Request';
 import Response from '../model/Response';
 import { errorToast, kvRowsToMap } from '.';
 import { asyncSandboxedFunction, sandboxedFunction } from './sandboxedFunction';
+
+const rand = new Random(MersenneTwister19937.autoSeed());
 
 const jpath = function (expr: string, value: string) {
   let json = value;
@@ -12,12 +15,13 @@ const jpath = function (expr: string, value: string) {
   return jp.value(json, expr);
 };
 
-function executeResponseScript(
+async function executeResponseScript(
   request: Request,
   response: Response,
   script: string,
   set: any,
   get: any,
+  exec: any,
   toast: any,
   isCollectionLevel: boolean,
   envName?: string,
@@ -33,6 +37,8 @@ function executeResponseScript(
   args.btoa = btoa;
   args.atob = atob;
   args.DateTime = DateTime;
+  args.rand = rand;
+  args.exec = exec;
   if (isCollectionLevel) {
     args.log = (...data: any[]) =>
       console.log(
@@ -44,10 +50,13 @@ function executeResponseScript(
       console.log(`[Response Script: ${request.id} - ${envName ?? 'NO_ENV'}]`, ...data);
   }
   try {
-    sandboxedFunction(args, script);
-  } catch (err) {
-    console.log(err);
-    errorToast(`${err}`, toast, 5000, 'Error in response script');
+    await asyncSandboxedFunction(args, script);
+  } catch (err: any) {
+    // NOTE: this is to prevent stacked error messages due to exec loop
+    const msg = err.message.startsWith('Error in request script')
+      ? err.message
+      : `Error in request script [id: ${request.id}]: ${err}`;
+    throw Error(msg);
   }
 }
 
@@ -72,6 +81,7 @@ async function executeRequestScript(
   args.btoa = window.btoa;
   args.atob = window.atob;
   args.DateTime = DateTime;
+  args.rand = rand;
   args.exec = exec;
   if (isCollectionLevel) {
     args.log = (...data: any[]) =>
