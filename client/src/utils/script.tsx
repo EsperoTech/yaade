@@ -4,7 +4,10 @@ import { MersenneTwister19937, Random } from 'random-js';
 
 import Request from '../model/Request';
 import Response from '../model/Response';
-import { errorToast, kvRowsToMap } from '.';
+import { JasmineReport } from '../model/Script';
+import { kvRowsToMap } from '.';
+import bootJasmine from './jasmine/jasmine';
+import getJasmineReport from './jasmine/parseReport';
 import { asyncSandboxedFunction, sandboxedFunction } from './sandboxedFunction';
 
 const rand = new Random(MersenneTwister19937.autoSeed());
@@ -25,8 +28,19 @@ async function executeResponseScript(
   toast: any,
   isCollectionLevel: boolean,
   envName?: string,
-) {
-  const args: Record<string, any> = {};
+): Promise<JasmineReport | null> {
+  const jasmine = bootJasmine();
+  const jasmineEnv = jasmine.getEnv();
+  const args: Record<string, any> = {
+    describe: jasmineEnv.describe,
+    it: jasmineEnv.it,
+    expect: jasmineEnv.expect,
+    fail: jasmineEnv.fail,
+    beforeEach: jasmineEnv.beforeEach,
+    afterEach: jasmineEnv.afterEach,
+    beforeAll: jasmineEnv.beforeAll,
+    afterAll: jasmineEnv.afterAll,
+  };
   args.env = { set, get };
   args.res = {
     body: response.body,
@@ -51,6 +65,10 @@ async function executeResponseScript(
   }
   try {
     await asyncSandboxedFunction(args, script);
+    // TODO: env.name does not work
+    // TODO: async jasmine spec does not work
+    await jasmineEnv.execute();
+    return getJasmineReport(jasmine);
   } catch (err: any) {
     // NOTE: this is to prevent stacked error messages due to exec loop
     const msg = err.message.startsWith('Error in request script')

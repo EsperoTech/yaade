@@ -6,6 +6,7 @@ import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import Request, { CurrentRequest } from '../../model/Request';
 import Response from '../../model/Response';
+import { JasmineReport } from '../../model/Script';
 import {
   CollectionsAction,
   CollectionsActionType,
@@ -283,7 +284,7 @@ function RequestSender({
     }
 
     if (injectedReq.data.responseScript) {
-      await doResponseScript(
+      const jasmineReport = await doResponseScript(
         injectedReq,
         response,
         injectedReq.data.responseScript,
@@ -291,10 +292,13 @@ function RequestSender({
         envName,
         n,
       );
+      if (jasmineReport) {
+        response.jasmineReport = jasmineReport;
+      }
     }
 
     if (collection?.data?.responseScript) {
-      await doResponseScript(
+      const jasmineReport = await doResponseScript(
         injectedReq,
         response,
         collection?.data?.responseScript,
@@ -302,6 +306,9 @@ function RequestSender({
         envName,
         n,
       );
+      if (!response.jasmineReport && jasmineReport) {
+        response.jasmineReport = jasmineReport;
+      }
     }
 
     return response;
@@ -345,7 +352,7 @@ function RequestSender({
     isCollectionLevel: boolean,
     envName?: string,
     n?: number,
-  ) {
+  ): Promise<JasmineReport | null> {
     // NOTE: cannot pass state on top level because it does not use most current state
     const set = (key: string, value: string) =>
       setEnvVar(request.collectionId, key, value, envName);
@@ -359,7 +366,7 @@ function RequestSender({
       if (!n) n = 0;
       return await sendRequest(request, envName, n + 1);
     };
-    await executeResponseScript(
+    return await executeResponseScript(
       request,
       response,
       responseScript,

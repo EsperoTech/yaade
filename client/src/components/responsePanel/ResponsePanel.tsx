@@ -20,6 +20,7 @@ import Response from '../../model/Response';
 import { cn, successToast } from '../../utils';
 import { json } from '../../utils/codemirror/lang-json';
 import KVEditor from '../kvEditor';
+import TestsTab from '../scriptResultsPanel/testsTab';
 import styles from './ResponsePanel.module.css';
 
 function getExtensions(contentType: string): Array<any> {
@@ -73,6 +74,7 @@ function ResponsePanel({ response }: ResponsePanelProps) {
             <TabList borderWidth={0}>
               <Tab>Body</Tab>
               <Tab>Headers</Tab>
+              <Tab>Tests</Tab>
             </TabList>
             <div>
               Status
@@ -115,6 +117,11 @@ function ResponsePanel({ response }: ResponsePanelProps) {
                 readOnly
                 hasEnvSupport="NONE"
               />
+            </TabPanel>
+            <TabPanel>
+              {response.jasmineReport && (
+                <TestsTab suites={response.jasmineReport.suites ?? []} />
+              )}
             </TabPanel>
           </TabPanels>
         </Tabs>

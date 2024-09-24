@@ -5,15 +5,6 @@ const createSandboxedFunction = function (
 ) {
   const params = Object.getOwnPropertyNames(args);
 
-  // 'function': can become a GeneratorFunction that can access global scope
-  const potentiallyMalicious = ['function'];
-
-  potentiallyMalicious.forEach((s) => {
-    if (script.includes(s)) {
-      throw Error(`Script contains potentially malicious code (${s})`);
-    }
-  });
-
   const blacklist = [
     ...Object.getOwnPropertyNames(window).filter(
       (e) => e !== 'eval' && e !== 'arguments' && e !== 'btoa' && e !== 'atob',

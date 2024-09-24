@@ -30,6 +30,7 @@ interface ScriptLog {
 
 interface JasmineReport {
   suites?: JasmineSuite[];
+  status: string;
 }
 
 interface JasmineSuite {
