@@ -447,7 +447,6 @@ function MoveableHeader({
     try {
       const response = await api.createScript(collection.id, state.newScriptName);
       const newScript = (await response.json()) as Script;
-      console.log(newScript);
 
       dispatchCollections({
         type: CollectionsActionType.ADD_SCRIPT,

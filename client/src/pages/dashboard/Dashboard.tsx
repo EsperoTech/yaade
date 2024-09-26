@@ -133,7 +133,6 @@ function Dashboard() {
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | undefined>(
     undefined,
   );
-  console.log({ collections });
   const navigate = useNavigate();
   const location = useLocation();
   const isExtInitialized = useRef(false);

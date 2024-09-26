@@ -8,7 +8,7 @@ interface Response {
   time: number;
   size: number;
   date?: string;
-  jasmineReport: JasmineReport | null;
+  jasmineReport?: JasmineReport | null;
 }
 
 export default Response;

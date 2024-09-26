@@ -24,35 +24,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 export default function bootJasmine() {
   const getJasmineRequireObj = (function (jasmineGlobal) {
-    let jasmineRequire;
-
-    // Do not add `module`, `module.exports`, and `exports` to the global scope
-    // Unless the JasmineRequire object has already been created
-    // And is assigned to the global 'exports' variable
-    if (
-      typeof module !== 'undefined' &&
-      module.exports &&
-      typeof exports !== 'undefined'
-    ) {
-      if (typeof global !== 'undefined') {
-        jasmineGlobal = global;
-      } else {
-        jasmineGlobal = {};
-      }
-
-      jasmineRequire = exports;
-    } else {
-      // TODO: GRAALVM: Removing Browser Code
-      // if (
-      //   typeof window !== 'undefined' &&
-      //   typeof window.toString === 'function' &&
-      //   window.toString() === '[object GjsGlobal]'
-      // ) {
-      //   jasmineGlobal = window;
-      // }
-
-      jasmineRequire = jasmineGlobal.jasmineRequire = {};
-    }
+    let jasmineRequire = {};
+    jasmineGlobal.jasmineRequire = {};
 
     function getJasmineRequire() {
       return jasmineRequire;
