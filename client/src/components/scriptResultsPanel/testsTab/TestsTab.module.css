@@ -1,0 +1,127 @@
+.reportTitle {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.suiteItem {
+  margin-bottom: 4px;
+}
+
+.suiteHeader {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.suiteHeader,
+.specItem,
+.specFailedExpectation {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  gap: 0.15rem;
+  border-bottom: 1px solid var(--chakra-colors-whiteAlpha-300);
+}
+
+
+.suiteDescription,
+.specFailedExpectation,
+.specDescription {
+  font-size: 0.875rem;
+  margin-left: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suiteDuration,
+.specDuration {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.specFailedExpectation {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ef4444;
+}
+
+.iconPassed {
+  color: #10b981;
+}
+
+.iconFailed {
+  color: #ef4444;
+}
+
+.iconPending {
+  color: #f59e0b;
+}
+
+.log-container {
+  margin-top: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.log-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.message-icon {
+  margin-right: 4px;
+}
+
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  height: 30px;
+}
+
+.log-message {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-timestamp {
+  color: #6b7280;
+  margin-left: 8px;
+}
+
+.emptyReport {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alertIcon {
+  color: #f59e0b;
+  margin-right: 8px;
+}
+
+.empty-message {
+  font-size: 1.125rem;
+  font-weight: bold;
+}
+
+.error {
+    color: var(--chakra-colors-red-500);
+    font-size: 1.125rem;
+    font-weight: bold;
+}

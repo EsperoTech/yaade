@@ -1,0 +1,56 @@
+.container {
+  display: flex;
+}
+
+.resultsList {
+  border-right: 1px solid var(--chakra-colors-whiteAlpha-300);
+}
+
+.resultsListHeader {
+  padding: 0 1rem 0 1rem;
+  height: 42px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--chakra-colors-whiteAlpha-300);
+}
+
+.resultsListElements {
+  height: 90%;
+  overflow: hidden;
+  overflow-y: scroll;
+  /* make the scrollbar not take up space when it is not there */
+  scrollbar-width: thin;
+  font-family: monospace;
+}
+
+.resultElement {
+  padding-right: 0.5rem;
+  padding-left: 0.5rem;
+  display: flex;
+  height: 30px;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 240px;
+  border-bottom: 1px solid var(--chakra-colors-whiteAlpha-300);
+}
+
+.resultElement:hover {
+  cursor: pointer;
+}
+
+.resultElement--light:hover {
+  background-color: var(--chakra-colors-gray-200);
+}
+.resultElement--dark:hover {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.resultElement--selected {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.selectedResult {
+  width: 100%;
+  overflow: scroll;
+}

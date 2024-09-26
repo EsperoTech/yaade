@@ -233,7 +233,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MoveRequestRequest"
+              $ref: "#/components/schemas/MoveScriptRequest"
       parameters:
         - name: id
           schema:
@@ -744,6 +744,122 @@ paths:
       responses:
         '200':
           description: Success
+  /api/scripts:
+    post:
+      tags:
+        - Scripts
+      summary: Create a new script
+      operationId: createScript
+      requestBody:
+        description: The script to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScriptRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Script"
+    put:
+      tags:
+        - Scripts
+      summary: Update a script
+      operationId: updateScript
+      requestBody:
+        description: The updated script
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Script"
+      responses:
+        '200':
+          description: Success
+  /api/scripts/{id}:
+    get:
+      tags:
+        - Scripts
+      summary: Get a script
+      operationId: getScript
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Script"
+    delete:
+      tags:
+        - Scripts
+      summary: Delete a script
+      operationId: deleteScript
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /api/scripts/{id}/move:
+    post:
+      tags:
+        - Scripts
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveScriptRequest"
+      responses:
+        "200":
+          description: Success
+      operationId: moveScript
+      summary: Move script
+  /api/scripts/{id}/take-ownership:
+    post:
+      tags:
+        - Scripts
+      parameters:
+        - name: id
+          schema:
+            type: integer
+          in: path
+          required: true
+      responses:
+        "200":
+          description: Success
+      operationId: takeScriptOwnership
+      summary: Take script ownership
+  /api/run-script:
+    post:
+      tags:
+        - Scripts
+      summary: Run a script
+      operationId: runScript
+      requestBody:
+        content:
+          application/json: { }
+        required: true
+      responses:
+        '200':
+          description: Success
 
 components:
   schemas:
@@ -876,6 +992,17 @@ components:
         name:
           type: string
           description: The name of the new collection.
+    MoveScriptRequest:
+      type: object
+      properties:
+        newRank:
+          format: int64
+          type: integer
+          description: The new rank of the script.
+        newCollectionId:
+          format: int64
+          type: integer
+          description: The new collection id of the script.
     Certificate:
       required:
         - id
@@ -957,3 +1084,24 @@ components:
                     type: array
                     items:
                       type: string
+    CreateScriptRequest:
+      type: object
+      required:
+        - name
+        - collectionId
+      properties:
+        name:
+          type: string
+        collectionId:
+          type: integer
+    Script:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+        collectionId:
+          type: integer
+        data:
+          type: object

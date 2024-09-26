@@ -15,26 +15,36 @@ type CollectionsProps = {
   collections: SidebarCollection[];
   currentCollectionId?: number;
   currentRequestId?: number;
+  currentScriptId?: number;
   selectCollection: any;
+  selectScript: any;
   selectRequest: (requestId: number) => void;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
   duplicateRequest: (id: number, newName: string) => void;
   duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
+  deleteScript: (id: number) => void;
+  duplicateScript: (id: number, newName: string) => void;
+  takeScriptOwnership: (id: number) => void;
 };
 
 function Collections({
   collections,
   currentCollectionId,
   currentRequestId,
+  currentScriptId,
   selectCollection,
   selectRequest,
+  selectScript,
   renameRequest,
   deleteRequest,
   duplicateRequest,
   duplicateCollection,
   dispatchCollections,
+  deleteScript,
+  duplicateScript,
+  takeScriptOwnership,
 }: CollectionsProps) {
   const toast = useToast();
 
@@ -117,6 +127,7 @@ function Collections({
         collection={collection}
         currentCollectionId={currentCollectionId}
         currentRequestId={currentRequestId}
+        currentScriptId={currentScriptId}
         selectCollection={selectCollection}
         index={collection.index}
         moveCollection={dragCollection}
@@ -128,6 +139,10 @@ function Collections({
         dispatchCollections={dispatchCollections}
         renderCollection={renderCollection}
         isCollectionDescendant={isCollectionDescendant}
+        selectScript={selectScript}
+        deleteScript={deleteScript}
+        duplicateScript={duplicateScript}
+        takeScriptOwnership={takeScriptOwnership}
       />
     );
   };

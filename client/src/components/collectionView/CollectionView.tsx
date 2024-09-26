@@ -34,6 +34,7 @@ import { VscEllipsis, VscFolder, VscFolderOpened } from 'react-icons/vsc';
 import api from '../../api';
 import { SidebarCollection } from '../../model/Collection';
 import Request, { SidebarRequest } from '../../model/Request';
+import { SidebarScript } from '../../model/Script';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import { errorToast, successToast } from '../../utils';
 import { cn } from '../../utils';
@@ -43,13 +44,16 @@ import BasicModal from '../basicModal';
 import styles from './CollectionView.module.css';
 import MoveableHeader from './MoveableHeader';
 import MoveableRequest, { RequestDragItem } from './MoveableRequest';
+import MoveableScript from './MoveableScript';
 
 type CollectionProps = {
   collection: SidebarCollection;
   currentCollectionId?: number;
   currentRequestId?: number;
+  currentScriptId?: number;
   selectCollection: any;
   selectRequest: any;
+  selectScript: any;
   index: number;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
@@ -59,14 +63,19 @@ type CollectionProps = {
   renderCollection: (collection: SidebarCollection, index: number) => any;
   moveCollection: (dragIndex: number, hoverIndex: number, newParentId?: number) => void;
   isCollectionDescendant: (collectionId: number, ancestorId: number) => boolean;
+  deleteScript: (id: number) => void;
+  duplicateScript: (id: number, newName: string) => void;
+  takeScriptOwnership: (id: number) => void;
 };
 
 function CollectionView({
   collection,
   currentRequestId,
   currentCollectionId,
+  currentScriptId,
   selectCollection,
   selectRequest,
+  selectScript,
   index,
   renameRequest,
   deleteRequest,
@@ -76,6 +85,9 @@ function CollectionView({
   renderCollection,
   moveCollection,
   isCollectionDescendant,
+  deleteScript,
+  duplicateScript,
+  takeScriptOwnership,
 }: CollectionProps) {
   const { colorMode } = useColorMode();
   const iconVariants = collection.open ? ['open'] : [];
@@ -97,6 +109,26 @@ function CollectionView({
       } catch (e) {
         console.error(e);
         errorToast('Could not move request.', toast);
+      }
+    },
+    [dispatchCollections, toast],
+  );
+
+  const moveScript = useCallback(
+    async (id: number, newRank: number, newCollectionId: number) => {
+      try {
+        dispatchCollections({
+          type: CollectionsActionType.MOVE_SCRIPT,
+          id,
+          newRank,
+          newCollectionId,
+        });
+        const response = await api.moveScript(id, newRank, newCollectionId);
+        if (response.status !== 200) throw new Error();
+        successToast('Script was moved.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not move script.', toast);
       }
     },
     [dispatchCollections, toast],
@@ -132,6 +164,36 @@ function CollectionView({
     ],
   );
 
+  const renderScript = useCallback(
+    (script: SidebarScript, index: number) => {
+      return (
+        <MoveableScript
+          key={script.id}
+          script={script}
+          index={index}
+          depth={collection.depth}
+          moveScript={moveScript}
+          selected={currentScriptId === script.id}
+          selectScript={selectScript}
+          deleteScript={deleteScript}
+          duplicateScript={duplicateScript}
+          dispatchCollections={dispatchCollections}
+          takeOwnership={takeScriptOwnership}
+        />
+      );
+    },
+    [
+      collection.depth,
+      currentScriptId,
+      deleteScript,
+      dispatchCollections,
+      duplicateScript,
+      moveScript,
+      selectScript,
+      takeScriptOwnership,
+    ],
+  );
+
   return (
     <>
       <MoveableHeader
@@ -139,9 +201,11 @@ function CollectionView({
         currentCollectionId={currentCollectionId}
         selectCollection={selectCollection}
         selectRequest={selectRequest}
+        selectScript={selectScript}
         index={index}
         moveCollection={moveCollection}
         moveRequest={moveRequest}
+        moveScript={moveScript}
         duplicateCollection={duplicateCollection}
         dispatchCollections={dispatchCollections}
         isCollectionDescendant={isCollectionDescendant}
@@ -151,6 +215,11 @@ function CollectionView({
           {collection.children?.map((child: SidebarCollection, i: number) =>
             renderCollection(child, i),
           )}
+        </div>
+      )}
+      {collection.open && (
+        <div className={cn(styles, 'scripts', [...iconVariants, colorMode])}>
+          {collection.scripts?.map((script, i) => renderScript(script, i))}
         </div>
       )}
       {collection.open && (

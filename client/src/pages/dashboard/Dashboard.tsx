@@ -32,16 +32,20 @@ import CollectionPanel from '../../components/collectionPanel';
 import Header from '../../components/header';
 import RequestSender from '../../components/requestPanel/RequestSender';
 import ResponsePanel from '../../components/responsePanel';
+import ScriptPanel from '../../components/scriptPanel/ScriptPanel';
+import ScriptResultsPanel from '../../components/scriptResultsPanel';
 import Sidebar from '../../components/sidebar';
 import { UserContext } from '../../context';
 import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
 import Request, { SidebarRequest } from '../../model/Request';
+import Script, { ScriptResult, SidebarScript } from '../../model/Script';
 import {
   CollectionsActionType,
   collectionsReducer,
   defaultCollections,
   findCollection,
   findRequest,
+  findScript,
 } from '../../state/collections';
 import {
   CurrentCollectionActionType,
@@ -52,6 +56,7 @@ import {
   currentRequestReducer,
   defaultCurrentRequest,
 } from '../../state/currentRequest';
+import { CurrentScriptActionType, currentScriptReducer } from '../../state/currentScript';
 import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
 import styles from './Dashboard.module.css';
 
@@ -61,6 +66,14 @@ function mapRequestToSidebarRequest(r: Request): SidebarRequest {
     collectionId: r.collectionId,
     name: r.data.name ?? '',
     method: r.data.method ?? '',
+  };
+}
+
+function mapScriptToSidebarScript(s: Script): SidebarScript {
+  return {
+    id: s.id,
+    collectionId: s.collectionId,
+    name: s.data.name ?? '',
   };
 }
 
@@ -78,6 +91,7 @@ function mapCollectionToSidebarCollection(
     parentId: c.data.parentId,
     groups: c.data.groups,
     requests: c.requests?.map(mapRequestToSidebarRequest) ?? [],
+    scripts: c.scripts?.map(mapScriptToSidebarScript) ?? [],
     children:
       c.children?.map((col, i) => mapCollectionToSidebarCollection(col, i, depth + 1)) ??
       [],
@@ -109,12 +123,17 @@ function Dashboard() {
     currentCollectionReducer,
     undefined,
   );
+  const [currentScript, dispatchCurrentScript] = useReducer(
+    currentScriptReducer,
+    undefined,
+  );
   const [selectedRequestId, setSelectedRequestId] = useState<number | undefined>(
     undefined,
   );
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | undefined>(
     undefined,
   );
+  console.log({ collections });
   const navigate = useNavigate();
   const location = useLocation();
   const isExtInitialized = useRef(false);
@@ -133,9 +152,15 @@ function Dashboard() {
     onOpen: onSaveCollectionOpen,
     onClose: onSaveCollectionClose,
   } = useDisclosure();
+  const {
+    isOpen: isSaveScriptOpen,
+    onOpen: onSaveScriptOpen,
+    onClose: onSaveScriptClose,
+  } = useDisclosure();
   const { user } = useContext(UserContext);
   const [collectionPanelTabIndex, setCollectionPanelTabIndex] = useState(0);
   const [requestPanelTabIndex, setRequestPanelTabIndex] = useState(0);
+  const forceSetScriptResult = useRef<(result: ScriptResult) => void>(() => {});
 
   const toast = useToast();
   const sidebarCollections: SidebarCollection[] = useMemo(() => {
@@ -171,6 +196,24 @@ function Dashboard() {
             dispatchCurrentCollection({
               type: CurrentCollectionActionType.UNSET,
             });
+            dispatchCurrentScript({
+              type: CurrentScriptActionType.UNSET,
+            });
+          }
+          openCollectionTree(collections, loc.collectionId);
+        } else if (loc.collectionId && loc.scriptId) {
+          const s = findScript(collections, loc.scriptId);
+          if (s) {
+            dispatchCurrentScript({
+              type: CurrentScriptActionType.SET,
+              script: s,
+            });
+            dispatchCurrentRequest({
+              type: CurrentRequestActionType.UNSET,
+            });
+            dispatchCurrentCollection({
+              type: CurrentCollectionActionType.UNSET,
+            });
           }
           openCollectionTree(collections, loc.collectionId);
         } else if (loc.collectionId) {
@@ -186,6 +229,9 @@ function Dashboard() {
             });
             dispatchCurrentRequest({
               type: CurrentRequestActionType.UNSET,
+            });
+            dispatchCurrentScript({
+              type: CurrentScriptActionType.UNSET,
             });
           }
           openCollectionTree(collections, loc.collectionId);
@@ -211,7 +257,12 @@ function Dashboard() {
     const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
 
     if (!tokenUrl || !clientId || !grantType) {
-      console.log('Required oauth2 parameters are missing.');
+      console.log({
+        message: 'Required oauth2 parameters are missing.',
+        tokenUrl,
+        clientId,
+        grantType,
+      });
       return;
     }
 
@@ -359,6 +410,9 @@ function Dashboard() {
         type: CurrentCollectionActionType.SET,
         collection: collection,
       });
+      dispatchCurrentScript({
+        type: CurrentScriptActionType.UNSET,
+      });
     },
     [collections, navigate],
   );
@@ -374,6 +428,28 @@ function Dashboard() {
       });
       dispatchCurrentCollection({
         type: CurrentCollectionActionType.UNSET,
+      });
+      dispatchCurrentScript({
+        type: CurrentScriptActionType.UNSET,
+      });
+    },
+    [collections, navigate],
+  );
+
+  const dispatchSelectScript = useCallback(
+    (id: number) => {
+      const script = findScript(collections, id);
+      if (!script) throw new Error(`Script ${id} doesn't exist`);
+      navigate(`/${script.collectionId}/s-${script.id}`);
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.UNSET,
+      });
+      dispatchCurrentCollection({
+        type: CurrentCollectionActionType.UNSET,
+      });
+      dispatchCurrentScript({
+        type: CurrentScriptActionType.SET,
+        script: script,
       });
     },
     [collections, navigate],
@@ -409,6 +485,21 @@ function Dashboard() {
     [toast],
   );
 
+  const updateScript = useCallback(
+    (script: Script) =>
+      api
+        .updateScript(script)
+        .then((res) => {
+          if (res.status !== 200) throw new Error();
+          successToast('Script was saved.', toast);
+        })
+        .catch((e) => {
+          console.error(e);
+          errorToast('Could not save script', toast);
+        }),
+    [toast],
+  );
+
   const selectRequest = useCallback(
     async (id: number) => {
       try {
@@ -428,6 +519,13 @@ function Dashboard() {
               id: currentCollection.id,
               data: { ...currentCollection.data },
             });
+          } else if (currentScript?.isChanged) {
+            updateScript(currentScript);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_SCRIPT_DATA,
+              id: currentScript.id,
+              data: { ...currentScript.data },
+            });
           }
           dispatchSelectRequest(id);
         } else if (currentRequest?.isChanged && currentRequest?.id !== -1) {
@@ -436,6 +534,9 @@ function Dashboard() {
         } else if (currentCollection?.isChanged) {
           setSelectedRequestId(id);
           onSaveCollectionOpen();
+        } else if (currentScript?.isChanged) {
+          setSelectedCollectionId(id);
+          onSaveScriptOpen();
         } else {
           dispatchSelectRequest(id);
         }
@@ -448,11 +549,14 @@ function Dashboard() {
       currentRequest,
       user?.data?.settings?.saveOnClose,
       currentCollection,
+      currentScript,
       dispatchSelectRequest,
       updateRequest,
       updateCollection,
+      updateScript,
       onSaveReqOpen,
       onSaveCollectionOpen,
+      onSaveScriptOpen,
       toast,
     ],
   );
@@ -482,6 +586,13 @@ function Dashboard() {
               id: currentCollection.id,
               data: { ...currentCollection.data },
             });
+          } else if (currentScript?.isChanged) {
+            updateScript(currentScript);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_SCRIPT_DATA,
+              id: currentScript.id,
+              data: { ...currentScript.data },
+            });
           }
           dispatchSelectCollection(id);
         } else if (currentRequest?.isChanged && currentRequest?.id !== -1) {
@@ -490,6 +601,9 @@ function Dashboard() {
         } else if (currentCollection?.isChanged) {
           setSelectedCollectionId(id);
           onSaveCollectionOpen();
+        } else if (currentScript?.isChanged) {
+          setSelectedCollectionId(id);
+          onSaveScriptOpen();
         } else {
           dispatchSelectCollection(id);
         }
@@ -501,12 +615,15 @@ function Dashboard() {
     [
       currentCollection,
       currentRequest,
+      currentScript,
       dispatchSelectCollection,
       onSaveCollectionOpen,
       onSaveReqOpen,
+      onSaveScriptOpen,
       toast,
       updateCollection,
       updateRequest,
+      updateScript,
       user?.data?.settings?.saveOnClose,
     ],
   );
@@ -516,6 +633,73 @@ function Dashboard() {
   useEffect(() => {
     selectCollectionRef.current = selectCollection;
   }, [selectCollection]);
+
+  const selectScript = useCallback(
+    async (id: number) => {
+      try {
+        if (currentScript?.id === id) return;
+        if (user?.data?.settings?.saveOnClose) {
+          if (currentRequest?.isChanged) {
+            updateRequest(currentRequest);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_REQUEST_DATA,
+              id: currentRequest.id,
+              data: { ...currentRequest.data },
+            });
+          } else if (currentCollection?.isChanged) {
+            updateCollection(currentCollection);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_COLLECTION_DATA,
+              id: currentCollection.id,
+              data: { ...currentCollection.data },
+            });
+          } else if (currentScript?.isChanged) {
+            updateScript(currentScript);
+            dispatchCollections({
+              type: CollectionsActionType.PATCH_SCRIPT_DATA,
+              id: currentScript.id,
+              data: { ...currentScript.data },
+            });
+          }
+          dispatchSelectScript(id);
+        } else if (currentRequest?.isChanged && currentRequest?.id !== -1) {
+          setSelectedCollectionId(id);
+          onSaveReqOpen();
+        } else if (currentCollection?.isChanged) {
+          setSelectedCollectionId(id);
+          onSaveCollectionOpen();
+        } else if (currentScript?.isChanged) {
+          setSelectedCollectionId(id);
+          onSaveScriptOpen();
+        } else {
+          dispatchSelectScript(id);
+        }
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not select script', toast);
+      }
+    },
+    [
+      currentCollection,
+      currentRequest,
+      currentScript,
+      dispatchSelectScript,
+      onSaveCollectionOpen,
+      onSaveReqOpen,
+      onSaveScriptOpen,
+      toast,
+      updateCollection,
+      updateRequest,
+      updateScript,
+      user?.data?.settings?.saveOnClose,
+    ],
+  );
+
+  const selectScriptRef = useRef(selectScript);
+
+  useEffect(() => {
+    selectScriptRef.current = selectScript;
+  }, [selectScript]);
 
   const renameRequest = useCallback(
     async (id: number, name: string) => {
@@ -611,6 +795,94 @@ function Dashboard() {
     [toast],
   );
 
+  const duplicateScript = useCallback(
+    async (id: number, newName: string) => {
+      try {
+        const script = findScript(collections, id);
+        if (!script) return;
+        const res = await api.createScript(script.collectionId, newName);
+        if (res.status !== 200) throw new Error();
+        const newScriptData = await res.json();
+        dispatchCollections({
+          type: CollectionsActionType.ADD_SCRIPT,
+          script: newScriptData,
+        });
+        selectScriptRef.current(newScriptData.id);
+        successToast('Script was duplicated.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not duplicate script', toast);
+      }
+    },
+    [collections, toast],
+  );
+
+  const deleteScript = useCallback(
+    async (id: number) => {
+      try {
+        await api.deleteScript(id);
+        dispatchCollections({
+          type: CollectionsActionType.DELETE_SCRIPT,
+          id: id,
+        });
+        if (currentScript?.id === id) {
+          dispatchCurrentScript({
+            type: CurrentScriptActionType.UNSET,
+          });
+        }
+        successToast('Script was deleted.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not delete script', toast);
+      }
+    },
+    [currentScript?.id, toast],
+  );
+
+  const takeScriptOwnership = useCallback(
+    async (id: number) => {
+      try {
+        const res = await api.takeScriptOwnership(id);
+        if (res.status !== 200) throw new Error();
+        dispatchCollections({
+          type: CollectionsActionType.PATCH_SCRIPT_DATA,
+          id: id,
+          data: { owner: user?.id },
+        });
+        successToast('You are now the owner of this script.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not take ownership of script', toast);
+      }
+    },
+    [toast],
+  );
+
+  const onRefreshResults = useCallback(async () => {
+    if (!currentScript) return;
+    try {
+      const res = await api.getScript(currentScript.id);
+      if (!res.ok) {
+        errorToast('Could not fetch script', toast);
+        return;
+      }
+      const newScript = await res.json();
+      dispatchCurrentScript({
+        type: CurrentScriptActionType.PATCH_DATA,
+        data: { results: newScript.data.results },
+      });
+      dispatchCollections({
+        type: CollectionsActionType.PATCH_SCRIPT_DATA,
+        id: newScript.id,
+        data: { results: newScript.data.results },
+      });
+      successToast('Refreshed', toast);
+    } catch (e) {
+      console.error(e);
+      errorToast('Could not refresh results', toast);
+    }
+  }, [currentScript, toast]);
+
   useEventListener('message', handlePongMessage);
 
   let panel = <div>Select a Request or Collection</div>;
@@ -645,6 +917,28 @@ function Dashboard() {
       </Allotment>
     );
   }
+  if (currentScript) {
+    panel = (
+      <Allotment vertical defaultSizes={[200, 100]} snap>
+        <div className={styles.requestPanel}>
+          <ScriptPanel
+            currentScript={currentScript}
+            collections={collections}
+            dispatchCurrentScript={dispatchCurrentScript}
+            dispatchCollections={dispatchCollections}
+            forceSetScriptResult={forceSetScriptResult}
+          />
+        </div>
+        <div className={styles.responsePanel}>
+          <ScriptResultsPanel
+            results={currentScript.data?.results}
+            onRefreshResults={onRefreshResults}
+            forceSetScriptResult={forceSetScriptResult}
+          />
+        </div>
+      </Allotment>
+    );
+  }
 
   return (
     <div className={styles.parent}>
@@ -658,13 +952,18 @@ function Dashboard() {
               collections={sidebarCollections}
               currentCollectionId={currentCollection?.id}
               currentRequestId={currentRequest?.id}
+              currentScriptId={currentScript?.id}
               selectCollection={selectCollectionRef}
               selectRequest={selectRequestRef}
+              selectScript={selectScriptRef}
               renameRequest={renameRequest}
               deleteRequest={deleteRequest}
+              deleteScript={deleteScript}
               duplicateRequest={duplicateRequest}
               duplicateCollection={duplicateCollection}
+              duplicateScript={duplicateScript}
               dispatchCollections={dispatchCollections}
+              takeScriptOwnership={takeScriptOwnership}
             />
           </div>
           <div className={styles.main}>{panel}</div>

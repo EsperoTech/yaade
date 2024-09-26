@@ -6,6 +6,7 @@ import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import Request, { CurrentRequest } from '../../model/Request';
 import Response from '../../model/Response';
+import { JasmineReport } from '../../model/Script';
 import {
   CollectionsAction,
   CollectionsActionType,
@@ -283,23 +284,31 @@ function RequestSender({
     }
 
     if (injectedReq.data.responseScript) {
-      doResponseScript(
+      const jasmineReport = await doResponseScript(
         injectedReq,
         response,
         injectedReq.data.responseScript,
         false,
         envName,
+        n,
       );
+      if (jasmineReport) {
+        response.jasmineReport = jasmineReport;
+      }
     }
 
     if (collection?.data?.responseScript) {
-      doResponseScript(
+      const jasmineReport = await doResponseScript(
         injectedReq,
         response,
         collection?.data?.responseScript,
         true,
         envName,
+        n,
       );
+      if (!response.jasmineReport && jasmineReport) {
+        response.jasmineReport = jasmineReport;
+      }
     }
 
     return response;
@@ -336,24 +345,34 @@ function RequestSender({
     );
   }
 
-  function doResponseScript(
+  async function doResponseScript(
     request: Request,
     response: Response,
     responseScript: string,
     isCollectionLevel: boolean,
     envName?: string,
-  ) {
+    n?: number,
+  ): Promise<JasmineReport | null> {
     // NOTE: cannot pass state on top level because it does not use most current state
     const set = (key: string, value: string) =>
       setEnvVar(request.collectionId, key, value, envName);
     const get = (key: string): string =>
       getEnvVar(request.collectionId, envName)(collections, key);
-    executeResponseScript(
+    const exec = async (requestId: number, envName?: string) => {
+      const request = findRequest(collections, requestId);
+      if (!request) {
+        throw Error(`Request with id ${requestId} not found`);
+      }
+      if (!n) n = 0;
+      return await sendRequest(request, envName, n + 1);
+    };
+    return await executeResponseScript(
       request,
       response,
       responseScript,
       set,
       get,
+      exec,
       toast,
       isCollectionLevel,
       envName,

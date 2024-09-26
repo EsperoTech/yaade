@@ -1,0 +1,12 @@
+.container {
+    max-width: 100%;
+    white-space: nowrap; /* Prevent text from wrapping to a new line */
+    overflow: hidden; /* Hide the overflowing text */
+    text-overflow: ellipsis;
+}
+
+.logContainer--closed {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

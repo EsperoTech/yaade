@@ -90,6 +90,11 @@ export default function AuthTab({
       redirectUri += `/${loc.requestId}`;
     }
 
+    // TODO: check if this is correct because loc return -1 I think not 0
+    if (loc.scriptId) {
+      redirectUri += `/s-${loc.scriptId}`;
+    }
+
     switch (grantType ?? 'authorization_code') {
       case 'authorization_code':
         if (!authUrl) {

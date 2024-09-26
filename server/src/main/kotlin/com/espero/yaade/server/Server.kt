@@ -11,6 +11,7 @@ import com.espero.yaade.server.routes.*
 import com.espero.yaade.server.utils.adminCoroutineHandler
 import com.espero.yaade.server.utils.coroutineHandler
 import com.espero.yaade.server.utils.userCoroutineHandler
+import com.espero.yaade.services.RequestSender
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServer
 import io.vertx.core.impl.logging.LoggerFactory
@@ -45,14 +46,16 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             }
             sessionStore = LocalSessionStore.create(vertx)
             val authHandler = AuthHandler(vertx, daoManager)
+            val requestSender = RequestSender(vertx, daoManager)
 
             val collectionRoute = CollectionRoute(daoManager, vertx)
             val requestRoute = RequestRoute(daoManager)
             val userRoute = UserRoute(daoManager, vertx)
             val adminRoute = AdminRoute(daoManager, vertx, authHandler::testAuthConfig, this)
-            val invokeRoute = InvokeRoute(vertx, daoManager)
+            val invokeRoute = InvokeRoute(daoManager, requestSender)
             val certificateRoute = CertificateRoute(daoManager, vertx)
             val fileRoute = FileRoute(daoManager)
+            val scriptRoute = ScriptRoute(daoManager, vertx)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
@@ -150,14 +153,17 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .adminCoroutineHandler(this, adminRoute::getConfig)
             routerBuilder.operation("setConfig")
                 .adminCoroutineHandler(this, adminRoute::updateConfig)
+
             routerBuilder.operation("getCertificates")
                 .userCoroutineHandler(this, certificateRoute::getCertificates)
             routerBuilder.operation("createCertificate")
                 .userCoroutineHandler(this, certificateRoute::createCertificate)
             routerBuilder.operation("deleteCertificate")
                 .userCoroutineHandler(this, certificateRoute::deleteCertificate)
+
             routerBuilder.operation("exchangeToken")
                 .userCoroutineHandler(this, userRoute::exchangeOAuth2Code)
+
             routerBuilder.operation("getFiles")
                 .userCoroutineHandler(this, fileRoute::getFiles)
             routerBuilder.operation("uploadFile")
@@ -166,6 +172,21 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .userCoroutineHandler(this, fileRoute::downloadFile)
             routerBuilder.operation("deleteFile")
                 .userCoroutineHandler(this, fileRoute::deleteFile)
+
+            routerBuilder.operation("createScript")
+                .userCoroutineHandler(this, scriptRoute::createScript)
+            routerBuilder.operation("deleteScript")
+                .userCoroutineHandler(this, scriptRoute::deleteScript)
+            routerBuilder.operation("updateScript")
+                .userCoroutineHandler(this, scriptRoute::updateScript)
+            routerBuilder.operation("getScript")
+                .userCoroutineHandler(this, scriptRoute::getScript)
+            routerBuilder.operation("runScript")
+                .userCoroutineHandler(this, scriptRoute::runScript)
+            routerBuilder.operation("moveScript")
+                .userCoroutineHandler(this, scriptRoute::moveScript)
+            routerBuilder.operation("takeScriptOwnership")
+                .userCoroutineHandler(this, scriptRoute::takeOwnership)
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())

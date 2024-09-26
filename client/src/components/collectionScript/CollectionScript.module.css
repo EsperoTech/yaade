@@ -1,0 +1,85 @@
+.script {
+  padding: 0 1rem 0 0.5rem;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.script:focus {
+  outline: 1px solid var(--chakra-colors-green-500) !important;
+  outline-offset: -1px;
+}
+
+.script--light {
+  border-color: var(--chakra-colors-gray-300);
+}
+
+.script--light.script--selected {
+  background-color: var(--chakra-colors-gray-300);
+}
+
+.script--dark {
+  border-color: var(--chakra-colors-gray-700);
+}
+.script--dark.script--selected {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.script:hover {
+  cursor: pointer;
+}
+
+.script--light:hover {
+  background-color: var(--chakra-colors-gray-200);
+}
+.script--dark:hover {
+  background-color: var(--chakra-colors-gray-700);
+}
+
+.scriptName {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.actionIcon {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.line {
+  width: 1rem;
+  min-width: 1rem;
+  max-width: 1rem;
+  height: 100%;
+  border-right: 1px solid var(--chakra-colors-gray-500);
+  opacity: 0.5;
+}
+
+.iconWrapper {
+  margin-right: 0.7rem;
+}
+
+.icon {
+  width: 16px;
+  min-height: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.7rem;
+}
+
+.icon--light {
+  color: black;
+}
+
+.icon--dark {
+  color: white;
+}

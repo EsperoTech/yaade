@@ -148,7 +148,7 @@ export default function CollectionPanel({
           onChange={(e) => setName(e.target.value)}
         />
         <IconButton
-          aria-label="start-rename-button"
+          aria-label="save-button"
           icon={<VscSave />}
           variant="ghost"
           size="sm"
