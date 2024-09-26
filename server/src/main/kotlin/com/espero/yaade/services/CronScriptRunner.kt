@@ -6,7 +6,6 @@ import com.cronutils.model.time.ExecutionTime
 import com.cronutils.parser.CronParser
 import com.espero.yaade.SCRIPT_RUNNER_TIMEOUT
 import com.espero.yaade.db.DaoManager
-import com.espero.yaade.model.db.CronScriptDb
 import io.vertx.core.eventbus.DeliveryOptions
 import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonArray
@@ -25,7 +24,7 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
     private val cronParser =
         CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
 
-    private val cronScripts = ConcurrentHashMap<Long, CronScriptDb>()
+    private val cronScripts = ConcurrentHashMap<Long, JsonObject>()
     private val runningScripts = ConcurrentHashMap<Long, Boolean>()
 
     public override suspend fun start() {
@@ -50,21 +49,21 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
     }
 
     private fun initCronScripts() {
-        daoManager.cronScriptDao.getAll().forEach { cronScript ->
-            cronScripts[cronScript.id] = cronScript
+        daoManager.jobScriptDao.getAll().forEach { cronScript ->
+            cronScripts[cronScript.id] = cronScript.toJson()
         }
     }
 
-    private suspend fun runCronScript(cronScript: CronScriptDb) {
-        if (runningScripts[cronScript.id] == true) {
+    private suspend fun runCronScript(cronScript: JsonObject) {
+        if (runningScripts[cronScript.getLong("id")] == true) {
             return
         }
-        val enabled = cronScript.jsonData().getBoolean("enabled") ?: false
+        val enabled = cronScript.getJsonObject("data").getBoolean("enabled") ?: false
         if (!enabled) {
             return
         }
-        val lastRun = cronScript.jsonData().getLong("lastRun") ?: 0
-        val cronExpression = cronScript.jsonData().getString("cronExpression") ?: return
+        val lastRun = cronScript.getJsonObject("data").getLong("lastRun") ?: 0
+        val cronExpression = cronScript.getJsonObject("data").getString("cronExpression") ?: return
         if (cronExpression == "") {
             return
         }
@@ -79,19 +78,20 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
             return
         }
 
-        val script = cronScript.jsonData().getString("script")
-        val collectionId = cronScript.collectionId
-        val envName = cronScript.jsonData().getString("selectedEnvName") ?: ""
-        val collection = daoManager.collectionDao.getById(collectionId) ?: throw RuntimeException(
-            "Collection not found for id: $collectionId"
-        )
+        val script = cronScript.getJsonObject("data").getString("script")
+        val collectionId = cronScript.getLong("collectionId")
+        val envName = cronScript.getJsonObject("data").getString("selectedEnvName") ?: ""
+        val owner = daoManager.userDao.getById(cronScript.getLong("ownerId"))
+            ?: throw RuntimeException("Owner not found for id: " + cronScript.getLong("ownerId"))
+        val ownerGroups = JsonArray(owner.groups().toList())
         var res: JsonObject? = null
         try {
-            runningScripts[cronScript.id] = true
+            runningScripts[cronScript.getLong("id")] = true
             val msg = JsonObject()
                 .put("script", script)
-                .put("collectionId", collection.id)
+                .put("collectionId", collectionId)
                 .put("envName", envName)
+                .put("ownerGroups", ownerGroups)
             res = vertx.eventBus()
                 .request<JsonObject>(
                     "script.run", msg, DeliveryOptions().setSendTimeout(
@@ -105,8 +105,8 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
             try {
                 // NOTE: we get the latest version of the cron script from the database
                 // to reduce the risk of accidental overwriting of other changes
-                val newScript = daoManager.cronScriptDao.getById(cronScript.id)
-                    ?: throw RuntimeException("Script not found for id: " + cronScript.id)
+                val newScript = daoManager.jobScriptDao.getById(cronScript.getLong("id"))
+                    ?: throw RuntimeException("Script not found for id: " + cronScript.getLong("id"))
                 val newData = newScript.jsonData().put("lastRun", System.currentTimeMillis())
                 if (res != null) {
                     val results = newScript.jsonData().getJsonArray("results") ?: JsonArray()
@@ -120,24 +120,27 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
                     newData.put("results", newResults)
                     newScript.setJsonData(newData)
                 }
-                daoManager.cronScriptDao.update(newScript)
-                cronScripts[newScript.id] = newScript
+                daoManager.jobScriptDao.update(newScript)
+                cronScripts[newScript.id] = newScript.toJson()
             } catch (e: Throwable) {
                 e.printStackTrace()
             } finally {
-                runningScripts[cronScript.id] = false
+                runningScripts[cronScript.getLong("id")] = false
             }
         }
     }
 
     private fun addCronScript(msg: Message<JsonObject>) {
-        val cronScript = msg.body().mapTo(CronScriptDb::class.java)
-        val lastRun: Long? = cronScripts[cronScript.id]?.jsonData()?.getLong("lastRun")
+        // TODO: for some fucking reason all owner ids are -1. and two requests are sent.
+        val cronScript = msg.body()
+        val lastRun: Long? =
+            cronScripts[cronScript.getLong("id")]?.getJsonObject("data")?.getLong("lastRun")
         if (lastRun != null) {
-            val newData = cronScript.jsonData().put("lastRun", System.currentTimeMillis())
-            cronScript.setJsonData(newData)
+            val newData =
+                cronScript.getJsonObject("data").put("lastRun", System.currentTimeMillis())
+            cronScript.put("data", newData)
         }
-        cronScripts[cronScript.id] = cronScript
+        cronScripts[cronScript.getLong("id")] = cronScript
     }
 
     private fun removeCronScript(msg: Message<Long>) {

@@ -30,7 +30,7 @@ function log(...messages) {
 
 async function exec(requestId, envName) {
     return new Promise((resolve, reject) => {
-        __exec.exec(requestId, envName).whenComplete((result, error) => {
+        __exec.exec(requestId, envName).onComplete((result, error) => {
               if (error) {
                   reject(error);
               } else {

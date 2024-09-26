@@ -133,6 +133,7 @@ function Dashboard() {
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | undefined>(
     undefined,
   );
+  console.log({ collections });
   const navigate = useNavigate();
   const location = useLocation();
   const isExtInitialized = useRef(false);
@@ -413,6 +414,7 @@ function Dashboard() {
 
   const dispatchSelectRequest = useCallback(
     (id: number) => {
+      console.log('request', collections);
       const request = findRequest(collections, id);
       if (!request) throw new Error("Request doesn't exist");
       navigate(`/${request.collectionId}/${request.id}`);
@@ -432,8 +434,9 @@ function Dashboard() {
 
   const dispatchSelectScript = useCallback(
     (id: number) => {
+      console.log('script', collections);
       const script = findScript(collections, id);
-      if (!script) throw new Error("Script doesn't exist");
+      if (!script) throw new Error(`Script ${id} doesn't exist`);
       navigate(`/${script.collectionId}/s-${script.id}`);
       dispatchCurrentRequest({
         type: CurrentRequestActionType.UNSET,
@@ -833,6 +836,25 @@ function Dashboard() {
     [currentScript?.id, toast],
   );
 
+  const takeScriptOwnership = useCallback(
+    async (id: number) => {
+      try {
+        const res = await api.takeScriptOwnership(id);
+        if (res.status !== 200) throw new Error();
+        dispatchCollections({
+          type: CollectionsActionType.PATCH_SCRIPT_DATA,
+          id: id,
+          data: { owner: user?.id },
+        });
+        successToast('You are now the owner of this script.', toast);
+      } catch (e) {
+        console.error(e);
+        errorToast('Could not take ownership of script', toast);
+      }
+    },
+    [toast],
+  );
+
   const onRefreshResults = useCallback(async () => {
     if (!currentScript) return;
     try {
@@ -938,6 +960,7 @@ function Dashboard() {
               duplicateCollection={duplicateCollection}
               duplicateScript={duplicateScript}
               dispatchCollections={dispatchCollections}
+              takeScriptOwnership={takeScriptOwnership}
             />
           </div>
           <div className={styles.main}>{panel}</div>

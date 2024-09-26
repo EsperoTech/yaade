@@ -51,6 +51,7 @@ type SidebarProps = {
   dispatchCollections: Dispatch<CollectionsAction>;
   deleteScript: (id: number) => void;
   duplicateScript: (id: number, newName: string) => void;
+  takeScriptOwnership: (id: number) => void;
 };
 
 function Sidebar({
@@ -68,6 +69,7 @@ function Sidebar({
   duplicateRequest,
   deleteScript,
   duplicateScript,
+  takeScriptOwnership,
 }: SidebarProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
@@ -208,6 +210,7 @@ function Sidebar({
         dispatchCollections={dispatchCollections}
         deleteScript={deleteScript}
         duplicateScript={duplicateScript}
+        takeScriptOwnership={takeScriptOwnership}
       />
 
       <BasicModal

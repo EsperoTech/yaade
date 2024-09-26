@@ -26,6 +26,7 @@ type CollectionsProps = {
   dispatchCollections: Dispatch<CollectionsAction>;
   deleteScript: (id: number) => void;
   duplicateScript: (id: number, newName: string) => void;
+  takeScriptOwnership: (id: number) => void;
 };
 
 function Collections({
@@ -43,6 +44,7 @@ function Collections({
   dispatchCollections,
   deleteScript,
   duplicateScript,
+  takeScriptOwnership,
 }: CollectionsProps) {
   const toast = useToast();
 
@@ -140,6 +142,7 @@ function Collections({
         selectScript={selectScript}
         deleteScript={deleteScript}
         duplicateScript={duplicateScript}
+        takeScriptOwnership={takeScriptOwnership}
       />
     );
   };

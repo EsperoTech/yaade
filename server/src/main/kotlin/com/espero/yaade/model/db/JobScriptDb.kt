@@ -6,7 +6,7 @@ import com.j256.ormlite.table.DatabaseTable
 import io.vertx.core.json.JsonObject
 
 @DatabaseTable(tableName = "jobscript")
-class CronScriptDb {
+class JobScriptDb {
 
     private constructor()
 
@@ -16,11 +16,15 @@ class CronScriptDb {
     @DatabaseField
     var collectionId: Long = -1
 
+    @DatabaseField
+    var ownerId: Long = -1
+
     @DatabaseField(dataType = DataType.BYTE_ARRAY)
     lateinit var data: ByteArray
 
-    constructor(collectionId: Long, name: String) {
+    constructor(collectionId: Long, name: String, ownerId: Long) {
         this.collectionId = collectionId
+        this.ownerId = ownerId
         this.data = JsonObject()
             .put("name", name)
             .put("script", "")
@@ -40,19 +44,29 @@ class CronScriptDb {
         return JsonObject()
             .put("id", id)
             .put("collectionId", collectionId)
+            .put("ownerId", ownerId)
             .put("data", jsonData())
+    }
+
+    fun patchData(data: JsonObject) {
+        val newData = jsonData()
+        data.forEach { entry ->
+            newData.put(entry.key, entry.value)
+        }
+        setJsonData(newData)
     }
 
     companion object {
 
-        fun fromUpdateRequest(json: JsonObject): CronScriptDb {
+        fun fromUpdateRequest(json: JsonObject, ownerId: Long): JobScriptDb {
             val id = json.getLong("id") ?: throw RuntimeException("No id provided")
             val collectionId = json.getLong("collectionId")
                 ?: throw RuntimeException("No collectionId provided")
             val data = json.getJsonObject("data")
                 ?: throw RuntimeException("No data provided")
-            val res = CronScriptDb()
+            val res = JobScriptDb()
             res.id = id
+            res.ownerId = ownerId
             res.collectionId = collectionId
             res.setJsonData(data)
             return res

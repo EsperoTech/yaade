@@ -42,6 +42,7 @@ import BasicModal from '../basicModal';
 import GroupsInput from '../groupsInput';
 import styles from './MoveableHeader.module.css';
 import { RequestDragItem } from './MoveableRequest';
+import { ScriptDragItem } from './MoveableScript';
 
 type MoveableHeaderProps = {
   collection: SidebarCollection;
@@ -55,6 +56,7 @@ type MoveableHeaderProps = {
   dispatchCollections: Dispatch<CollectionsAction>;
   moveCollection: (dragIndex: number, hoverIndex: number, newParentId?: number) => void;
   moveRequest: (id: number, newRank: number, newCollectionId: number) => void;
+  moveScript: (id: number, newRank: number, newCollectionId: number) => void;
   isCollectionDescendant: (collectionId: number, ancestorId: number) => boolean;
 };
 
@@ -108,6 +110,7 @@ function MoveableHeader({
   dispatchCollections,
   moveCollection,
   moveRequest,
+  moveScript,
   isCollectionDescendant,
 }: MoveableHeaderProps) {
   const { user } = useContext(UserContext);
@@ -272,11 +275,11 @@ function MoveableHeader({
     void,
     { handlerId: Identifier | null; hovered: boolean }
   >({
-    accept: [DragTypes.REQUEST],
+    accept: [DragTypes.REQUEST, DragTypes.SCRIPT],
     collect(monitor) {
       let hovered = false;
       const item = monitor.getItem();
-      if (item && item.type === DragTypes.REQUEST) {
+      if (item && (item.type === DragTypes.REQUEST || item.type === DragTypes.SCRIPT)) {
         hovered = monitor.isOver() && item.collectionId !== collection.id;
       }
       return {
@@ -284,8 +287,11 @@ function MoveableHeader({
         hovered,
       };
     },
-    drop(item: RequestDragItem) {
-      if (!ref.current || item.type !== DragTypes.REQUEST) {
+    drop(item: RequestDragItem | ScriptDragItem) {
+      if (
+        !ref.current ||
+        (item.type !== DragTypes.REQUEST && item.type !== DragTypes.SCRIPT)
+      ) {
         return;
       }
 
@@ -294,7 +300,11 @@ function MoveableHeader({
         return;
       }
 
-      moveRequest(item.id, 0, collection.id);
+      if (item.type === DragTypes.REQUEST) {
+        moveRequest(item.id, 0, collection.id);
+      } else if (item.type === DragTypes.SCRIPT) {
+        moveScript(item.id, 0, collection.id);
+      }
     },
   });
 
@@ -437,6 +447,7 @@ function MoveableHeader({
     try {
       const response = await api.createScript(collection.id, state.newScriptName);
       const newScript = (await response.json()) as Script;
+      console.log(newScript);
 
       dispatchCollections({
         type: CollectionsActionType.ADD_SCRIPT,

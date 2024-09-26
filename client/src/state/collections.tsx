@@ -24,6 +24,7 @@ enum CollectionsActionType {
   MOVE_SCRIPT = 'MOVE_SCRIPT',
   ADD_SCRIPT = 'ADD_SCRIPT',
   DELETE_SCRIPT = 'DELETE_SCRIPT',
+  CHANGE_SCRIPT_OWNER = 'CHANGE_SCRIPT_OWNER',
 }
 
 type SetCollectionsAction = {
@@ -121,6 +122,12 @@ type DeleteScriptAction = {
   id: number;
 };
 
+type ChangeScriptOwnerAction = {
+  type: CollectionsActionType.CHANGE_SCRIPT_OWNER;
+  id: number;
+  newOwnerId: number;
+};
+
 function findCollection(collections: Collection[], id: number): Collection | undefined {
   for (const collection of collections) {
     if (collection.id === id) {
@@ -151,7 +158,7 @@ function findRequest(collections: Collection[], id: number): Request | undefined
 
 function findScript(collections: Collection[], id: number): Script | undefined {
   for (const collection of collections) {
-    for (const script of collection.scripts) {
+    for (const script of collection.scripts ?? []) {
       if (script.id === id) {
         return script;
       }
@@ -475,6 +482,24 @@ function patchScriptData(state: Collection[], id: number, data: any): Collection
   });
 }
 
+function changeScriptOwner(
+  state: Collection[],
+  id: number,
+  newOwnerId: number,
+): Collection[] {
+  const oldScript = findScript(state, id);
+  if (!oldScript) return state;
+  return modifyCollection(state, oldScript.collectionId, (c) => {
+    if (!c.scripts) return;
+    for (const script of c.scripts) {
+      if (script.id === id) {
+        script.ownerId = newOwnerId;
+        return;
+      }
+    }
+  });
+}
+
 function moveScript(
   state: Collection[],
   id: number,
@@ -510,6 +535,7 @@ function moveScript(
 function addScript(state: Collection[], script: Script): Collection[] {
   return modifyCollection(state, script.collectionId, (c) => {
     if (!c.scripts) c.scripts = [];
+    c.open = true;
     c.scripts.splice(0, 0, script);
   });
 }
@@ -539,7 +565,8 @@ type CollectionsAction =
   | PatchScriptDataAction
   | MoveScriptAction
   | AddScriptAction
-  | DeleteScriptAction;
+  | DeleteScriptAction
+  | ChangeScriptOwnerAction;
 
 function collectionsReducer(
   state: Collection[] = defaultCollections,
@@ -578,6 +605,8 @@ function collectionsReducer(
       return addScript(state, action.script);
     case CollectionsActionType.DELETE_SCRIPT:
       return deleteScript(state, action.id);
+    case CollectionsActionType.CHANGE_SCRIPT_OWNER:
+      return changeScriptOwner(state, action.id, action.newOwnerId);
     default:
       console.error('Invalid action type');
       return state;

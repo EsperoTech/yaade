@@ -41,7 +41,7 @@ async function executeResponseScript(
     beforeAll: jasmineEnv.beforeAll,
     afterAll: jasmineEnv.afterAll,
   };
-  args.env = { set, get };
+  args.env = { set, get, name: envName };
   args.res = {
     body: response.body,
     headers: kvRowsToMap(response.headers),

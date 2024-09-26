@@ -3,6 +3,7 @@ import Script, { CurrentScript } from '../model/Script';
 const defaultCurrentScript: CurrentScript | undefined = {
   id: -1,
   collectionId: -1,
+  ownerId: -1,
   data: {},
   isChanged: false,
 };
@@ -37,6 +38,7 @@ function set(script: Script): CurrentScript {
   return {
     id: script.id,
     collectionId: script.collectionId,
+    ownerId: script.ownerId,
     data: script.data,
     isChanged: false,
   };

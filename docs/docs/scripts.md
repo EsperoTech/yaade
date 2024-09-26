@@ -100,17 +100,17 @@ const now = DateTime.utc().toISO()
 
 #### random-js
 
-We support `random-js` by referencing `$r`. You can read the full random-js docs [here](https://github.com/ckknight/random-js). Below are some useful commands taken from their documentation.
+We support `random-js` by referencing `rand`. You can read the full random-js docs [here](https://github.com/ckknight/random-js). Below are some useful commands taken from their documentation.
 
-- `$r.integer(min, max)`: Produce an integer within the inclusive range [`min`, `max`]. `min` can be at its minimum -9007199254740992 (2 ** 53). `max` can be at its maximum 9007199254740992 (2 ** 53). The special number `-0` is never returned.
-- `$r.real(min, max, inclusive)`: Produce a floating point number within the range [`min`, `max`) or [`min`, `max`]. Uses 53 bits of randomness.
-- `$r.die(sideCount)`: Same as `r.integer(1, sideCount)`
-- `$r.uuid4()`: Produce a [Universally Unique Identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier) Version 4.
-- `$r.string(length)`: Produce a random string using numbers, uppercase and lowercase letters, `_`, and `-` of length `length`.
-- `$r.string(length, pool)`: Produce a random string using the provided string `pool` as the possible characters to choose from of length `length`.
-- `$r.hex(length)` or `r.hex(length, false)`: Produce a random string comprised of numbers or the characters `abcdef` of length `length`.
-- `$r.hex(length, true)`: Produce a random string comprised of numbers or the characters `ABCDEF` of length `length`.
-- `$r.date(start, end)`: Produce a random `Date` within the inclusive range of [`start`, `end`]. `start` and `end` must both be `Date`s.
+- `rand.integer(min, max)`: Produce an integer within the inclusive range [`min`, `max`]. `min` can be at its minimum -9007199254740992 (2 ** 53). `max` can be at its maximum 9007199254740992 (2 ** 53). The special number `-0` is never returned.
+- `rand.real(min, max, inclusive)`: Produce a floating point number within the range [`min`, `max`) or [`min`, `max`]. Uses 53 bits of randomness.
+- `rand.die(sideCount)`: Same as `r.integer(1, sideCount)`
+- `rand.uuid4()`: Produce a [Universally Unique Identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier) Version 4.
+- `rand.string(length)`: Produce a random string using numbers, uppercase and lowercase letters, `_`, and `-` of length `length`.
+- `rand.string(length, pool)`: Produce a random string using the provided string `pool` as the possible characters to choose from of length `length`.
+- `rand.hex(length)` or `r.hex(length, false)`: Produce a random string comprised of numbers or the characters `abcdef` of length `length`.
+- `rand.hex(length, true)`: Produce a random string comprised of numbers or the characters `ABCDEF` of length `length`.
+- `rand.date(start, end)`: Produce a random `Date` within the inclusive range of [`start`, `end`]. `start` and `end` must both be `Date`s.
 
 ### Base64 encoding/decoding
 
@@ -128,13 +128,17 @@ The signature of the command is very simple:
 const exec: (requestId: number, envName?: string) => Promise<unknown>
 ```
 
-Because `exec` is asynchronous one can use `await` to wait for the result of the command.
+Because `exec` is asynchronous you can use `await` to wait for the result of the command.
 
 ```javascript
 // A simple example to extract a JWT from the response of another request
-const res = await exec(15, env.name)
-if (res.status === 200) {
-    env.set("token", jp("$.accessToken", res.body))
+try {
+  const res = await exec(15, env.name)
+  if (res.status === 200) {
+      env.set("token", jp("$.accessToken", res.body))
+  }
+} catch (e) {
+  log(e)
 }
 ```
 
@@ -173,19 +177,27 @@ The following example shows how to write a simple test suite:
 describe('Create and retrieve an entity', function() {
     it('should create an entity', async function() {
         // post entity request
-        const res = await exec(1783, env.name);
-        expect(res.status).toBe(201);
-        const id = jp("$.id", res.body)
-        env.set("id", id);
+        try {
+          const res = await exec(1783, env.name)
+          expect(res.status).toBe(201)
+          const id = jp("$.id", res.body)
+          env.set("id", id)
+        } catch (e) {
+          fail(e)
+        }
     });
 
     it('should retrieve the entity', async function() {
         // get entity request (id is injected from the environment)
-        const res = await exec(1784, env.name);
-        expect(res.status).toBe(200);
-        const resId = jp("$.id", res.body)
-        const envId = env.get("id")
-        expect(resId).toBe(envId)
+        try {
+          const res = await exec(1784, env.name)
+          expect(res.status).toBe(200)
+          const resId = jp("$.id", res.body)
+          const envId = env.get("id")
+          expect(resId).toBe(envId)
+        } catch (e) {
+          fail(e)
+        }
     });
 });
 ```
@@ -379,25 +391,50 @@ To enable a scheduled job, click the `▶` play button. To disable the job, clic
 
 ### Callback
 
-You can register a callback that is executed after the job script has finished. This is useful when automating workflows. The callback function has access to all the test results of the job script.
+You can register a callback that is executed after the job script has finished. This is useful when automating workflows. The callback function has access to the test report of the job script.
 
 ```javascript
-registerCallback(async (res) => {
-    env.set("res", res)
-    if (!res.success || res.jasmineReport?.status === "failed") {
+registerCallback(async (report) => {
+    env.set("report", JSON.stringify(report))
+    if (!report.success || report.jasmineReport?.status === "failed") {
         // you can execute another request here, for example
         // have a request that sends a notification to a slack channel
-        await exec(12)
+        await exec(1790, env.name)
     }
 })
 ```
 
 ```typescript
-type JasmineExpectation = {
-  matcherName: string;
+type TestReport = {
+  success: boolean;
+  executionTime: number;
+  jasmineReport: JasmineReport;
+  logs: Log[];
+  error: string | null;
+  envName: string;
+};
+
+type Log = {
   message: string;
-  stack: string;
-  passed: boolean;
+  timestamp: string;
+};
+
+type JasmineReport = {
+  suites: JasmineSuite[];
+  status: string;
+};
+
+type JasmineSuite = {
+  id: string;
+  description: string;
+  fullName: string;
+  parentSuiteId: string | null;
+  failedExpectations: any[];
+  deprecationWarnings: any[];
+  duration: number;
+  properties: any | null;
+  status: string;
+  specs: JasmineSpec[];
 };
 
 type JasmineSpec = {
@@ -415,35 +452,10 @@ type JasmineSpec = {
   status: string;
 };
 
-type JasmineSuite = {
-  id: string;
-  description: string;
-  fullName: string;
-  parentSuiteId: string | null;
-  failedExpectations: any[];
-  deprecationWarnings: any[];
-  duration: number;
-  properties: any | null;
-  status: string;
-  specs: JasmineSpec[];
-};
-
-type JasmineReport = {
-  suites: JasmineSuite[];
-  status: string;
-};
-
-type Log = {
+type JasmineExpectation = {
+  matcherName: string;
   message: string;
-  timestamp: string;
-};
-
-type TestReport = {
-  success: boolean;
-  executionTime: number;
-  jasmineReport: JasmineReport;
-  logs: Log[];
-  error: string | null;
-  envName: string;
+  stack: string;
+  passed: boolean;
 };
 ```

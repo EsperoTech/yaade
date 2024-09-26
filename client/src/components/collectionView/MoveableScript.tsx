@@ -17,6 +17,7 @@ type MoveableScriptProps = {
   selectScript: any;
   deleteScript: (id: number) => void;
   duplicateScript: (id: number, newName: string) => void;
+  takeOwnership: (id: number) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
 };
 
@@ -59,6 +60,7 @@ function MoveableScript({
   selectScript,
   deleteScript,
   duplicateScript,
+  takeOwnership,
   dispatchCollections,
 }: MoveableScriptProps) {
   const id = script.id;
@@ -74,10 +76,6 @@ function MoveableScript({
     hover(item, monitor) {
       if (!ref.current || !monitor.isOver()) {
         return;
-      }
-
-      if (selected) {
-        console.log('SSELECTED');
       }
 
       if (!ref.current || !monitor || !item || item.id === id) {
@@ -207,6 +205,7 @@ function MoveableScript({
         dispatchCollections={dispatchCollections}
         deleteScript={deleteScript}
         duplicateScript={duplicateScript}
+        takeOwnership={takeOwnership}
       />
     </div>
   );

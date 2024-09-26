@@ -1,6 +1,7 @@
 interface Script {
   id: number;
   collectionId: number;
+  ownerId: number;
   data: ScriptData;
 }
 
@@ -63,6 +64,7 @@ interface JasmineSpec {
 interface CurrentScript {
   id: number;
   collectionId: number;
+  ownerId: number;
   data: ScriptData;
   isChanged: boolean;
 }

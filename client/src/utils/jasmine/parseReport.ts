@@ -4,7 +4,6 @@ export default function getJasmineReport(jasmine: any): JasmineReport | null {
   try {
     const rawSuites = jasmine.getGlobal().jsApiReporter.suites();
     const rawSpecs = jasmine.getGlobal().jsApiReporter.specs();
-    console.log(jasmine.getGlobal().jsApiReporter.status());
     const suitesObject: any = JSON.parse(rawSuites);
     const suites: any[] = Object.values(suitesObject);
     const specs = JSON.parse(rawSpecs);
@@ -61,8 +60,6 @@ export default function getJasmineReport(jasmine: any): JasmineReport | null {
     }
 
     const sortedResult = result.sort((a, b) => a.id.localeCompare(b.id));
-
-    console.log('Jasmine Report:', sortedResult);
 
     return { suites: sortedResult, status: overallStatus };
   } catch (e) {

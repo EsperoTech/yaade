@@ -157,7 +157,15 @@ function ScriptPanel({
           },
           body: JSON.stringify(script),
         });
-        if (response.status !== 200) throw new Error();
+        if (response.status === 200) {
+          // skip
+        } else if (response.status === 400) {
+          const body = await response.json();
+          const message = body.message;
+          throw new Error(message);
+        } else {
+          throw new Error();
+        }
 
         dispatchCollections({
           type: CollectionsActionType.PATCH_SCRIPT_DATA,
@@ -169,8 +177,8 @@ function ScriptPanel({
           isChanged: false,
         });
         successToast('Script was saved.', toast);
-      } catch (e) {
-        errorToast('The script could not be saved.', toast);
+      } catch (e: any) {
+        errorToast('The script could not be saved. ' + e.message, toast);
       }
     },
     [dispatchCollections, dispatchCurrentScript, toast],

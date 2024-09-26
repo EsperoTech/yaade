@@ -65,6 +65,7 @@ type CollectionProps = {
   isCollectionDescendant: (collectionId: number, ancestorId: number) => boolean;
   deleteScript: (id: number) => void;
   duplicateScript: (id: number, newName: string) => void;
+  takeScriptOwnership: (id: number) => void;
 };
 
 function CollectionView({
@@ -86,6 +87,7 @@ function CollectionView({
   isCollectionDescendant,
   deleteScript,
   duplicateScript,
+  takeScriptOwnership,
 }: CollectionProps) {
   const { colorMode } = useColorMode();
   const iconVariants = collection.open ? ['open'] : [];
@@ -176,6 +178,7 @@ function CollectionView({
           deleteScript={deleteScript}
           duplicateScript={duplicateScript}
           dispatchCollections={dispatchCollections}
+          takeOwnership={takeScriptOwnership}
         />
       );
     },
@@ -187,6 +190,7 @@ function CollectionView({
       duplicateScript,
       moveScript,
       selectScript,
+      takeScriptOwnership,
     ],
   );
 
@@ -201,6 +205,7 @@ function CollectionView({
         index={index}
         moveCollection={moveCollection}
         moveRequest={moveRequest}
+        moveScript={moveScript}
         duplicateCollection={duplicateCollection}
         dispatchCollections={dispatchCollections}
         isCollectionDescendant={isCollectionDescendant}

@@ -195,6 +195,11 @@ const runScript = (script: Script, envName?: string): Promise<Response> =>
     body: JSON.stringify({ script, envName }),
   });
 
+const takeScriptOwnership = (id: number): Promise<Response> =>
+  fetch(BASE_PATH + `api/scripts/${id}/take-ownership`, {
+    method: 'POST',
+  });
+
 const exchangeOAuthToken = (tokenUrl: string, data: string): Promise<Response> =>
   fetch(BASE_PATH + 'api/oauth2/token', {
     method: 'POST',
@@ -241,4 +246,5 @@ export default {
   createScript,
   deleteScript,
   getScript,
+  takeScriptOwnership,
 };

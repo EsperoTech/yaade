@@ -38,7 +38,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
                 .getAllInCollection(it.id)
                 .map(RequestDb::toJson)
                 .sortedBy { el -> el.getJsonObject("data").getInteger("rank") ?: 0 }
-            val scripts = daoManager.cronScriptDao
+            val scripts = daoManager.jobScriptDao
                 .getAllInCollection(it.id)
                 .map { script -> script.toJson() }
                 .sortedBy { el -> el.getJsonObject("data").getInteger("rank") ?: 0 }
@@ -104,7 +104,10 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
         daoManager.collectionDao.create(newCollection)
 
-        val result = newCollection.toJson().put("requests", JsonArray()).encode()
+        val result = newCollection.toJson()
+            .put("requests", JsonArray())
+            .put("scripts", JsonArray())
+            .encode()
         ctx.end(result).coAwait()
     }
 
@@ -247,6 +250,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val id = collection.getLong("id")
         daoManager.collectionDao.delete(id)
         daoManager.requestDao.deleteAllInCollection(id)
+        daoManager.jobScriptDao.deleteAllInCollection(id)
     }
 
     suspend fun importOpenApiCollection(ctx: RoutingContext) {

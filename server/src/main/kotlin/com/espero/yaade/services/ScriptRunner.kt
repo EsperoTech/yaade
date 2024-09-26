@@ -40,7 +40,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
     class FutureWrapper(val future: Future<Map<String, Any>>) {
 
         @Export
-        fun whenComplete(v: Value) {
+        fun onComplete(v: Value) {
             future.onComplete {
                 if (!v.canExecute()) {
                     return@onComplete
@@ -48,10 +48,8 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
                 if (it.succeeded()) {
                     v.execute(ProxyObject.fromMap(it.result()))
                 } else {
-                    v.execute(null, it.cause())
+                    v.execute(null, it.cause()?.message ?: "Unknown error")
                 }
-            }.onFailure {
-                v.execute(null, it)
             }
         }
 
@@ -59,6 +57,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
 
     class Exec(
         private val eventBus: EventBus,
+        private val ownerGroups: Set<String>,
         private val scriptRunner: ScriptRunner
     ) {
 
@@ -68,7 +67,13 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
             envName: String?
         ): FutureWrapper {
             val promise = Promise.promise<Map<String, Any>>()
-            val f = scriptRunner.prepareExec(requestId, envName)
+            val f: CompletableFuture<JsonObject>?
+            try {
+                f = scriptRunner.prepareExec(requestId, envName, ownerGroups)
+            } catch (e: Exception) {
+                return FutureWrapper(Future.failedFuture(e))
+            }
+
             f.orTimeout(30, TimeUnit.SECONDS)
                 .whenComplete { res, err ->
                     if (err != null) {
@@ -83,8 +88,6 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
                             } else {
                                 promise.fail(it.cause())
                             }
-                        }.onFailure {
-                            promise.fail(it)
                         }
                 }
             return FutureWrapper(promise.future())
@@ -114,7 +117,9 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         val context = newContext(out)
         val continuation = ContinuationWrapper()
         val startTime = System.currentTimeMillis()
-        val globalBindings = createGlobalBindings(context, collection, envName)
+        val ownerGroups =
+            msg.body().getJsonArray("ownerGroups", JsonArray()).map { it as String }.toSet()
+        val globalBindings = createGlobalBindings(context, collection, envName, ownerGroups)
         globalBindings.putMember(
             "__continuation",
             continuation
@@ -168,12 +173,20 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
             }
     }
 
-    private fun prepareExec(requestId: Long, envName: String?): CompletableFuture<JsonObject> {
+    private fun prepareExec(
+        requestId: Long,
+        envName: String?,
+        ownerGroups: Set<String>
+    ): CompletableFuture<JsonObject> {
         val request = daoManager.requestDao.getById(requestId)
             ?: throw IllegalArgumentException("Request not found for id: $requestId")
         val collection = daoManager.collectionDao.getById(request.collectionId)
             ?: throw IllegalArgumentException("Collection not found for id: ${request.collectionId}")
-        // TODO: close context on timeout
+        if (collection.groups().intersect(ownerGroups)
+                .isEmpty() && !ownerGroups.contains("admin")
+        ) {
+            throw IllegalArgumentException("Owner of script does not have the necessary permissions")
+        }
         return CompletableFuture.supplyAsync(
             { interpolate(request.jsonData(), collection, envName) },
             executor
@@ -192,7 +205,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         val envData = env.getJsonObject("data") ?: JsonObject()
         val out = ByteArrayOutputStream()
         newContext(out).use { context ->
-            val globalBindings = createGlobalBindings(context, collection, envName)
+            val globalBindings = context.getBindings("js")
             val builder = ScriptRuntimeBuilder(context)
             builder.evalScript(context, interpolateFile)
             val res =
@@ -228,10 +241,11 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
     private fun createGlobalBindings(
         context: Context,
         collection: CollectionDb,
-        envName: String?
+        envName: String?,
+        ownerGroups: Set<String>
     ): Value {
         val globalBindings: Value = context.getBindings("js")
-        globalBindings.putMember("__exec", Exec(eventBus, this))
+        globalBindings.putMember("__exec", Exec(eventBus, ownerGroups, this))
         globalBindings.putMember(
             "env",
             Environment(

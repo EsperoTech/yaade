@@ -30,6 +30,7 @@ type CollectionScriptProps = {
   dispatchCollections: Dispatch<CollectionsAction>;
   deleteScript: (id: number) => void;
   duplicateScript: (id: number, newName: string) => void;
+  takeOwnership: (id: number) => void;
 };
 
 type CollectionScriptState = {
@@ -50,6 +51,7 @@ const CollectionScript: FunctionComponent<CollectionScriptProps> = ({
   selectScript,
   deleteScript,
   duplicateScript,
+  takeOwnership,
 }) => {
   const [state, setState] = useState<CollectionScriptState>({
     name: script.name,
@@ -118,12 +120,34 @@ const CollectionScript: FunctionComponent<CollectionScriptProps> = ({
     </BasicModal>
   );
 
+  const takeOwnershipModal = (
+    <BasicModal
+      isOpen={isOpen}
+      initialRef={undefined}
+      onClose={onCloseClear}
+      heading={`Take ownership of "${script.name}"`}
+      onClick={() => {
+        takeOwnership(script.id);
+        onCloseClear();
+      }}
+      buttonText="Take Ownership"
+      buttonColor="green"
+      isButtonDisabled={false}
+    >
+      Are you sure you want to take ownership of this script?
+      <br />
+      You will be the owner of this script and it will be moved to your workspace.
+    </BasicModal>
+  );
+
   let currentModal;
 
   if (state.currentModal === 'delete') {
     currentModal = deleteModal;
   } else if (state.currentModal === 'duplicate') {
     currentModal = duplicateModal;
+  } else if (state.currentModal === 'takeOwnership') {
+    currentModal = takeOwnershipModal;
   }
 
   return (
@@ -181,6 +205,19 @@ const CollectionScript: FunctionComponent<CollectionScriptProps> = ({
                   }}
                 >
                   Duplicate
+                </MenuItem>
+                <MenuItem
+                  icon={<CopyIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setState({
+                      ...state,
+                      currentModal: 'takeOwnership',
+                    });
+                    onOpen();
+                  }}
+                >
+                  Take Ownership
                 </MenuItem>
                 <MenuItem
                   icon={<LinkIcon />}
