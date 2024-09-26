@@ -5,7 +5,6 @@ import com.espero.yaade.server.Server
 import com.espero.yaade.server.utils.configureDatabindCodec
 import com.espero.yaade.services.CronScriptRunner
 import com.espero.yaade.services.ScriptRunner
-import com.j256.ormlite.support.DatabaseConnection.DEFAULT_RESULT_FLAGS
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.ThreadingModel
 import io.vertx.core.Vertx
@@ -22,10 +21,6 @@ val SCRIPT_RUNNER_TIMEOUT: Long = System.getenv("YAADE_SCRIPT_RUNNER_TIMEOUT")?.
 fun main() {
     configureDatabindCodec()
     val daoManager = createDaoManager(JDBC_URL, JDBC_USR, JDBC_PWD)
-    daoManager.connectionSource.readWriteConnection.executeStatement(
-        "" +
-                "DELETE FROM jobscript", DEFAULT_RESULT_FLAGS
-    )
 
     val vertx = Vertx.vertx()
     vertx.deployVerticle(Server(PORT, daoManager))

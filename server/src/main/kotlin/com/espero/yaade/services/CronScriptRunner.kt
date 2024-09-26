@@ -131,7 +131,6 @@ class CronScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle()
     }
 
     private fun addCronScript(msg: Message<JsonObject>) {
-        // TODO: for some fucking reason all owner ids are -1. and two requests are sent.
         val cronScript = msg.body()
         val lastRun: Long? =
             cronScripts[cronScript.getLong("id")]?.getJsonObject("data")?.getLong("lastRun")

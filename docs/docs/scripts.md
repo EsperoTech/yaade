@@ -459,3 +459,7 @@ type JasmineExpectation = {
   passed: boolean;
 };
 ```
+
+### Ownership
+
+Each time a job script is run as a cron script it is executed in the context of the owner of the script. A user can take ownership of a script by clicking the `Take Ownership` button in the sidebar. A script can only execute requests that the owner has access to. When running a script manually, the calling user is always the owner of the script.

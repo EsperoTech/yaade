@@ -257,7 +257,12 @@ function Dashboard() {
     const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
 
     if (!tokenUrl || !clientId || !grantType) {
-      console.log('Required oauth2 parameters are missing.');
+      console.log({
+        message: 'Required oauth2 parameters are missing.',
+        tokenUrl,
+        clientId,
+        grantType,
+      });
       return;
     }
 
@@ -414,7 +419,6 @@ function Dashboard() {
 
   const dispatchSelectRequest = useCallback(
     (id: number) => {
-      console.log('request', collections);
       const request = findRequest(collections, id);
       if (!request) throw new Error("Request doesn't exist");
       navigate(`/${request.collectionId}/${request.id}`);
@@ -434,7 +438,6 @@ function Dashboard() {
 
   const dispatchSelectScript = useCallback(
     (id: number) => {
-      console.log('script', collections);
       const script = findScript(collections, id);
       if (!script) throw new Error(`Script ${id} doesn't exist`);
       navigate(`/${script.collectionId}/s-${script.id}`);
