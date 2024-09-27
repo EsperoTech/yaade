@@ -2,6 +2,8 @@ package com.espero.yaade.server
 
 import com.espero.yaade.ADMIN_USERNAME
 import com.espero.yaade.BASE_PATH
+import com.espero.yaade.VERTX_BODY_LIMIT
+import com.espero.yaade.VERTX_MAX_HEADER_SIZE
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.ConfigDb
@@ -64,7 +66,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             routerBuilder.rootHandler(
                 BodyHandler
                     .create()
-                    .setBodyLimit(-1)
+                    .setBodyLimit(VERTX_BODY_LIMIT)
                     .setUploadsDirectory("/tmp")
             )
             val loggerHandler = LoggerHandler.create(LoggerFormat.DEFAULT)
@@ -207,7 +209,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 log.error("Bad auth config: $e")
             }
 
-            val options: HttpServerOptions = HttpServerOptions().setMaxHeaderSize(1000000)
+            val options: HttpServerOptions = HttpServerOptions().setMaxHeaderSize(VERTX_MAX_HEADER_SIZE)
             server = vertx.createHttpServer(options)
                 .requestHandler(mainRouter)
                 .listen(port)
