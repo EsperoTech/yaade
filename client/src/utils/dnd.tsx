@@ -1,6 +1,7 @@
 export const DragTypes = {
   COLLECTION: 'collection',
   REQUEST: 'request',
+  SCRIPT: 'script',
 };
 
 export const DropTypes = {

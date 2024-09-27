@@ -21,12 +21,19 @@ import {
 import type { Identifier } from 'dnd-core';
 import { Dispatch, useContext, useMemo, useRef, useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
-import { VscEllipsis, VscFolder, VscFolderOpened } from 'react-icons/vsc';
+import {
+  VscCode,
+  VscEllipsis,
+  VscFileCode,
+  VscFolder,
+  VscFolderOpened,
+} from 'react-icons/vsc';
 
 import api from '../../api';
 import { UserContext } from '../../context';
 import Collection, { SidebarCollection } from '../../model/Collection';
 import Request from '../../model/Request';
+import Script from '../../model/Script';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import { cn, errorToast, successToast } from '../../utils';
 import { parseCurlCommand } from '../../utils/curl';
@@ -35,6 +42,7 @@ import BasicModal from '../basicModal';
 import GroupsInput from '../groupsInput';
 import styles from './MoveableHeader.module.css';
 import { RequestDragItem } from './MoveableRequest';
+import { ScriptDragItem } from './MoveableScript';
 
 type MoveableHeaderProps = {
   collection: SidebarCollection;
@@ -42,11 +50,13 @@ type MoveableHeaderProps = {
   currentRequestId?: number;
   selectCollection: any;
   selectRequest: any;
+  selectScript: any;
   index: number;
   duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
   moveCollection: (dragIndex: number, hoverIndex: number, newParentId?: number) => void;
   moveRequest: (id: number, newRank: number, newCollectionId: number) => void;
+  moveScript: (id: number, newRank: number, newCollectionId: number) => void;
   isCollectionDescendant: (collectionId: number, ancestorId: number) => boolean;
 };
 
@@ -60,6 +70,7 @@ type MoveableHeaderState = {
   uploadFile: any;
   basePath: string;
   selectedImport: string;
+  newScriptName: string;
 };
 
 function calculateTopHoveredRank(
@@ -93,11 +104,13 @@ function MoveableHeader({
   currentCollectionId,
   selectCollection,
   selectRequest,
+  selectScript,
   index,
   duplicateCollection,
   dispatchCollections,
   moveCollection,
   moveRequest,
+  moveScript,
   isCollectionDescendant,
 }: MoveableHeaderProps) {
   const { user } = useContext(UserContext);
@@ -111,6 +124,7 @@ function MoveableHeader({
     uploadFile: undefined,
     basePath: '',
     selectedImport: 'openapi',
+    newScriptName: '',
   });
   const id = collection.id;
   const ref = useRef<HTMLDivElement>(null);
@@ -261,11 +275,11 @@ function MoveableHeader({
     void,
     { handlerId: Identifier | null; hovered: boolean }
   >({
-    accept: [DragTypes.REQUEST],
+    accept: [DragTypes.REQUEST, DragTypes.SCRIPT],
     collect(monitor) {
       let hovered = false;
       const item = monitor.getItem();
-      if (item && item.type === DragTypes.REQUEST) {
+      if (item && (item.type === DragTypes.REQUEST || item.type === DragTypes.SCRIPT)) {
         hovered = monitor.isOver() && item.collectionId !== collection.id;
       }
       return {
@@ -273,8 +287,11 @@ function MoveableHeader({
         hovered,
       };
     },
-    drop(item: RequestDragItem) {
-      if (!ref.current || item.type !== DragTypes.REQUEST) {
+    drop(item: RequestDragItem | ScriptDragItem) {
+      if (
+        !ref.current ||
+        (item.type !== DragTypes.REQUEST && item.type !== DragTypes.SCRIPT)
+      ) {
         return;
       }
 
@@ -283,7 +300,11 @@ function MoveableHeader({
         return;
       }
 
-      moveRequest(item.id, 0, collection.id);
+      if (item.type === DragTypes.REQUEST) {
+        moveRequest(item.id, 0, collection.id);
+      } else if (item.type === DragTypes.SCRIPT) {
+        moveScript(item.id, 0, collection.id);
+      }
     },
   });
 
@@ -334,7 +355,13 @@ function MoveableHeader({
   }
 
   function onCloseClear() {
-    setState({ ...state, newRequestName: '', newCollectionName: '', importData: '' });
+    setState({
+      ...state,
+      newRequestName: '',
+      newCollectionName: '',
+      newScriptName: '',
+      importData: '',
+    });
     onClose();
   }
 
@@ -413,6 +440,25 @@ function MoveableHeader({
       onCloseClear();
     } catch (e) {
       errorToast('The collection could be not created', toast);
+    }
+  }
+
+  async function handleCreateScriptClick() {
+    try {
+      const response = await api.createScript(collection.id, state.newScriptName);
+      const newScript = (await response.json()) as Script;
+
+      dispatchCollections({
+        type: CollectionsActionType.ADD_SCRIPT,
+        script: newScript,
+      });
+      selectScript.current(newScript.id);
+
+      onCloseClear();
+      successToast('A new request was created.', toast);
+    } catch (e) {
+      console.error(e);
+      errorToast('The request could be not created', toast);
     }
   }
 
@@ -505,6 +551,30 @@ function MoveableHeader({
                     </TabPanel>
                   </TabPanels>
                 </Tabs>
+              </BasicModal>
+            );
+          case 'newScript':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                onClose={onCloseClear}
+                initialRef={initialRef}
+                heading="Create a new Script"
+                onClick={handleCreateScriptClick}
+                isButtonDisabled={state.newScriptName === ''}
+                buttonText="Create"
+                buttonColor="green"
+              >
+                <Input
+                  placeholder="Name"
+                  w="100%"
+                  borderRadius={20}
+                  backgroundColor={colorMode === 'light' ? 'white' : undefined}
+                  colorScheme="green"
+                  value={state.newScriptName}
+                  onChange={(e) => setState({ ...state, newScriptName: e.target.value })}
+                  ref={initialRef}
+                />
               </BasicModal>
             );
           case 'newCollection':
@@ -740,6 +810,16 @@ function MoveableHeader({
                     }}
                   >
                     New Collection
+                  </MenuItem>
+                  <MenuItem
+                    icon={<VscFileCode />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setState({ ...state, currentModal: 'newScript' });
+                      onOpen();
+                    }}
+                  >
+                    New Job Script
                   </MenuItem>
                   <MenuItem
                     icon={<LinkIcon />}

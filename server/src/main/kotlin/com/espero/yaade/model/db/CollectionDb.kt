@@ -151,6 +151,13 @@ class CollectionDb {
         this.data = json.encode().toByteArray()
     }
 
+    fun getEnvVar(envName: String, key: String): String? {
+        val json = jsonData()
+        val envs = json.getJsonObject("envs") ?: return null
+        val env = envs.getJsonObject(envName) ?: return null
+        return env.getJsonObject("data")?.getString(key)
+    }
+
     fun setSecret(envName: String, key: String, value: String) {
         val json = jsonData()
         var envs = json.getJsonObject("envs")
@@ -218,6 +225,12 @@ class CollectionDb {
         env.put("data", updatedData)
         env.put("proxy", updatedProxy)
         this.data = json.encode().toByteArray()
+    }
+
+    fun getEnv(name: String): JsonObject? {
+        val json = jsonData()
+        val envs = json.getJsonObject("envs") ?: return null
+        return envs.getJsonObject(name)
     }
 
     companion object {

@@ -1,5 +1,6 @@
 import Collection, { CurrentCollection } from '../model/Collection';
 import Request, { AuthData } from '../model/Request';
+import Script, { CurrentScript } from '../model/Script';
 import { BASE_PATH, groupsArrayToStr } from '../utils';
 
 const DEFAULT_HEADERS = {
@@ -148,6 +149,57 @@ const updateCollection = (
     body: JSON.stringify(collection),
   });
 
+const getScript = (id: number): Promise<Response> =>
+  fetch(BASE_PATH + `api/scripts/${id}`);
+
+const createScript = (collectionId: number, name: string): Promise<Response> =>
+  fetch(BASE_PATH + 'api/scripts', {
+    method: 'POST',
+    headers: DEFAULT_HEADERS,
+    body: JSON.stringify({
+      collectionId,
+      name,
+    }),
+  });
+
+const updateScript = (script: Script | CurrentScript): Promise<Response> =>
+  fetch(BASE_PATH + 'api/scripts', {
+    method: 'PUT',
+    headers: DEFAULT_HEADERS,
+    body: JSON.stringify(script),
+  });
+
+const moveScript = (
+  id: number,
+  newRank: number,
+  newCollectionId: number,
+): Promise<Response> =>
+  fetch(BASE_PATH + `api/scripts/${id}/move`, {
+    method: 'POST',
+    headers: DEFAULT_HEADERS,
+    body: JSON.stringify({
+      newRank,
+      newCollectionId,
+    }),
+  });
+
+const deleteScript = (id: number): Promise<Response> =>
+  fetch(BASE_PATH + `api/scripts/${id}`, {
+    method: 'DELETE',
+  });
+
+const runScript = (script: Script, envName?: string): Promise<Response> =>
+  fetch(BASE_PATH + `api/run-script`, {
+    method: 'POST',
+    headers: DEFAULT_HEADERS,
+    body: JSON.stringify({ script, envName }),
+  });
+
+const takeScriptOwnership = (id: number): Promise<Response> =>
+  fetch(BASE_PATH + `api/scripts/${id}/take-ownership`, {
+    method: 'POST',
+  });
+
 const exchangeOAuthToken = (tokenUrl: string, data: string): Promise<Response> =>
   fetch(BASE_PATH + 'api/oauth2/token', {
     method: 'POST',
@@ -184,8 +236,15 @@ export default {
   moveRequest,
   updateRequest,
   invoke,
+  runScript,
   updateCollection,
   getFiles,
   uploadFile,
   deleteFile,
+  updateScript,
+  moveScript,
+  createScript,
+  deleteScript,
+  getScript,
+  takeScriptOwnership,
 };

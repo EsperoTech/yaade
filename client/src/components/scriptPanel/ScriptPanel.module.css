@@ -1,0 +1,78 @@
+.container {
+  height: calc(100% - 2rem);
+}
+
+.menu {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.cronPanel {
+  display: flex;
+  align-items: center;
+}
+
+.iconBar {
+  display: flex;
+}
+
+.box {
+  height: 100%;
+  width: 100%;
+  padding: 1rem;
+  scrollbar-gutter: stable;
+}
+
+.input {
+  width: 100%;
+  min-height: 32px;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 100%;
+  border-radius: 20px 0 0 20px;
+  padding-left: 1rem;
+}
+
+.input--light {
+  background-color: var(--chakra-colors-white);
+}
+
+.input--dark {
+  background-color: var(--chakra-colors-gray-900);
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border: 1px solid var(--chakra-colors-gray-700);
+}
+
+.button {
+  border-radius: 0 20px 20px 0;
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button--light {
+  background-color: var(--chakra-colors-green-500);
+  color: var(--chakra-colors-white);
+}
+
+.button--dark {
+  background-color: var(--chakra-colors-green-300);
+  color: var(--chakra-colors-gray-900);
+}
+
+.button--light:hover {
+  background-color: var(--chakra-colors-green-400);
+}
+
+.button--dark:hover {
+  background-color: var(--chakra-colors-green-400);
+}

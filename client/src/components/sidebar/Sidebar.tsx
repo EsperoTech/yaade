@@ -40,13 +40,18 @@ type SidebarProps = {
   collections: SidebarCollection[];
   currentCollectionId?: number;
   currentRequestId?: number;
+  currentScriptId?: number;
   selectCollection: any;
   selectRequest: any;
+  selectScript: any;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
   duplicateRequest: (id: number, newName: string) => void;
   duplicateCollection: (id: number, newName: string) => void;
   dispatchCollections: Dispatch<CollectionsAction>;
+  deleteScript: (id: number) => void;
+  duplicateScript: (id: number, newName: string) => void;
+  takeScriptOwnership: (id: number) => void;
 };
 
 function Sidebar({
@@ -54,12 +59,17 @@ function Sidebar({
   dispatchCollections,
   currentCollectionId,
   currentRequestId,
+  currentScriptId,
   selectCollection,
   selectRequest,
+  selectScript,
   renameRequest,
   deleteRequest,
   duplicateCollection,
   duplicateRequest,
+  deleteScript,
+  duplicateScript,
+  takeScriptOwnership,
 }: SidebarProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
@@ -189,13 +199,18 @@ function Sidebar({
         collections={filteredCollections}
         currentCollectionId={currentCollectionId}
         currentRequestId={currentRequestId}
+        currentScriptId={currentScriptId}
         selectCollection={selectCollection}
         selectRequest={selectRequest}
+        selectScript={selectScript}
         renameRequest={renameRequest}
         deleteRequest={deleteRequest}
         duplicateRequest={duplicateRequest}
         duplicateCollection={duplicateCollection}
         dispatchCollections={dispatchCollections}
+        deleteScript={deleteScript}
+        duplicateScript={duplicateScript}
+        takeScriptOwnership={takeScriptOwnership}
       />
 
       <BasicModal

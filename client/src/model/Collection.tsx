@@ -1,5 +1,6 @@
 import KVRow from './KVRow';
 import Request, { AuthData, SidebarRequest } from './Request';
+import Script, { SidebarScript } from './Script';
 
 interface Collection {
   id: number;
@@ -9,6 +10,7 @@ interface Collection {
   version: string;
   children: Array<Collection>;
   requests: Array<Request>;
+  scripts: Array<Script>;
 }
 
 interface CollectionData {
@@ -49,6 +51,7 @@ interface SidebarCollection {
   parentId?: number;
   groups?: string[];
   requests: SidebarRequest[];
+  scripts: SidebarScript[];
   children: SidebarCollection[];
   depth: number;
 }

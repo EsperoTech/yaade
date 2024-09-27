@@ -1,17 +1,25 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.21"
-    id("java")
+    kotlin("jvm") version "1.9.20"
+    application
+    java
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 group = "com.espero"
 version = "1.0-SNAPSHOT"
 
 val vertxVersion = "4.5.1"
+val graalVMVersion = "23.1.1";
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 dependencies {
@@ -36,32 +44,64 @@ dependencies {
     implementation("net.lingala.zip4j:zip4j:2.9.1")
     implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.19")
     implementation("com.google.code.gson:gson:2.11.0")
-    
+    implementation("com.cronutils:cron-utils:9.2.0")
+
     implementation("org.apache.commons:commons-text:1.9")
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+
+    implementation("org.graalvm.truffle:truffle-api:$graalVMVersion")
+    implementation("org.graalvm.truffle:truffle-runtime:$graalVMVersion")
+    implementation("org.graalvm.truffle:truffle-compiler:$graalVMVersion")
+    implementation("org.graalvm.polyglot:polyglot:$graalVMVersion")
+    implementation("org.graalvm.polyglot:js:$graalVMVersion")
+
+    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation("org.slf4j:slf4j-simple:2.0.9")
 }
 
 tasks.test {
     useJUnitPlatform()
 }
 
-tasks.withType<Jar> {
+application {
+    mainClass.set("com.espero.yaade.MainKt")
+}
 
-    manifest {
-        attributes["Main-Class"] = "com.espero.yaade.MainKt"
+sourceSets {
+    main {
+        java.srcDirs("src/main/java")
+        kotlin.srcDirs("src/main/kotlin")
     }
-
-    from(sourceSets.main.get().output)
-
-    dependsOn(configurations.runtimeClasspath)
-    from({
-        configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
-    })
+    test {
+        java.srcDirs("src/test/java")
+        kotlin.srcDirs("src/test/kotlin")
+    }
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
+}
+
+kotlin {
+    jvmToolchain(17)
+}
+
+tasks.register<Copy>("copyDependencies") {
+    val outputDir = file("build/libs/dependencies")
+    from(configurations.runtimeClasspath)
+    into(outputDir)
+}
+
+tasks.register<Sync>("syncApp") {
+    val appOutputDir = file("build/app")
+    from(tasks.getByName("jar"))
+    from(tasks.getByName("copyDependencies"))
+    into(appOutputDir)
+}
+
+tasks.named("build") {
+    dependsOn("syncApp")
 }
