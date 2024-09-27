@@ -3,6 +3,7 @@ package com.espero.yaade.server.routes
 import com.cronutils.model.CronType
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
+import com.espero.yaade.SCRIPT_RUNNER_TIMEOUT
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.JobScriptDb
 import com.espero.yaade.server.errors.ServerError
@@ -21,6 +22,7 @@ class ScriptRoute(
 
     private val cronParser =
         CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
+    private val log = org.slf4j.LoggerFactory.getLogger(this::class.java)
 
     fun getScript(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
@@ -99,6 +101,7 @@ class ScriptRoute(
     }
 
     suspend fun runScript(ctx: RoutingContext) {
+        log.info("${System.currentTimeMillis()} Running script")
         val jsonScript = ctx.body().asJsonObject().getJsonObject("script") ?: throw ServerError(
             HttpResponseStatus.BAD_REQUEST.code(),
             "No script provided"
@@ -124,9 +127,15 @@ class ScriptRoute(
                 .put("collectionId", collection.id)
                 .put("envName", envName)
                 .put("ownerGroups", ownerGroups)
+            log.info("${System.currentTimeMillis()} sending message")
             res = vertx.eventBus()
-                .request<JsonObject>("script.run", msg, DeliveryOptions().setSendTimeout(6000))
+                .request<JsonObject>(
+                    "script.run",
+                    msg,
+                    DeliveryOptions().setSendTimeout(SCRIPT_RUNNER_TIMEOUT + 1000)
+                )
                 .coAwait().body()
+            log.info("${System.currentTimeMillis()} answer received")
         } catch (e: Throwable) {
             res = JsonObject()
                 .put("success", false)
