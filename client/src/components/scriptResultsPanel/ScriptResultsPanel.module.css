@@ -18,9 +18,7 @@
 .resultsListElements {
   height: 90%;
   overflow: hidden;
-  overflow-y: scroll;
-  /* make the scrollbar not take up space when it is not there */
-  scrollbar-width: thin;
+  overflow-y: auto;
   font-family: monospace;
 }
 
@@ -46,7 +44,10 @@
   background-color: var(--chakra-colors-gray-700);
 }
 
-.resultElement--selected {
+.resultElement--light.resultElement--selected {
+  background-color: var(--chakra-colors-gray-300);
+}
+.resultElement--dark.resultElement--selected {
   background-color: var(--chakra-colors-gray-700);
 }
 

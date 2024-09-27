@@ -445,7 +445,12 @@ function MoveableHeader({
 
   async function handleCreateScriptClick() {
     try {
-      const response = await api.createScript(collection.id, state.newScriptName);
+      const data = {
+        name: state.newScriptName,
+        script: '',
+        enabled: false,
+      };
+      const response = await api.createScript(collection.id, data);
       const newScript = (await response.json()) as Script;
 
       dispatchCollections({

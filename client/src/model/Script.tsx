@@ -80,6 +80,7 @@ export type {
   JasmineReport,
   JasmineSpec,
   JasmineSuite,
+  ScriptData,
   ScriptLog,
   ScriptResult,
   SidebarScript,

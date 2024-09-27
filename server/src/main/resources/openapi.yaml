@@ -1087,11 +1087,8 @@ components:
     CreateScriptRequest:
       type: object
       required:
-        - name
         - collectionId
       properties:
-        name:
-          type: string
         collectionId:
           type: integer
     Script:
