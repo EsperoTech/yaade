@@ -22,14 +22,10 @@ class JobScriptDb {
     @DatabaseField(dataType = DataType.BYTE_ARRAY)
     lateinit var data: ByteArray
 
-    constructor(collectionId: Long, name: String, ownerId: Long) {
+    constructor(collectionId: Long, ownerId: Long, data: JsonObject) {
         this.collectionId = collectionId
         this.ownerId = ownerId
-        this.data = JsonObject()
-            .put("name", name)
-            .put("script", "")
-            .put("enabled", false)
-            .encode().toByteArray()
+        this.data = data.encode().toByteArray()
     }
 
     fun jsonData(): JsonObject {

@@ -1,4 +1,13 @@
-import { Table, TableContainer, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
+import {
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+  useColorMode,
+} from '@chakra-ui/react';
 import { useState } from 'react';
 import {
   VscArrowDown,
@@ -46,8 +55,9 @@ type LogsTabProps = {
 
 const LogsTab = ({ logs }: LogsTabProps) => {
   const [openedRows, setOpenedRows] = useState<number[]>([]);
+  const { colorMode } = useColorMode();
   return (
-    <div className={styles.container}>
+    <div className={cn(styles, 'container', [colorMode])}>
       <TableContainer overflow="hidden">
         <Table size="sm" whiteSpace="normal">
           <Thead>

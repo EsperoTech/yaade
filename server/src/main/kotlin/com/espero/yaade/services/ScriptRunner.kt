@@ -115,14 +115,12 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         interpolateFile = interpolateStream.bufferedReader().use { it.readText() }
         eventBus.consumer("script.run", this::run)
         CompletableFuture.runAsync({
-            log.info("${System.currentTimeMillis()} Initializing script runner")
             val context = newContext(ByteArrayOutputStream())
             runtimeBuilder.initRuntime(context)
             val globalBindings: Value = context.getBindings("js")
             globalBindings.putMember("hello", "world")
             context.eval("js", "console.log(hello)")
             context.close(true)
-            log.info("${System.currentTimeMillis()} Script runner initialized")
         }, executor)
     }
 
@@ -138,33 +136,26 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
             val out = ByteArrayOutputStream()
             outReference.set(out)
             val context = newContext(out)
-            log.info("${System.currentTimeMillis()} context built")
             contextReference.set(context)
             val continuation = ContinuationWrapper()
             val startTime = System.currentTimeMillis()
             val ownerGroups =
                 msg.body().getJsonArray("ownerGroups", JsonArray()).map { it as String }.toSet()
-            log.info("${System.currentTimeMillis()} creating global bindings")
             val globalBindings = createGlobalBindings(context, collection, envName, ownerGroups)
             globalBindings.putMember(
                 "__continuation",
                 continuation
             )
-            log.info("${System.currentTimeMillis()} init runtime")
             runtimeBuilder.initRuntime(context)
-            log.info("${System.currentTimeMillis()} evaluating script")
             context.eval("js", indexFile.format(script))
             while (!continuation.finished.get() && System.currentTimeMillis() - startTime < SCRIPT_RUNNER_TIMEOUT) {
                 Thread.sleep(10)
             }
-            log.info("${System.currentTimeMillis()} finished")
             if (!continuation.finished.get()) {
                 throw RuntimeException("Script execution timed out")
             }
-            log.info("${System.currentTimeMillis()} creating result")
             val result = createResult(globalBindings, envName ?: "")
             continuation.finished.set(false)
-            log.info("${System.currentTimeMillis()} calling callback")
             globalBindings.getMember("__doCallback").execute(result.encode())
             while (!continuation.finished.get() && System.currentTimeMillis() - startTime < SCRIPT_RUNNER_TIMEOUT) {
                 Thread.sleep(10)
@@ -177,7 +168,6 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         // NOTE: we add a little extra timeout to better differentiate which timeout happened
         f.orTimeout(SCRIPT_RUNNER_TIMEOUT + 500, TimeUnit.MILLISECONDS)
             .whenComplete { result: JsonObject?, ex: Throwable? ->
-                log.info("${System.currentTimeMillis()} completing")
                 val out = outReference.get() ?: throw RuntimeException("Output stream not found")
                 val context = contextReference.get() ?: throw RuntimeException("Context not found")
                 val outPrint = out.toString()
@@ -200,9 +190,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
                             .put("envName", envName)
                     )
                 } else {
-                    log.info("${System.currentTimeMillis()} closing context")
                     context.close()
-                    log.info("${System.currentTimeMillis()} sending reply")
                     msg.reply(result)
                 }
             }

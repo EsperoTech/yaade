@@ -799,7 +799,13 @@ function Dashboard() {
       try {
         const script = findScript(collections, id);
         if (!script) return;
-        const res = await api.createScript(script.collectionId, newName);
+        const newData = {
+          ...script.data,
+          name: newName,
+          lastRun: undefined,
+          results: undefined,
+        };
+        const res = await api.createScript(script.collectionId, newData);
         if (res.status !== 200) throw new Error();
         const newScriptData = await res.json();
         dispatchCollections({

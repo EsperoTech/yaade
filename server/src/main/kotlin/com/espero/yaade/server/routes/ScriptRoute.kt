@@ -22,7 +22,6 @@ class ScriptRoute(
 
     private val cronParser =
         CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
-    private val log = org.slf4j.LoggerFactory.getLogger(this::class.java)
 
     fun getScript(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
@@ -46,11 +45,11 @@ class ScriptRoute(
             HttpResponseStatus.BAD_REQUEST.code(),
             "Collection ID is required"
         )
-        val name = body.getString("name") ?: throw ServerError(
+        val data = body.getJsonObject("data") ?: throw ServerError(
             HttpResponseStatus.BAD_REQUEST.code(),
-            "Name is required"
+            "Data is required"
         )
-        val script = JobScriptDb(collectionId, name, ownerId)
+        val script = JobScriptDb(collectionId, ownerId, data)
         daoManager.jobScriptDao.create(script)
         vertx.eventBus().send("cronjob.add", script.toJson())
         ctx.end(script.toJson().encode())
@@ -101,7 +100,6 @@ class ScriptRoute(
     }
 
     suspend fun runScript(ctx: RoutingContext) {
-        log.info("${System.currentTimeMillis()} Running script")
         val jsonScript = ctx.body().asJsonObject().getJsonObject("script") ?: throw ServerError(
             HttpResponseStatus.BAD_REQUEST.code(),
             "No script provided"
@@ -127,7 +125,6 @@ class ScriptRoute(
                 .put("collectionId", collection.id)
                 .put("envName", envName)
                 .put("ownerGroups", ownerGroups)
-            log.info("${System.currentTimeMillis()} sending message")
             res = vertx.eventBus()
                 .request<JsonObject>(
                     "script.run",
@@ -135,7 +132,6 @@ class ScriptRoute(
                     DeliveryOptions().setSendTimeout(SCRIPT_RUNNER_TIMEOUT + 1000)
                 )
                 .coAwait().body()
-            log.info("${System.currentTimeMillis()} answer received")
         } catch (e: Throwable) {
             res = JsonObject()
                 .put("success", false)

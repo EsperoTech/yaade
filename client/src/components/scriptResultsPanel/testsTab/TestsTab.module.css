@@ -20,6 +20,17 @@
   align-items: center;
   height: 24px;
   gap: 0.15rem;
+}
+
+.suiteHeader--light,
+.specItem--light,
+.specFailedExpectation--light {
+  border-bottom: 1px solid white;
+}
+
+.suiteHeader--dark,
+.specItem--dark,
+.specFailedExpectation--dark {
   border-bottom: 1px solid var(--chakra-colors-whiteAlpha-300);
 }
 

@@ -1,6 +1,6 @@
 import Collection, { CurrentCollection } from '../model/Collection';
 import Request, { AuthData } from '../model/Request';
-import Script, { CurrentScript } from '../model/Script';
+import Script, { CurrentScript, ScriptData } from '../model/Script';
 import { BASE_PATH, groupsArrayToStr } from '../utils';
 
 const DEFAULT_HEADERS = {
@@ -152,13 +152,13 @@ const updateCollection = (
 const getScript = (id: number): Promise<Response> =>
   fetch(BASE_PATH + `api/scripts/${id}`);
 
-const createScript = (collectionId: number, name: string): Promise<Response> =>
+const createScript = (collectionId: number, data: ScriptData): Promise<Response> =>
   fetch(BASE_PATH + 'api/scripts', {
     method: 'POST',
     headers: DEFAULT_HEADERS,
     body: JSON.stringify({
       collectionId,
-      name,
+      data,
     }),
   });
 
