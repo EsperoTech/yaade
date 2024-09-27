@@ -1,50 +1,38 @@
 package com.espero.yaade.services
 
 import org.graalvm.polyglot.Context
-import org.graalvm.polyglot.Source
-import org.graalvm.polyglot.Value
-import java.io.InputStreamReader
 
-class ScriptRuntimeBuilder(context: Context) {
+class ScriptRuntimeBuilder {
+
+    private val bundleScript: String
+    private val jasmineScript: String
+    private val boot0Script: String
+    private val boot1Script: String
 
     init {
-        createGlobalVariables(context)
-        loadDependencies(context)
+        val bundleStream = javaClass.getResourceAsStream("/bundle.js")
+            ?: throw RuntimeException("bundle.js file not found")
+        bundleScript = bundleStream.bufferedReader().use { it.readText() }
+        val jasmineStream = javaClass.getResourceAsStream("/jasmine.js")
+            ?: throw RuntimeException("jasmine.js file not found")
+        jasmineScript = jasmineStream.bufferedReader().use { it.readText() }
+        val boot0Stream = javaClass.getResourceAsStream("/boot0.js")
+            ?: throw RuntimeException("boot0.js file not found")
+        boot0Script = boot0Stream.bufferedReader().use { it.readText() }
+        val boot1Stream = javaClass.getResourceAsStream("/boot1.js")
+            ?: throw RuntimeException("boot1.js file not found")
+        boot1Script = boot1Stream.bufferedReader().use { it.readText() }
     }
 
-    private fun loadDependencies(context: Context) {
-        loadDependency(context, "bundle.js")
-        loadDependency(context, "jasmine.js")
-        loadDependency(context, "boot0.js")
-        loadDependency(context, "boot1.js")
-    }
-
-    private fun loadDependency(context: Context, scriptFile: String) {
-        val inputStream = javaClass.getResourceAsStream("/$scriptFile")
-            ?: throw RuntimeException("JavaScript file not found")
-        InputStreamReader(inputStream).use { reader ->
-            val source = Source.newBuilder(
-                "js",
-                reader,
-                scriptFile
-            ).cached(false).build()
-            context.eval(source)
-        }
-    }
-
-    private fun createGlobalVariables(context: Context) {
-        val globalBindings = getGlobalBindings(context)
+    fun initRuntime(context: Context) {
+        val globalBindings = context.getBindings("js")
         val jasmineGlobalPrototype = globalBindings.getMember("Object")
         val jasmineGlobal = jasmineGlobalPrototype.newInstance()
-        getGlobalBindings(context).putMember("global", jasmineGlobal)
-    }
-
-    private fun getGlobalBindings(context: Context): Value {
-        return context.getBindings("js")
-    }
-
-    fun evalScript(context: Context, script: String): Value {
-        return context.eval("js", script)
+        context.getBindings("js").putMember("global", jasmineGlobal)
+        context.eval("js", bundleScript)
+        context.eval("js", jasmineScript)
+        context.eval("js", boot0Script)
+        context.eval("js", boot1Script)
     }
 
 }

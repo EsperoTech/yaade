@@ -7,6 +7,7 @@ import io.vertx.core.Future
 import io.vertx.core.Promise
 import io.vertx.core.eventbus.EventBus
 import io.vertx.core.eventbus.Message
+import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.graalvm.polyglot.Context
@@ -21,10 +22,18 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 class ScriptRunner(private val daoManager: DaoManager, private val eventBus: EventBus) {
 
+    private val log = LoggerFactory.getLogger(ScriptRunner::class.java)
     private val executor: ExecutorService = Executors.newCachedThreadPool()
+    private val runtimeBuilder = ScriptRuntimeBuilder()
+    private val contextBuilder = Context.newBuilder("js")
+        .sandbox(SandboxPolicy.CONSTRAINED)
+        .`in`(ByteArrayInputStream(ByteArray(0)))
+        .allowHostAccess(HostAccess.CONSTRAINED)
+        .option("engine.WarnInterpreterOnly", "false")
 
     class ContinuationWrapper {
 
@@ -105,36 +114,57 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
             ?: throw IllegalArgumentException("File not found in resources")
         interpolateFile = interpolateStream.bufferedReader().use { it.readText() }
         eventBus.consumer("script.run", this::run)
+        CompletableFuture.runAsync({
+            log.info("${System.currentTimeMillis()} Initializing script runner")
+            val context = newContext(ByteArrayOutputStream())
+            runtimeBuilder.initRuntime(context)
+            val globalBindings: Value = context.getBindings("js")
+            globalBindings.putMember("hello", "world")
+            context.eval("js", "console.log(hello)")
+            context.close(true)
+            log.info("${System.currentTimeMillis()} Script runner initialized")
+        }, executor)
     }
 
     fun run(msg: Message<JsonObject>) {
-        val script = msg.body().getString("script")
-        val collectionId = msg.body().getLong("collectionId")
+        val outReference = AtomicReference<ByteArrayOutputStream>()
+        val contextReference = AtomicReference<Context>()
         val envName = msg.body().getString("envName")
-        val collection = daoManager.collectionDao.getById(collectionId)
-            ?: throw IllegalArgumentException("Collection not found for id: $collectionId")
-        val out = ByteArrayOutputStream()
-        val context = newContext(out)
-        val continuation = ContinuationWrapper()
-        val startTime = System.currentTimeMillis()
-        val ownerGroups =
-            msg.body().getJsonArray("ownerGroups", JsonArray()).map { it as String }.toSet()
-        val globalBindings = createGlobalBindings(context, collection, envName, ownerGroups)
-        globalBindings.putMember(
-            "__continuation",
-            continuation
-        )
-        val builder = ScriptRuntimeBuilder(context)
         val f = CompletableFuture.supplyAsync({
-            builder.evalScript(context, indexFile.format(script))
+            val script = msg.body().getString("script")
+            val collectionId = msg.body().getLong("collectionId")
+            val collection = daoManager.collectionDao.getById(collectionId)
+                ?: throw IllegalArgumentException("Collection not found for id: $collectionId")
+            val out = ByteArrayOutputStream()
+            outReference.set(out)
+            val context = newContext(out)
+            log.info("${System.currentTimeMillis()} context built")
+            contextReference.set(context)
+            val continuation = ContinuationWrapper()
+            val startTime = System.currentTimeMillis()
+            val ownerGroups =
+                msg.body().getJsonArray("ownerGroups", JsonArray()).map { it as String }.toSet()
+            log.info("${System.currentTimeMillis()} creating global bindings")
+            val globalBindings = createGlobalBindings(context, collection, envName, ownerGroups)
+            globalBindings.putMember(
+                "__continuation",
+                continuation
+            )
+            log.info("${System.currentTimeMillis()} init runtime")
+            runtimeBuilder.initRuntime(context)
+            log.info("${System.currentTimeMillis()} evaluating script")
+            context.eval("js", indexFile.format(script))
             while (!continuation.finished.get() && System.currentTimeMillis() - startTime < SCRIPT_RUNNER_TIMEOUT) {
                 Thread.sleep(10)
             }
+            log.info("${System.currentTimeMillis()} finished")
             if (!continuation.finished.get()) {
                 throw RuntimeException("Script execution timed out")
             }
+            log.info("${System.currentTimeMillis()} creating result")
             val result = createResult(globalBindings, envName ?: "")
             continuation.finished.set(false)
+            log.info("${System.currentTimeMillis()} calling callback")
             globalBindings.getMember("__doCallback").execute(result.encode())
             while (!continuation.finished.get() && System.currentTimeMillis() - startTime < SCRIPT_RUNNER_TIMEOUT) {
                 Thread.sleep(10)
@@ -147,6 +177,9 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         // NOTE: we add a little extra timeout to better differentiate which timeout happened
         f.orTimeout(SCRIPT_RUNNER_TIMEOUT + 500, TimeUnit.MILLISECONDS)
             .whenComplete { result: JsonObject?, ex: Throwable? ->
+                log.info("${System.currentTimeMillis()} completing")
+                val out = outReference.get() ?: throw RuntimeException("Output stream not found")
+                val context = contextReference.get() ?: throw RuntimeException("Context not found")
                 val outPrint = out.toString()
                 if (outPrint.trimIndent().isNotEmpty()) {
                     println(outPrint)
@@ -167,7 +200,9 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
                             .put("envName", envName)
                     )
                 } else {
+                    log.info("${System.currentTimeMillis()} closing context")
                     context.close()
+                    log.info("${System.currentTimeMillis()} sending reply")
                     msg.reply(result)
                 }
             }
@@ -205,9 +240,9 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         val envData = env.getJsonObject("data") ?: JsonObject()
         val out = ByteArrayOutputStream()
         newContext(out).use { context ->
+            runtimeBuilder.initRuntime(context)
             val globalBindings = context.getBindings("js")
-            val builder = ScriptRuntimeBuilder(context)
-            builder.evalScript(context, interpolateFile)
+            context.eval("js", interpolateFile)
             val res =
                 globalBindings.getMember("interpolate").execute(request.encode(), envData.encode())
                     .asString()
@@ -228,14 +263,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
     }
 
     private fun newContext(out: ByteArrayOutputStream): Context {
-        return Context.newBuilder("js")
-            .sandbox(SandboxPolicy.CONSTRAINED)
-            .`in`(ByteArrayInputStream(ByteArray(0)))
-            .out(out)
-            .err(out)
-            .allowHostAccess(HostAccess.CONSTRAINED)
-            .option("engine.WarnInterpreterOnly", "false")
-            .build()
+        return contextBuilder.out(out).err(out).build()
     }
 
     private fun createGlobalBindings(
