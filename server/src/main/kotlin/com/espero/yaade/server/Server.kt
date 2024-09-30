@@ -12,6 +12,7 @@ import com.espero.yaade.server.errors.handleFailure
 import com.espero.yaade.server.routes.*
 import com.espero.yaade.server.utils.adminCoroutineHandler
 import com.espero.yaade.server.utils.coroutineHandler
+import com.espero.yaade.server.utils.tokenCoroutineHandler
 import com.espero.yaade.server.utils.userCoroutineHandler
 import com.espero.yaade.services.RequestSender
 import io.vertx.core.http.HttpMethod
@@ -60,6 +61,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val certificateRoute = CertificateRoute(daoManager, vertx)
             val fileRoute = FileRoute(daoManager)
             val scriptRoute = ScriptRoute(daoManager, vertx)
+            val accessTokenRoute = AccessTokenRoute(daoManager)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
@@ -192,6 +194,16 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 .userCoroutineHandler(this, scriptRoute::moveScript)
             routerBuilder.operation("takeScriptOwnership")
                 .userCoroutineHandler(this, scriptRoute::takeOwnership)
+
+            routerBuilder.operation("getAccessTokens")
+                .userCoroutineHandler(this, accessTokenRoute::listUserAccessTokens)
+            routerBuilder.operation("createAccessToken")
+                .userCoroutineHandler(this, accessTokenRoute::createAccessToken)
+            routerBuilder.operation("deleteAccessToken")
+                .userCoroutineHandler(this, accessTokenRoute::deleteAccessToken)
+
+            routerBuilder.operation("tokenRunScript")
+                .tokenCoroutineHandler(this, daoManager, scriptRoute::tokenRunScript)
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())

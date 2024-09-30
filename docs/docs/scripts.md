@@ -460,6 +460,21 @@ type JasmineExpectation = {
 };
 ```
 
+### Programmatic Run
+
+You can run a script with an access token from an external source. The script is executed in the context of the user that created the token. Check the [access token section](/access-tokens.html) for more information on how to create an access token.
+
+```bash
+curl --request POST \
+  --url 'http://localhost:9338/api/v1/script/12/run?env=staging' \
+  --header 'Authorization: Bearer yaade_<access-token>'
+# response: {"success": true, "logs": [{ ... }]}
+```
+
+The `env` query parameter is optional. If it is not set, the script is executed in the default environment.
+
+The response is the result of the script. Check the [callback section](/scripts.html#callback) of the script to see the specific response structure. The response status will be `200` only if the script was executed successfully and all the tests passed.
+
 ### Ownership
 
-Each time a job script is run as a cron script it is executed in the context of the owner of the script. A user can take ownership of a script by clicking the `Take Ownership` button in the sidebar. A script can only execute requests that the owner has access to. When running a script manually, the calling user is always the owner of the script.
+Each time a job script is run as a cron script it is executed in the context of the owner of the script. A user can take ownership of a script by clicking the `Take Ownership` button in the sidebar. A script can only execute requests that the owner has access to. When running a script manually or with an access token, the calling user is always the owner of the script.

@@ -18,6 +18,7 @@ class DaoManager {
     lateinit var connectionSource: ConnectionSource
     lateinit var fileDao: FileDao
     lateinit var jobScriptDao: JobScriptDao
+    lateinit var accessTokenDao: AccessTokenDao
 
     fun init(jdbcUrl: String, jdbcUsr: String, jdbcPwd: String) {
         val hikariConfig = HikariConfig()
@@ -34,6 +35,7 @@ class DaoManager {
         certificatesDao = CertificatesDao(connectionSource)
         fileDao = FileDao(connectionSource)
         jobScriptDao = JobScriptDao(connectionSource)
+        accessTokenDao = AccessTokenDao(connectionSource)
     }
 
     fun close() {
