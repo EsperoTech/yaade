@@ -24,6 +24,8 @@ class SecretInterpolator(private val daoManager: DaoManager) {
     ): JsonObject {
         val result = JsonObject()
         request.forEach {
+            if (it.key == null || it.value == null)
+                return@forEach
             result.put(it.key, interpolate1(it.value, substitutor))
         }
 
