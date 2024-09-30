@@ -1,3 +1,3 @@
-import CertificateSettings from './CertificateSettings';
+import AccessTokenSettings from './AccessTokenSettings';
 
-export default CertificateSettings;
+export default AccessTokenSettings;
