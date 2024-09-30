@@ -12,7 +12,6 @@ class AccessTokenRoute(private val daoManager: DaoManager) {
         val userId = ctx.user().principal().getLong("id")
         val data = ctx.body().asJsonObject()
         val rawSecret = "yaade_${generateSecret()}"
-        // TODO: check if this always works... im really not sure
         val secret = hashWithSHA256(rawSecret)
         val newAccessToken = AccessTokenDb(secret, userId, data)
         daoManager.accessTokenDao.create(newAccessToken)
