@@ -905,7 +905,7 @@ paths:
       responses:
         '200':
           description: Success
-  /api/v1/script/{id}/run:
+  /api/v1/scripts/{id}/run:
     post:
       tags:
         - Scripts
