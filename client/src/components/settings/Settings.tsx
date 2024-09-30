@@ -10,6 +10,7 @@ import {
 import { useContext } from 'react';
 
 import { UserContext } from '../../context';
+import AccessTokenSettings from './accessTokensSettings/AccessTokenSettings';
 import AccountSettings from './accountSettings';
 import AdminSettings from './adminSettings';
 import CertificateSettings from './certificateSettings';
@@ -47,6 +48,9 @@ function Settings() {
             <Tab sx={sx} _selected={selected}>
               Account
             </Tab>
+            <Tab sx={sx} _selected={selected}>
+              Tokens
+            </Tab>
             {isAdmin() ? (
               <>
                 <Divider my="4" />
@@ -79,6 +83,9 @@ function Settings() {
           </TabPanel>
           <TabPanel>
             <AccountSettings />
+          </TabPanel>
+          <TabPanel>
+            <AccessTokenSettings />
           </TabPanel>
           {isAdmin() ? (
             <TabPanel>

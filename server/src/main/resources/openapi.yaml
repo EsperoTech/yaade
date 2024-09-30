@@ -860,6 +860,71 @@ paths:
       responses:
         '200':
           description: Success
+  /api/accessTokens:
+    get:
+      tags:
+        - AccessToken
+      summary: Get the access tokens for the current user
+      operationId: getAccessTokens
+      responses:
+        '200':
+          description: Success
+    post:
+      tags:
+        - AccessToken
+      summary: Create a new access token
+      operationId: createAccessToken
+      requestBody:
+        description: The access token to create
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - createdAt
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Success
+  /api/accessTokens/{id}:
+    delete:
+      tags:
+        - AccessToken
+      summary: Delete an access token
+      operationId: deleteAccessToken
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /api/v1/script/{id}/run:
+    post:
+      tags:
+        - Scripts
+      summary: Run a script
+      operationId: tokenRunScript
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: env
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
 
 components:
   schemas:

@@ -1,5 +1,6 @@
 package com.espero.yaade.server.utils
 
+import com.espero.yaade.db.DaoManager
 import com.espero.yaade.server.errors.ServerError
 import com.fasterxml.jackson.core.StreamReadConstraints
 import io.netty.handler.codec.http.HttpResponseStatus
@@ -11,6 +12,7 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.openapi.Operation
 import io.vertx.kotlin.coroutines.CoroutineVerticle
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 
 fun Operation.coroutineHandler(
     coroutineVerticle: CoroutineVerticle,
@@ -75,6 +77,31 @@ fun Operation.userCoroutineHandler(
     authorizedCoroutineHandler(coroutineVerticle, false, handler)
 }
 
+fun Operation.tokenCoroutineHandler(
+    coroutineVerticle: CoroutineVerticle,
+    daoManager: DaoManager,
+    handler: suspend (ctx: RoutingContext) -> Unit
+) {
+    this.handler { ctx ->
+        val token = ctx.request().getHeader("Authorization")?.replace("Bearer ", "")
+            ?: throw ServerError(HttpResponseStatus.UNAUTHORIZED.code(), "No token provided")
+        val hashedSecret = hashWithSHA256(token)
+        val accessToken = daoManager.accessTokenDao.getByHashedSecret(hashedSecret)
+            ?: throw ServerError(HttpResponseStatus.UNAUTHORIZED.code(), "Invalid token")
+        val user = daoManager.userDao.getById(accessToken.ownerId)
+            ?: throw ServerError(HttpResponseStatus.UNAUTHORIZED.code(), "Invalid token")
+        ctx.setUser(user.toSessionUser())
+        coroutineVerticle.launch {
+            try {
+                handler(ctx)
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                ctx.fail(t)
+            }
+        }
+    }
+}
+
 fun Route.coroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Handler<RoutingContext>) {
     this.handler { ctx ->
         coroutineVerticle.launch {
@@ -97,4 +124,10 @@ fun configureDatabindCodec() {
         .build()
     DatabindCodec.mapper().factory.setStreamReadConstraints(s)
     DatabindCodec.prettyMapper().factory.setStreamReadConstraints(s)
+}
+
+fun hashWithSHA256(input: String): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    val hashBytes = digest.digest(input.toByteArray())
+    return hashBytes.joinToString("") { "%02x".format(it) }
 }
