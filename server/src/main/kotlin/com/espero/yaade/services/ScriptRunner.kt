@@ -278,7 +278,8 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         val executionTime = System.currentTimeMillis()
         val logs = getLogs(globalBindings)
         val error = globalBindings.getMember("__internalError")?.asString()
-        val success = error == null
+        val success = error == null &&
+                (jasmineReport == null || jasmineReport.getString("status") == "passed")
         return JsonObject()
             .put("success", success)
             .put("executionTime", executionTime)

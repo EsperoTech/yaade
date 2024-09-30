@@ -99,6 +99,36 @@ class ScriptRoute(
         ctx.end()
     }
 
+    suspend fun tokenRunScript(ctx: RoutingContext) {
+        val id = ctx.pathParam("id").toLong()
+        val envName = ctx.queryParam("env").firstOrNull()
+        val jobScript = daoManager.jobScriptDao.getById(id)
+            ?: throw ServerError(HttpResponseStatus.NOT_FOUND.code(), "Script does not exist")
+        val collection = daoManager.collectionDao.getById(jobScript.collectionId)
+            ?: throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "No collection found for id: ${jobScript.collectionId}"
+            )
+        assertUserCanReadCollection(ctx, collection.id)
+        val ownerGroups =
+            ctx.user().principal().getJsonObject("data", JsonObject())
+                .getJsonArray("groups", JsonArray())
+        val scriptString = jobScript.jsonData().getString("script")
+        val result =
+            run(jobScript.id, scriptString, jobScript.collectionId, envName ?: "", ownerGroups)
+                ?: throw ServerError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    "Script failed"
+                )
+        ctx.response().putHeader("Content-Type", "application/json")
+        if (result.getBoolean("success", false)) {
+            ctx.response().setStatusCode(HttpResponseStatus.OK.code())
+        } else {
+            ctx.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code())
+        }
+        ctx.end(result.encodePrettily())
+    }
+
     suspend fun runScript(ctx: RoutingContext) {
         val jsonScript = ctx.body().asJsonObject().getJsonObject("script") ?: throw ServerError(
             HttpResponseStatus.BAD_REQUEST.code(),
@@ -118,11 +148,23 @@ class ScriptRoute(
         val ownerGroups = JsonArray(owner.groups().toList())
         val scriptString = jobScript.jsonData().getString("script")
             ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No script provided")
+        val result = run(jobScript.id, scriptString, jobScript.collectionId, envName, ownerGroups)
+            ?: throw ServerError(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), "Script failed")
+        ctx.end(result.encode())
+    }
+
+    suspend fun run(
+        scriptId: Long,
+        scriptString: String,
+        collectionId: Long,
+        envName: String?,
+        ownerGroups: JsonArray
+    ): JsonObject? {
         var res: JsonObject? = null
         try {
             val msg = JsonObject()
                 .put("script", scriptString)
-                .put("collectionId", collection.id)
+                .put("collectionId", collectionId)
                 .put("envName", envName)
                 .put("ownerGroups", ownerGroups)
             res = vertx.eventBus()
@@ -143,8 +185,8 @@ class ScriptRoute(
             try {
                 // NOTE: we get the latest version of the job script from the database
                 // to reduce the risk of accidental overwriting of other changes
-                val newScript = daoManager.jobScriptDao.getById(jobScript.id)
-                    ?: throw RuntimeException("Script not found for id: " + jobScript.id)
+                val newScript = daoManager.jobScriptDao.getById(scriptId)
+                    ?: throw RuntimeException("Script not found for id: $scriptId")
                 val newData = newScript.jsonData().put("lastRun", System.currentTimeMillis())
                 if (res != null) {
                     val results = newScript.jsonData().getJsonArray("results") ?: JsonArray()
@@ -163,8 +205,7 @@ class ScriptRoute(
                 e.printStackTrace()
             }
         }
-        val result = res?.encode() ?: ""
-        ctx.end(result)
+        return res
     }
 
     suspend fun moveScript(ctx: RoutingContext) {
