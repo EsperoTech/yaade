@@ -20,7 +20,7 @@ val BASE_PATH: String = System.getenv("YAADE_BASE_PATH") ?: ""
 val FILE_STORAGE_PATH: String = System.getenv("YAADE_FILE_STORAGE_PATH") ?: "./app/data/files"
 val SCRIPT_RUNNER_TIMEOUT: Long = System.getenv("YAADE_SCRIPT_RUNNER_TIMEOUT")?.toLong() ?: 30_000
 val YAADE_SERVER_BODY_LIMIT: Long = System.getenv("YAADE_SERVER_BODY_LIMIT")?.toLong() ?: DEFAULT_BODY_LIMIT
-val YAADE_SERVER_MAX_HEADER_SIZE: Int = System.getenv("YAADE_SERVER_MAX_HEADER_SIZE").toInt() ?: DEFAULT_MAX_HEADER_SIZE
+val YAADE_SERVER_MAX_HEADER_SIZE: Int = System.getenv("YAADE_SERVER_MAX_HEADER_SIZE")?.toInt() ?: DEFAULT_MAX_HEADER_SIZE
 
 fun main() {
     configureDatabindCodec()
