@@ -313,14 +313,21 @@ class AuthHandler(private val vertx: Vertx, private val daoManager: DaoManager) 
             }
     }
 
-    private fun updateUser(config: JsonObject, ctx: RoutingContext, userInfo: JsonObject) {
+    private fun updateUser(
+        config: JsonObject,
+        ctx: RoutingContext,
+        deprecatedUserInfo: JsonObject
+    ) {
+        val userInfo = ctx.user().attributes()?.getJsonObject("idToken")
         val fields = config.getJsonObject("params")?.getJsonObject("fields")
             ?: throw RuntimeException("missing fields in provider config")
 
         val usernamePointer = fields.getString("username")
             ?: throw RuntimeException("missing username in fields in provider config")
         val username = (JsonPointer.from(usernamePointer).queryJson(userInfo)
-            ?: throw RuntimeException("Username not found: $usernamePointer")) as String
+            ?: JsonPointer.from(usernamePointer).queryJson(deprecatedUserInfo)
+            ?: throw RuntimeException("Username not found: $usernamePointer")
+                ) as String
 
         val providerId = config.getString("id")
 

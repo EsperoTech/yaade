@@ -7,9 +7,9 @@ import io.vertx.core.Future
 import io.vertx.core.Promise
 import io.vertx.core.eventbus.EventBus
 import io.vertx.core.eventbus.Message
-import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
+import io.vertx.kotlin.coroutines.CoroutineVerticle
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.HostAccess
 import org.graalvm.polyglot.HostAccess.Export
@@ -24,9 +24,8 @@ import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-class ScriptRunner(private val daoManager: DaoManager, private val eventBus: EventBus) {
+class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
 
-    private val log = LoggerFactory.getLogger(ScriptRunner::class.java)
     private val executor: ExecutorService = Executors.newCachedThreadPool()
     private val runtimeBuilder = ScriptRuntimeBuilder()
     private val contextBuilder = Context.newBuilder("js")
@@ -34,86 +33,17 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         .`in`(ByteArrayInputStream(ByteArray(0)))
         .allowHostAccess(HostAccess.CONSTRAINED)
         .option("engine.WarnInterpreterOnly", "false")
+    private lateinit var indexFile: String
+    private lateinit var interpolateFile: String
 
-    class ContinuationWrapper {
-
-        var finished = AtomicBoolean(false)
-
-        @Export
-        fun resume() {
-            finished.set(true)
-        }
-
-    }
-
-    class FutureWrapper(val future: Future<Map<String, Any>>) {
-
-        @Export
-        fun onComplete(v: Value) {
-            future.onComplete {
-                if (!v.canExecute()) {
-                    return@onComplete
-                }
-                if (it.succeeded()) {
-                    v.execute(ProxyObject.fromMap(it.result()))
-                } else {
-                    v.execute(null, it.cause()?.message ?: "Unknown error")
-                }
-            }
-        }
-
-    }
-
-    class Exec(
-        private val eventBus: EventBus,
-        private val ownerGroups: Set<String>,
-        private val scriptRunner: ScriptRunner
-    ) {
-
-        @Export
-        fun exec(
-            requestId: Long,
-            envName: String?
-        ): FutureWrapper {
-            val promise = Promise.promise<Map<String, Any>>()
-            val f: CompletableFuture<JsonObject>?
-            try {
-                f = scriptRunner.prepareExec(requestId, envName, ownerGroups)
-            } catch (e: Exception) {
-                return FutureWrapper(Future.failedFuture(e))
-            }
-
-            f.orTimeout(30, TimeUnit.SECONDS)
-                .whenComplete { res, err ->
-                    if (err != null) {
-                        f.cancel(true)
-                        promise.fail(err.cause?.message ?: err.message ?: "Unknown error")
-                        return@whenComplete
-                    }
-                    eventBus
-                        .request<JsonObject>("request.send", res).onComplete {
-                            if (it.succeeded()) {
-                                promise.complete(it.result().body().map)
-                            } else {
-                                promise.fail(it.cause())
-                            }
-                        }
-                }
-            return FutureWrapper(promise.future())
-        }
-    }
-
-    private val indexFile: String
-    private val interpolateFile: String
-
-    init {
+    public override suspend fun start() {
         val inputStream: InputStream = javaClass.getResourceAsStream("/index.js")
             ?: throw IllegalArgumentException("File not found in resources")
         indexFile = inputStream.bufferedReader().use { it.readText() }
         val interpolateStream: InputStream = javaClass.getResourceAsStream("/interpolate.js")
             ?: throw IllegalArgumentException("File not found in resources")
         interpolateFile = interpolateStream.bufferedReader().use { it.readText() }
-        eventBus.consumer("script.run", this::run)
+        vertx.eventBus().consumer("script.run", this::run)
         CompletableFuture.runAsync({
             val context = newContext(ByteArrayOutputStream())
             runtimeBuilder.initRuntime(context)
@@ -261,7 +191,7 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         ownerGroups: Set<String>
     ): Value {
         val globalBindings: Value = context.getBindings("js")
-        globalBindings.putMember("__exec", Exec(eventBus, ownerGroups, this))
+        globalBindings.putMember("__exec", Exec(vertx.eventBus(), ownerGroups, this))
         globalBindings.putMember(
             "env",
             Environment(
@@ -352,5 +282,73 @@ class ScriptRunner(private val daoManager: DaoManager, private val eventBus: Eve
         val logs = globalBindings.getMember("__getInternalLogs").execute() ?: return JsonArray()
         val rawLogs = logs.asString()
         return JsonArray(rawLogs)
+    }
+
+    class ContinuationWrapper {
+
+        var finished = AtomicBoolean(false)
+
+        @Export
+        fun resume() {
+            finished.set(true)
+        }
+
+    }
+
+    class FutureWrapper(val future: Future<Map<String, Any>>) {
+
+        @Export
+        fun onComplete(v: Value) {
+            future.onComplete {
+                if (!v.canExecute()) {
+                    return@onComplete
+                }
+                if (it.succeeded()) {
+                    v.execute(ProxyObject.fromMap(it.result()))
+                } else {
+                    v.execute(null, it.cause()?.message ?: "Unknown error")
+                }
+            }
+        }
+
+    }
+
+    class Exec(
+        private val eventBus: EventBus,
+        private val ownerGroups: Set<String>,
+        private val scriptRunner: ScriptRunner
+    ) {
+
+        @Export
+        fun exec(
+            requestId: Long,
+            envName: String?
+        ): FutureWrapper {
+            val promise = Promise.promise<Map<String, Any>>()
+            val f: CompletableFuture<JsonObject>?
+            try {
+                f = scriptRunner.prepareExec(requestId, envName, ownerGroups)
+            } catch (e: Exception) {
+                return FutureWrapper(Future.failedFuture(e))
+            }
+
+            f.orTimeout(30, TimeUnit.SECONDS)
+                .whenComplete { res, err ->
+                    if (err != null) {
+                        f.cancel(true)
+                        promise.fail(err.cause?.message ?: err.message ?: "Unknown error")
+                        return@whenComplete
+                    }
+                    eventBus
+                        .request<JsonObject>("request.send", res).onComplete {
+                            if (it.succeeded()) {
+                                promise.complete(it.result().body().map)
+                            } else {
+                                promise.fail(it.cause())
+                            }
+                        }
+                }
+            return FutureWrapper(promise.future())
+        }
     }
 }

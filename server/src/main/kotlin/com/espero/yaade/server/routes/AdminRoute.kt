@@ -8,6 +8,7 @@ import com.espero.yaade.model.db.ConfigDb
 import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.Server
 import com.espero.yaade.server.errors.ServerError
+import com.espero.yaade.server.utils.awaitBlocking
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpHeaders
@@ -19,6 +20,7 @@ import io.vertx.kotlin.coroutines.coAwait
 import net.lingala.zip4j.ZipFile
 import org.h2.tools.DeleteDbFiles
 import java.util.*
+import java.util.concurrent.Callable
 
 class AdminRoute(
     private val daoManager: DaoManager,
@@ -46,10 +48,11 @@ class AdminRoute(
 
         // create a backup so that data is not really lost...
         val fileUuid = UUID.randomUUID().toString()
-        daoManager.dataSource.connection.use { conn ->
-            conn.prepareStatement("BACKUP TO './app/data/$fileUuid'").executeUpdate()
+        vertx.awaitBlocking {
+            daoManager.dataSource.connection.use { conn ->
+                conn.prepareStatement("BACKUP TO './app/data/$fileUuid'").executeUpdate()
+            }
         }
-
         daoManager.close()
 
         DeleteDbFiles.execute("./app/data", "yaade-db", false)
@@ -79,7 +82,7 @@ class AdminRoute(
 
         val result = daoManager.userDao.createUser(username, groups)
 
-        ctx.end(result.toJson().encode()).coAwait()
+        ctx.end(result.toJson().encode())
     }
 
     suspend fun deleteUser(ctx: RoutingContext) {
@@ -92,7 +95,7 @@ class AdminRoute(
             )
         }
         daoManager.userDao.deleteUser(userId)
-        ctx.end().coAwait()
+        ctx.end()
     }
 
     suspend fun updateUser(ctx: RoutingContext) {
@@ -104,18 +107,21 @@ class AdminRoute(
                 ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No body provided")
         val result = daoManager.userDao.updateUser(userId, data)
 
-        ctx.end(result.toJson().encode()).coAwait()
+        ctx.end(result.toJson().encode())
     }
 
     suspend fun getUsers(ctx: RoutingContext) {
         val result = JsonArray(daoManager.userDao.getUsers().map(UserDb::toJson))
-        ctx.end(result.encode()).coAwait()
+        ctx.end(result.encode())
     }
 
     suspend fun resetUserPassword(ctx: RoutingContext) {
         val userId = ctx.pathParam("userId").toLong()
-        daoManager.userDao.resetPassword(userId)
-        ctx.end().coAwait()
+        vertx.executeBlocking(
+            Callable {
+                daoManager.userDao.resetPassword(userId)
+            }).coAwait()
+        ctx.end()
     }
 
     suspend fun getConfig(ctx: RoutingContext) {
@@ -125,7 +131,7 @@ class AdminRoute(
                 HttpResponseStatus.NOT_FOUND.code(),
                 "Config not found for name $configName"
             )
-        ctx.end(config.config.decodeToString()).coAwait()
+        ctx.end(config.config.decodeToString())
     }
 
     suspend fun updateConfig(ctx: RoutingContext) {

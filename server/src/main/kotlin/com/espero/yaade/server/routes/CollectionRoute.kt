@@ -28,7 +28,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         }
 
         val result = createCollectionsResponse(rawCollections)
-        ctx.end(JsonArray(result).encode()).coAwait()
+        ctx.end(JsonArray(result).encode())
     }
 
     private fun createCollectionsResponse(rawCollections: List<CollectionDb>): ArrayList<JsonObject> {
@@ -108,7 +108,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             .put("requests", JsonArray())
             .put("scripts", JsonArray())
             .encode()
-        ctx.end(result).coAwait()
+        ctx.end(result)
     }
 
     suspend fun duplicateCollection(ctx: RoutingContext) {
@@ -141,7 +141,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val requestsJson = requests.map(RequestDb::toJson)
         val result = collection.toJson().put("requests", requestsJson).encode()
 
-        ctx.end(result).coAwait()
+        ctx.end(result)
     }
 
     suspend fun putCollection(ctx: RoutingContext) {
@@ -154,7 +154,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
         val newCollection = CollectionDb.fromUpdateRequest(body)
         daoManager.collectionDao.updateWithoutSecrets(newCollection)
-        ctx.end().coAwait()
+        ctx.end()
     }
 
     suspend fun moveCollection(ctx: RoutingContext) {
@@ -206,7 +206,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             daoManager.collectionDao.update(collectionDb)
         }
 
-        ctx.end().coAwait()
+        ctx.end()
     }
 
     suspend fun deleteCollection(ctx: RoutingContext) {
@@ -239,7 +239,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             deleteCollectionAndChildren(collectionToDelete)
         }
 
-        ctx.end().coAwait()
+        ctx.end()
     }
 
     private fun deleteCollectionAndChildren(collection: JsonObject) {
@@ -283,7 +283,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
         vertx.fileSystem().delete(f.uploadedFileName()).coAwait()
 
-        ctx.end(collectionJson.encode()).coAwait()
+        ctx.end(collectionJson.encode())
     }
 
     suspend fun importPostmanCollection(ctx: RoutingContext) {
@@ -305,7 +305,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
         vertx.fileSystem().delete(f.uploadedFileName()).coAwait()
 
-        ctx.end(newCollection.encode()).coAwait()
+        ctx.end(newCollection.encode())
     }
 
     suspend fun createEnv(ctx: RoutingContext) {
@@ -323,7 +323,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             val body: JsonObject? = ctx.body().asJsonObject()
             collection.createEnv(name, body)
             daoManager.collectionDao.update(collection)
-            ctx.end().coAwait()
+            ctx.end()
         } catch (e: RuntimeException) {
             throw ServerError(HttpResponseStatus.CONFLICT.code(), "Failed to create environment")
         }
@@ -343,7 +343,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val name = ctx.pathParam("env")
         collection.updateEnv(name, env)
         daoManager.collectionDao.update(collection)
-        ctx.end().coAwait()
+        ctx.end()
     }
 
     suspend fun deleteEnv(ctx: RoutingContext) {
@@ -359,7 +359,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val name = ctx.pathParam("env")
         collection.deleteEnv(name)
         daoManager.collectionDao.update(collection)
-        ctx.end().coAwait()
+        ctx.end()
     }
 
     suspend fun setSecret(ctx: RoutingContext) {
@@ -381,7 +381,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
 
         collection.setSecret(envName, key, value)
         daoManager.collectionDao.update(collection)
-        ctx.end().coAwait()
+        ctx.end()
     }
 
     suspend fun deleteSecret(ctx: RoutingContext) {
@@ -397,7 +397,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val key = ctx.pathParam("key")
         collection.deleteSecret(envName, key)
         daoManager.collectionDao.update(collection)
-        ctx.end().coAwait()
+        ctx.end()
     }
 
     private fun assertUserCanReadCollection(ctx: RoutingContext, collection: CollectionDb?) {

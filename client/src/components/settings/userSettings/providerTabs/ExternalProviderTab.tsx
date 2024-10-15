@@ -69,18 +69,25 @@ const ExternalProviderTab: FunctionComponent = () => {
   }
 
   return (
-    <VStack alignItems="flex-start" w="100%">
-      <CodeMirror
-        value={config}
-        onChange={onChangeCodeMirror}
-        extensions={[json()]}
-        theme={colorMode}
-        style={{ height: '350px', width: '100%' }}
-      />
-      <HStack>
-        <Button onClick={handleSaveAuthConfigClicked}>Save</Button>
-      </HStack>
-    </VStack>
+    <>
+      <div
+        style={{
+          height: '400px',
+          maxHeight: '400px',
+          minHeight: '400px',
+          overflow: 'auto',
+          marginBottom: '1rem',
+        }}
+      >
+        <CodeMirror
+          value={config}
+          onChange={onChangeCodeMirror}
+          extensions={[json()]}
+          theme={colorMode}
+        />
+      </div>
+      <Button onClick={handleSaveAuthConfigClicked}>Save</Button>
+    </>
   );
 };
 

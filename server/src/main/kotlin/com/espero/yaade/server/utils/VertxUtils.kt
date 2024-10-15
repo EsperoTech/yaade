@@ -5,12 +5,14 @@ import com.espero.yaade.server.errors.ServerError
 import com.fasterxml.jackson.core.StreamReadConstraints
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.json.jackson.DatabindCodec
 import io.vertx.ext.auth.User
 import io.vertx.ext.web.Route
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.openapi.Operation
 import io.vertx.kotlin.coroutines.CoroutineVerticle
+import io.vertx.kotlin.coroutines.coAwait
 import kotlinx.coroutines.launch
 import java.security.MessageDigest
 
@@ -124,6 +126,10 @@ fun configureDatabindCodec() {
         .build()
     DatabindCodec.mapper().factory.setStreamReadConstraints(s)
     DatabindCodec.prettyMapper().factory.setStreamReadConstraints(s)
+}
+
+suspend fun <T : Any> Vertx.awaitBlocking(block: () -> T): T {
+    return this.executeBlocking(block).coAwait()
 }
 
 fun hashWithSHA256(input: String): String {

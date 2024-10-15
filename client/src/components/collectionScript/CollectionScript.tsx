@@ -136,7 +136,7 @@ const CollectionScript: FunctionComponent<CollectionScriptProps> = ({
     >
       Are you sure you want to take ownership of this script?
       <br />
-      You will be the owner of this script and it will be moved to your workspace.
+      Every subsequent Cron run will be executed by your user.
     </BasicModal>
   );
 
