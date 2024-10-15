@@ -27,7 +27,7 @@ class CertificateRoute(private val daoManager: DaoManager, private val vertx: Ve
             JsonObject()
                 .put("certificates", JsonArray(response))
                 .encode()
-        ).coAwait()
+        )
     }
 
     suspend fun createCertificate(ctx: RoutingContext) {
@@ -83,7 +83,7 @@ class CertificateRoute(private val daoManager: DaoManager, private val vertx: Ve
 
         val certificate = CertificateDb(data.encode().toByteArray())
         daoManager.certificatesDao.create(certificate)
-        ctx.end(certificate.hideCerts().toJson().encode()).coAwait()
+        ctx.end(certificate.hideCerts().toJson().encode())
     }
 
     suspend fun deleteCertificate(ctx: RoutingContext) {
@@ -107,7 +107,7 @@ class CertificateRoute(private val daoManager: DaoManager, private val vertx: Ve
             )
 
         daoManager.certificatesDao.delete(certificate.id)
-        ctx.end().coAwait()
+        ctx.end()
     }
 
 }

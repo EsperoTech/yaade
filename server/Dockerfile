@@ -10,6 +10,7 @@ COPY /build/classes/java/main /app/classes
 COPY /build/libs/*.jar /app/libs/
 
 ENV CLASSPATH=/app/classes:/app/resources:/app/libs/*
+ENV YAADE_HEAP_SIZE=""
 
 # Entry point to start the application
-ENTRYPOINT ["java", "com.espero.yaade.MainKt"]
+ENTRYPOINT ["sh", "-c", "if [ -z \"$YAADE_HEAP_SIZE\" ]; then java com.espero.yaade.MainKt; else java -Xmx${YAADE_HEAP_SIZE} com.espero.yaade.MainKt; fi"]
