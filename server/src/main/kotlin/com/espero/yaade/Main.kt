@@ -30,8 +30,9 @@ fun main() {
 
     val vertx = Vertx.vertx()
     vertx.deployVerticle(Server(PORT, daoManager))
-    val options = DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
-
-    vertx.deployVerticle(CronScriptRunner(daoManager), options)
-    ScriptRunner(daoManager, vertx.eventBus())
+    vertx.deployVerticle(
+        CronScriptRunner(daoManager),
+        DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
+    )
+    vertx.deployVerticle(ScriptRunner(daoManager))
 }
