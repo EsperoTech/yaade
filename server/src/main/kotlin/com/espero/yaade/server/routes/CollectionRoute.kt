@@ -94,6 +94,7 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
         val data = ctx.body().asJsonObject()
         val userId = ctx.user().principal().getLong("id")
         val newCollection = CollectionDb(data, userId)
+        newCollection.createEnv("default", JsonObject().put("proxy", "server"))
 
         val parentId = newCollection.jsonData().getLong("parentId")
         if (parentId != null) {

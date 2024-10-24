@@ -22,6 +22,7 @@ type BodyTextEditorProps = {
   setContent: any;
   selectedEnv: any;
   contentType: string;
+  setEditorView?: any;
 };
 
 function BodyTextEditor({
@@ -29,6 +30,7 @@ function BodyTextEditor({
   setContent,
   selectedEnv,
   contentType,
+  setEditorView,
 }: BodyTextEditorProps) {
   const { colorMode } = useColorMode();
 
@@ -51,7 +53,7 @@ function BodyTextEditor({
 
   const ref = useRef<HTMLDivElement>(null);
 
-  const { setContainer } = useCodeMirror({
+  const { setContainer, view } = useCodeMirror({
     container: ref.current,
     onChange: (value: string) => setContent(value),
     extensions: [extensions],
@@ -59,6 +61,12 @@ function BodyTextEditor({
     value: content,
     style: { height: '100%' },
   });
+
+  useEffect(() => {
+    if (view && setEditorView) {
+      setEditorView(view);
+    }
+  }, [view, setEditorView]);
 
   useEffect(() => {
     if (ref.current) {

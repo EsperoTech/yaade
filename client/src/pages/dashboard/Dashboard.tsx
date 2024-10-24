@@ -57,6 +57,11 @@ import {
   defaultCurrentRequest,
 } from '../../state/currentRequest';
 import { CurrentScriptActionType, currentScriptReducer } from '../../state/currentScript';
+import {
+  defaultOpenHistory,
+  OpenHistoryActionType,
+  openHistoryReducer,
+} from '../../state/openHistory';
 import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
 import styles from './Dashboard.module.css';
 
@@ -126,6 +131,10 @@ function Dashboard() {
   const [currentScript, dispatchCurrentScript] = useReducer(
     currentScriptReducer,
     undefined,
+  );
+  const [openHistory, dispatchOpenHistory] = useReducer(
+    openHistoryReducer,
+    defaultOpenHistory,
   );
   const [selectedRequestId, setSelectedRequestId] = useState<number | undefined>(
     undefined,
@@ -198,6 +207,10 @@ function Dashboard() {
             dispatchCurrentScript({
               type: CurrentScriptActionType.UNSET,
             });
+            dispatchOpenHistory({
+              type: OpenHistoryActionType.PUSH,
+              item: { type: 'request', id: r.id },
+            });
           }
           openCollectionTree(collections, loc.collectionId);
         } else if (loc.collectionId && loc.scriptId) {
@@ -212,6 +225,10 @@ function Dashboard() {
             });
             dispatchCurrentCollection({
               type: CurrentCollectionActionType.UNSET,
+            });
+            dispatchOpenHistory({
+              type: OpenHistoryActionType.PUSH,
+              item: { type: 'script', id: s.id },
             });
           }
           openCollectionTree(collections, loc.collectionId);
@@ -231,6 +248,10 @@ function Dashboard() {
             });
             dispatchCurrentScript({
               type: CurrentScriptActionType.UNSET,
+            });
+            dispatchOpenHistory({
+              type: OpenHistoryActionType.PUSH,
+              item: { type: 'collection', id: c.id },
             });
           }
           openCollectionTree(collections, loc.collectionId);
@@ -398,7 +419,7 @@ function Dashboard() {
   };
 
   const dispatchSelectCollection = useCallback(
-    (id: number) => {
+    (id: number, pushHistory: boolean = true) => {
       const collection = findCollection(collections, id);
       if (!collection) throw new Error("Collection doesn't exist");
       navigate(`/${id}`);
@@ -412,12 +433,18 @@ function Dashboard() {
       dispatchCurrentScript({
         type: CurrentScriptActionType.UNSET,
       });
+      if (pushHistory) {
+        dispatchOpenHistory({
+          type: OpenHistoryActionType.PUSH,
+          item: { type: 'collection', id: id },
+        });
+      }
     },
     [collections, navigate],
   );
 
   const dispatchSelectRequest = useCallback(
-    (id: number) => {
+    (id: number, pushHistory: boolean = true) => {
       const request = findRequest(collections, id);
       if (!request) throw new Error("Request doesn't exist");
       navigate(`/${request.collectionId}/${request.id}`);
@@ -431,12 +458,18 @@ function Dashboard() {
       dispatchCurrentScript({
         type: CurrentScriptActionType.UNSET,
       });
+      if (pushHistory) {
+        dispatchOpenHistory({
+          type: OpenHistoryActionType.PUSH,
+          item: { type: 'request', id: id },
+        });
+      }
     },
     [collections, navigate],
   );
 
   const dispatchSelectScript = useCallback(
-    (id: number) => {
+    (id: number, pushHistory: boolean = true) => {
       const script = findScript(collections, id);
       if (!script) throw new Error(`Script ${id} doesn't exist`);
       navigate(`/${script.collectionId}/s-${script.id}`);
@@ -450,6 +483,12 @@ function Dashboard() {
         type: CurrentScriptActionType.SET,
         script: script,
       });
+      if (pushHistory) {
+        dispatchOpenHistory({
+          type: OpenHistoryActionType.PUSH,
+          item: { type: 'script', id: id },
+        });
+      }
     },
     [collections, navigate],
   );
@@ -500,7 +539,7 @@ function Dashboard() {
   );
 
   const selectRequest = useCallback(
-    async (id: number) => {
+    async (id: number, pushHistory: boolean = true) => {
       try {
         if (currentRequest?.id === id) return;
         if (user?.data?.settings?.saveOnClose) {
@@ -526,7 +565,7 @@ function Dashboard() {
               data: { ...currentScript.data },
             });
           }
-          dispatchSelectRequest(id);
+          dispatchSelectRequest(id, pushHistory);
         } else if (currentRequest?.isChanged && currentRequest?.id !== -1) {
           setSelectedRequestId(id);
           onSaveReqOpen();
@@ -537,8 +576,14 @@ function Dashboard() {
           setSelectedCollectionId(id);
           onSaveScriptOpen();
         } else {
-          dispatchSelectRequest(id);
+          dispatchSelectRequest(id, pushHistory);
         }
+        const req = findRequest(collections, id);
+        if (!req) return;
+        dispatchCollections({
+          type: CollectionsActionType.OPEN_COLLECTION_TREE,
+          id: req?.collectionId,
+        });
       } catch (e) {
         console.error(e);
         errorToast('Could not select request', toast);
@@ -549,6 +594,7 @@ function Dashboard() {
       user?.data?.settings?.saveOnClose,
       currentCollection,
       currentScript,
+      collections,
       dispatchSelectRequest,
       updateRequest,
       updateCollection,
@@ -567,7 +613,7 @@ function Dashboard() {
   }, [selectRequest]);
 
   const selectCollection = useCallback(
-    async (id: number) => {
+    async (id: number, pushHistory: boolean = true) => {
       try {
         if (currentCollection?.id === id) return;
         if (user?.data?.settings?.saveOnClose) {
@@ -593,7 +639,7 @@ function Dashboard() {
               data: { ...currentScript.data },
             });
           }
-          dispatchSelectCollection(id);
+          dispatchSelectCollection(id, pushHistory);
         } else if (currentRequest?.isChanged && currentRequest?.id !== -1) {
           setSelectedCollectionId(id);
           onSaveReqOpen();
@@ -604,8 +650,12 @@ function Dashboard() {
           setSelectedCollectionId(id);
           onSaveScriptOpen();
         } else {
-          dispatchSelectCollection(id);
+          dispatchSelectCollection(id, pushHistory);
         }
+        dispatchCollections({
+          type: CollectionsActionType.OPEN_COLLECTION_TREE,
+          id: id,
+        });
       } catch (e) {
         console.error(e);
         errorToast('Could not select collection', toast);
@@ -634,7 +684,7 @@ function Dashboard() {
   }, [selectCollection]);
 
   const selectScript = useCallback(
-    async (id: number) => {
+    async (id: number, pushHistory: boolean = true) => {
       try {
         if (currentScript?.id === id) return;
         if (user?.data?.settings?.saveOnClose) {
@@ -660,7 +710,7 @@ function Dashboard() {
               data: { ...currentScript.data },
             });
           }
-          dispatchSelectScript(id);
+          dispatchSelectScript(id, pushHistory);
         } else if (currentRequest?.isChanged && currentRequest?.id !== -1) {
           setSelectedCollectionId(id);
           onSaveReqOpen();
@@ -671,14 +721,21 @@ function Dashboard() {
           setSelectedCollectionId(id);
           onSaveScriptOpen();
         } else {
-          dispatchSelectScript(id);
+          dispatchSelectScript(id, pushHistory);
         }
+        const script = findScript(collections, id);
+        if (!script) return;
+        dispatchCollections({
+          type: CollectionsActionType.OPEN_COLLECTION_TREE,
+          id: script?.collectionId,
+        });
       } catch (e) {
         console.error(e);
         errorToast('Could not select script', toast);
       }
     },
     [
+      collections,
       currentCollection,
       currentRequest,
       currentScript,
@@ -914,6 +971,8 @@ function Dashboard() {
             isExtInitialized={isExtInitialized}
             extVersion={extVersion}
             openExtModal={onOpen}
+            tabIndex={requestPanelTabIndex}
+            setTabIndex={setRequestPanelTabIndex}
           />
         </div>
         <div className={styles.responsePanel}>
@@ -1101,13 +1160,19 @@ function Dashboard() {
         <br />
         Do you want to save the changes now?
       </BasicModal>
-      {/* <CmdPalette
+      <CmdPalette
         collections={collections}
         currentRequest={currentRequest}
         currentCollection={currentCollection}
+        currentScript={currentScript}
         selectCollection={selectCollectionRef}
+        selectRequest={selectRequestRef}
+        selectScript={selectScriptRef}
         setCollectionPanelTabIndex={setCollectionPanelTabIndex}
-      /> */}
+        setRequestPanelTabIndex={setRequestPanelTabIndex}
+        openHistory={openHistory}
+        dispatchOpenHistory={dispatchOpenHistory}
+      />
     </div>
   );
 }

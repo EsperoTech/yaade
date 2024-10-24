@@ -9,7 +9,7 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import { CollectionSettings, CurrentCollection } from '../../model/Collection';

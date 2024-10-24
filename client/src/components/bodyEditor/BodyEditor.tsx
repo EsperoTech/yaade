@@ -17,6 +17,7 @@ type BodyEditorProps = {
   contentType: string;
   setContentType: any;
   setContentTypeHeader: any;
+  setEditorView?: any;
 };
 
 function BodyEditor({
@@ -28,6 +29,7 @@ function BodyEditor({
   contentType,
   setContentType,
   setContentTypeHeader,
+  setEditorView,
 }: BodyEditorProps) {
   const toast = useToast();
   function handleBeautifyClick() {
@@ -71,6 +73,7 @@ function BodyEditor({
           setContent={setContent}
           selectedEnv={selectedEnv}
           contentType={contentType}
+          setEditorView={setEditorView}
         />
       );
   }

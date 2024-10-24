@@ -37,3 +37,8 @@ input:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* NOTE: this makes sure that the cmd palette is in front of all other elements */
+.atom-overlay {
+  z-index: 9999999;
+}

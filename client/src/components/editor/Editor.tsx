@@ -28,7 +28,7 @@ function Editor({ content, setContent }: EditorProps) {
 
   const ref = useRef<HTMLDivElement>(null);
 
-  const { setContainer } = useCodeMirror({
+  const { setContainer, view } = useCodeMirror({
     container: ref.current,
     onChange: (value: string) => setContent(value),
     extensions: [extensions],
@@ -40,8 +40,9 @@ function Editor({ content, setContent }: EditorProps) {
   useEffect(() => {
     if (ref.current) {
       setContainer(ref.current);
+      view?.focus();
     }
-  }, [ref, setContainer]);
+  }, [ref, setContainer, view]);
 
   function handleBeautifyClick() {
     try {

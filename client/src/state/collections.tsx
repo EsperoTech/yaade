@@ -19,6 +19,7 @@ enum CollectionsActionType {
   CHANGE_REQUEST_COLLECTION = 'CHANGE_REQUEST_COLLECTION',
   CLOSE_ALL = 'CLOSE_ALL',
   TOGGLE_OPEN_COLLECTION = 'TOGGLE_OPEN_COLLECTION',
+  OPEN_COLLECTION_TREE = 'OPEN_COLLECTION_TREE',
   SET_ENV_VAR = 'SET_ENV_VAR',
   PATCH_SCRIPT_DATA = 'PATCH_SCRIPT_DATA',
   MOVE_SCRIPT = 'MOVE_SCRIPT',
@@ -84,6 +85,11 @@ type CloseAllAction = {
 
 type ToggleOpenCollectionAction = {
   type: CollectionsActionType.TOGGLE_OPEN_COLLECTION;
+  id: number;
+};
+
+type OpenCollectionTreeAction = {
+  type: CollectionsActionType.OPEN_COLLECTION_TREE;
   id: number;
 };
 
@@ -456,6 +462,18 @@ function toggleOpenCollection(state: Collection[], id: number): Collection[] {
   });
 }
 
+function openCollectionTree(state: Collection[], id: number): Collection[] {
+  let c = findCollection(state, id);
+  while (c) {
+    c.open = true;
+    if (!c.data.parentId) {
+      break;
+    }
+    c = findCollection(state, c.data.parentId);
+  }
+  return [...state];
+}
+
 function setEnvVar(state: Collection[], payload: SetEnvVarPayload): Collection[] {
   return modifyCollection(state, payload.collectionId, (c) => {
     const envs = c.data?.envs;
@@ -561,6 +579,7 @@ type CollectionsAction =
   | MoveRequestAction
   | CloseAllAction
   | ToggleOpenCollectionAction
+  | OpenCollectionTreeAction
   | SetEnvVarAction
   | PatchScriptDataAction
   | MoveScriptAction
@@ -595,6 +614,8 @@ function collectionsReducer(
       return closeAll(state);
     case CollectionsActionType.TOGGLE_OPEN_COLLECTION:
       return toggleOpenCollection(state, action.id);
+    case CollectionsActionType.OPEN_COLLECTION_TREE:
+      return openCollectionTree(state, action.id);
     case CollectionsActionType.SET_ENV_VAR:
       return setEnvVar(state, action.payload);
     case CollectionsActionType.PATCH_SCRIPT_DATA:

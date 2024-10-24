@@ -2,8 +2,9 @@ import { Spinner, useColorMode } from '@chakra-ui/react';
 import { history } from '@codemirror/commands';
 import { drawSelection } from '@codemirror/view';
 import { useCodeMirror } from '@uiw/react-codemirror';
-import { FormEvent, useEffect, useRef } from 'react';
+import { FormEvent, RefObject, useContext, useEffect, useRef } from 'react';
 
+import { FocusElementsContext } from '../../context/FocusElementsContext';
 import { cn } from '../../utils';
 import {
   helpCursor,
@@ -28,6 +29,8 @@ type UriBarProps = {
   isLoading: boolean;
   handleSendButtonClick: () => void;
   env: any;
+  // NOTE: we need this to set the focus element on changing the request
+  currentRequestId: number;
 };
 
 type MethodOptionProps = {
@@ -42,11 +45,13 @@ function UriBar({
   isLoading,
   handleSendButtonClick,
   env,
+  currentRequestId,
 }: UriBarProps) {
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
+  const { setUriBarView } = useContext(FocusElementsContext);
 
-  const { setContainer } = useCodeMirror({
+  const { setContainer, view } = useCodeMirror({
     container: ref.current,
     onChange: (value: string) => setUri(value),
     extensions: [
@@ -66,6 +71,12 @@ function UriBar({
     indentWithTab: false,
     basicSetup: singleLineSetupOptions,
   });
+
+  useEffect(() => {
+    if (view) {
+      setUriBarView(view);
+    }
+  }, [view, currentRequestId, setUriBarView]);
 
   useEffect(() => {
     if (ref.current) {

@@ -4,6 +4,7 @@ import { Dispatch, useCallback, useContext, useMemo } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import { UserContext } from '../../context';
+import { FocusElementsContext } from '../../context/FocusElementsContext';
 import KVRow from '../../model/KVRow';
 import Request, { AuthData, CurrentRequest } from '../../model/Request';
 import Response from '../../model/Response';
@@ -96,6 +97,8 @@ type RequestPanelProps = {
   saveOnSend: (request: Request) => Promise<void>;
   handleSaveRequestClick: () => Promise<void>;
   selectedEnv: Record<string, string>;
+  tabIndex: number;
+  setTabIndex: (index: number) => void;
 };
 
 function RequestPanel({
@@ -105,6 +108,8 @@ function RequestPanel({
   saveOnSend,
   handleSaveRequestClick,
   selectedEnv,
+  tabIndex,
+  setTabIndex,
 }: RequestPanelProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
@@ -290,6 +295,7 @@ function RequestPanel({
           handleSendButtonClick={handleSendButtonClick}
           isLoading={currentRequest.isLoading}
           env={selectedEnv}
+          currentRequestId={currentRequest.id}
         />
         <IconButton
           aria-label="save-request-button"
@@ -304,6 +310,8 @@ function RequestPanel({
 
       <Tabs
         isLazy
+        index={tabIndex}
+        onChange={(index) => setTabIndex(index)}
         colorScheme="green"
         mt="1"
         display="flex"
