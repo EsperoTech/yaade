@@ -1,5 +1,6 @@
 package com.espero.yaade.server.routes
 
+import com.espero.yaade.FILE_STORAGE_PATH
 import com.espero.yaade.JDBC_PWD
 import com.espero.yaade.JDBC_URL
 import com.espero.yaade.JDBC_USR
@@ -18,7 +19,13 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.awaitBlocking
 import io.vertx.kotlin.coroutines.coAwait
 import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.model.enums.CompressionLevel
+import net.lingala.zip4j.model.enums.CompressionMethod
 import org.h2.tools.DeleteDbFiles
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.Callable
 
@@ -32,15 +39,30 @@ class AdminRoute(
     suspend fun exportBackup(ctx: RoutingContext) {
         val fileUuid = UUID.randomUUID().toString()
         daoManager.dataSource.connection.use { conn ->
-            conn.prepareStatement("BACKUP TO '/tmp/$fileUuid'").executeUpdate()
+            conn.prepareStatement("BACKUP TO '/tmp/$fileUuid/yaade-db.mv.db'").executeUpdate()
         }
+
+        val zipFile = ZipFile("/tmp/$fileUuid.zip")
+        val metadata = JsonObject()
+            .put("version", "1.0")
+            .put("createdAt", System.currentTimeMillis())
+            .encode()
+        val metadataFile = File("/tmp/$fileUuid/metadata.json")
+        metadataFile.writeText(metadata)
+        val zipParameters = ZipParameters()
+        zipParameters.compressionMethod = CompressionMethod.DEFLATE
+        zipParameters.compressionLevel = CompressionLevel.NORMAL
+        zipFile.addFile(metadataFile, zipParameters)
+        zipFile.addFile(File("/tmp/$fileUuid/yaade-db.mv.db"), zipParameters)
+        zipFile.addFolder(File(FILE_STORAGE_PATH), zipParameters)
 
         ctx.response()
             .putHeader("Content-Disposition", "attachment; filename=\"yaade-db.mv.db.zip\"")
             .putHeader(HttpHeaders.TRANSFER_ENCODING, "chunked")
-            .sendFile("/tmp/$fileUuid").coAwait()
+            .sendFile("/tmp/$fileUuid.zip").coAwait()
 
         vertx.fileSystem().delete("/tmp/$fileUuid")
+        vertx.fileSystem().delete("/tmp/$fileUuid.zip")
     }
 
     suspend fun importBackup(ctx: RoutingContext) {
@@ -56,10 +78,26 @@ class AdminRoute(
         daoManager.close()
 
         DeleteDbFiles.execute("./app/data", "yaade-db", false)
+        vertx.fileSystem().deleteRecursive(FILE_STORAGE_PATH, true).coAwait()
         awaitBlocking {
-            ZipFile(f.uploadedFileName()).extractAll("./app/data")
+            ZipFile(f.uploadedFileName()).extractAll("/tmp/$fileUuid/")
+            if (Files.exists(Paths.get("/tmp/$fileUuid/metadata.json"))) {
+                // move files folder from tmp to FILE_STORAGE_PATH
+                Files.move(
+                    Paths.get("/tmp/$fileUuid/files"),
+                    Paths.get(FILE_STORAGE_PATH)
+                )
+                ZipFile("/tmp/$fileUuid/yaade-db.mv.db").extractAll("./app/data/")
+            } else {
+                // move database from tmp to data dir
+                Files.move(
+                    Paths.get("/tmp/$fileUuid/yaade-db.mv.db"),
+                    Paths.get("./app/data/yaade-db.mv.db")
+                )
+            }
         }
         vertx.fileSystem().delete(f.uploadedFileName()).coAwait()
+        vertx.fileSystem().deleteRecursive("/tmp/$fileUuid", true).coAwait()
 
         daoManager.init(JDBC_URL, JDBC_USR, JDBC_PWD)
 

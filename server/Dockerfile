@@ -1,4 +1,7 @@
 FROM amazoncorretto:17
+
+RUN yum update -y && yum install -y tar
+
 RUN mkdir /app
 
 EXPOSE 9339

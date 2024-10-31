@@ -1,4 +1,4 @@
-import { Dispatch, useState } from 'react';
+import { useState } from 'react';
 import CommandPalette, { Command } from 'react-command-palette';
 
 import Collection, { CurrentCollection } from '../../model/Collection';
@@ -21,7 +21,6 @@ function CmdPalette({
   setCollectionPanelTabIndex,
 }: CmdPaletteProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
   useKeyPress(() => setIsOpen(true), 'p', true, true);
 
   async function openCollectionPanelTab(index: number) {
