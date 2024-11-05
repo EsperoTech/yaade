@@ -1,0 +1,16 @@
+# Ignore everything
+*
+
+# Allow only specific directories needed for build
+!client/
+!server/
+
+# Ignore unnecessary files within allowed directories
+**/node_modules/
+**/.gradle/
+**/build/
+**/.git/
+**/.env
+**/*.log
+**/npm-debug.log*
+**/.DS_Store
