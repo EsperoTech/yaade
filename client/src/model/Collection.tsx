@@ -1,5 +1,5 @@
 import KVRow from './KVRow';
-import Request, { AuthData, SidebarRequest } from './Request';
+import { AuthData, RestRequest, SidebarRequest, WebsocketRequest } from './Request';
 import Script, { SidebarScript } from './Script';
 
 interface Collection {
@@ -9,7 +9,7 @@ interface Collection {
   ownerId: number;
   version: string;
   children: Array<Collection>;
-  requests: Array<Request>;
+  requests: Array<RestRequest | WebsocketRequest>;
   scripts: Array<Script>;
 }
 

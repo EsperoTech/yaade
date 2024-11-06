@@ -1,5 +1,11 @@
 import Collection, { CurrentCollection } from '../model/Collection';
-import Request, { AuthData } from '../model/Request';
+import {
+  AuthData,
+  RestRequest,
+  RestRequestData,
+  WebsocketRequest,
+  WebsocketRequestData,
+} from '../model/Request';
 import Script, { CurrentScript, ScriptData } from '../model/Script';
 import { BASE_PATH, groupsArrayToStr } from '../utils';
 
@@ -104,13 +110,27 @@ const moveRequest = (
     }),
   });
 
-const createRequest = (collectionId: number, data?: any): Promise<Response> =>
+const createRestRequest = (
+  collectionId: number,
+  data: RestRequestData,
+): Promise<Response> => createRequest(collectionId, 'REST', data);
+
+const createWebsocketRequest = (
+  collectionId: number,
+  data: WebsocketRequestData,
+): Promise<Response> => createRequest(collectionId, 'WS', data);
+
+const createRequest = (
+  collectionId: number,
+  type: 'REST' | 'WS',
+  data: RestRequestData | WebsocketRequestData,
+): Promise<Response> =>
   fetch(BASE_PATH + 'api/request', {
     method: 'POST',
     headers: DEFAULT_HEADERS,
     body: JSON.stringify({
-      collectionId: collectionId,
-      type: 'REST',
+      collectionId,
+      type,
       version: '1.0.0',
       data: data,
     }),
@@ -126,14 +146,14 @@ const deleteRequest = (id: number): Promise<Response> =>
     method: 'DELETE',
   });
 
-const updateRequest = (request: Request): Promise<Response> =>
+const updateRequest = (request: RestRequest | WebsocketRequest): Promise<Response> =>
   fetch(BASE_PATH + 'api/request', {
     method: 'PUT',
     headers: DEFAULT_HEADERS,
     body: JSON.stringify(request),
   });
 
-const invoke = (request: Request, envName: string) =>
+const invoke = (request: RestRequest, envName: string) =>
   fetch(BASE_PATH + 'api/invoke', {
     method: 'POST',
     headers: DEFAULT_HEADERS,
@@ -227,7 +247,8 @@ export default {
   exchangeOAuthToken,
   createCollection,
   duplicateCollection,
-  createRequest,
+  createRestRequest,
+  createWebsocketRequest,
   deleteRequest,
   deleteCollection,
   importOpenApi,

@@ -17,6 +17,7 @@ import com.espero.yaade.server.utils.userCoroutineHandler
 import com.espero.yaade.services.RequestSender
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServer
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
@@ -26,8 +27,7 @@ import io.vertx.ext.web.sstore.LocalSessionStore
 import io.vertx.ext.web.sstore.SessionStore
 import io.vertx.kotlin.coroutines.CoroutineVerticle
 import io.vertx.kotlin.coroutines.coAwait
-import io.vertx.core.http.HttpServerOptions
-
+import kotlinx.coroutines.launch
 
 class Server(private val port: Int, private val daoManager: DaoManager) : CoroutineVerticle() {
 
@@ -62,6 +62,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val fileRoute = FileRoute(daoManager)
             val scriptRoute = ScriptRoute(daoManager, vertx)
             val accessTokenRoute = AccessTokenRoute(daoManager)
+            val websocketRoute = WebsocketRoute(vertx, daoManager, sessionStore!!)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
@@ -242,9 +243,15 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 log.error("Bad auth config: $e")
             }
 
-            val options: HttpServerOptions = HttpServerOptions().setMaxHeaderSize(YAADE_SERVER_MAX_HEADER_SIZE)
+            val options: HttpServerOptions =
+                HttpServerOptions().setMaxHeaderSize(YAADE_SERVER_MAX_HEADER_SIZE)
             server = vertx.createHttpServer(options)
                 .requestHandler(mainRouter)
+                .webSocketHandler { ws ->
+                    launch {
+                        websocketRoute.handle(ws)
+                    }
+                }
                 .listen(port)
                 .coAwait()
             log.info("Started server on port ${server!!.actualPort()}")

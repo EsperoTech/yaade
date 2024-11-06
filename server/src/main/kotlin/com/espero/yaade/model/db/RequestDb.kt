@@ -27,22 +27,9 @@ class RequestDb {
     @DatabaseField(dataType = DataType.BYTE_ARRAY)
     lateinit var data: ByteArray
 
-    constructor(collectionId: Long, name: String) {
+    constructor(collectionId: Long, type: String, data: JsonObject) {
         this.collectionId = collectionId
-        this.type = "REST"
-        this.version = "1.0.0"
-        this.data = JsonObject()
-            .put("name", name)
-            .put("uri", "")
-            .put("method", "GET")
-            .put("headers", JsonArray())
-            .put("body", "")
-            .encode().toByteArray()
-    }
-
-    constructor(collectionId: Long, data: JsonObject) {
-        this.collectionId = collectionId
-        this.type = "REST"
+        this.type = type
         this.version = "1.0.0"
         this.data = data.encode().toByteArray()
     }
@@ -82,6 +69,16 @@ class RequestDb {
 
     companion object {
 
+        fun fromCreateRestRequest(collectionId: Long, name: String): RequestDb {
+            val data = JsonObject()
+                .put("name", name)
+                .put("uri", "")
+                .put("method", "GET")
+                .put("headers", JsonArray())
+                .put("body", "")
+            return RequestDb(collectionId, "REST", data)
+        }
+
         fun fromUpdateRequest(request: JsonObject): RequestDb {
             return RequestDb(
                 id = request.getLong("id"),
@@ -110,7 +107,7 @@ class RequestDb {
                 .put("contentType", contentType)
                 .put("body", body)
                 .put("formDataBody", urlEncodedBody)
-            return RequestDb(collectionId, data)
+            return RequestDb(collectionId, "REST", data)
         }
     }
 }

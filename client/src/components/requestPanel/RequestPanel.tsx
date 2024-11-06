@@ -5,13 +5,14 @@ import { VscSave } from 'react-icons/vsc';
 
 import { UserContext } from '../../context';
 import KVRow from '../../model/KVRow';
-import Request, { AuthData, CurrentRequest } from '../../model/Request';
-import Response from '../../model/Response';
+import { AuthData, CurrentRestRequest, RestRequest } from '../../model/Request';
+import { RestResponse } from '../../model/Response';
 import {
   CurrentRequestAction,
   CurrentRequestActionType,
 } from '../../state/currentRequest';
-import { currentRequestToRequest, errorToast } from '../../utils';
+import { currentRestRequestToRequest, errorToast } from '../../utils';
+import { getParamsFromUri, getUriFromParams } from '../../utils/codemirror';
 import { getSelectedEnvs } from '../../utils/store';
 import AuthTab from '../authTab';
 import BodyEditor from '../bodyEditor';
@@ -22,78 +23,11 @@ import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
 
-function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
-  const paramString = uri.split('?')[1];
-  if (!paramString) {
-    return params?.filter((param) => param.isEnabled === false) ?? [];
-  }
-
-  const uriParams = paramString.split('&').map((kv) => {
-    const [k, ...v] = kv.split('='); // ...v with v.join('=') handle cases where the value contains '='
-    return {
-      key: k,
-      value: v.join('='),
-    };
-  });
-
-  if (!params) {
-    return uriParams;
-  }
-
-  const newParams: KVRow[] = [];
-
-  let indexEnabledParams = 0;
-  for (const [_, param] of params.entries()) {
-    if (param.isEnabled === false) {
-      newParams.push(param);
-    } else {
-      const uriParam = uriParams[indexEnabledParams];
-      if (!uriParam) {
-        console.warn('params and URI params out of sync (enabled params > URI params)');
-        newParams.push({ key: '', value: '' });
-      } else {
-        newParams.push(uriParam);
-      }
-      indexEnabledParams++;
-    }
-  }
-
-  if (uriParams.length > indexEnabledParams) {
-    console.warn('params and URI params out of sync (URI params > enabled params)');
-  }
-  // add remaining URI params to newParams in case they go out of sync
-  for (let i = indexEnabledParams; i < uriParams.length; i++) {
-    newParams.push(uriParams[i]);
-  }
-
-  return newParams;
-}
-
-function getUriFromParams(uri: string, params: Array<KVRow>): string {
-  let newUri = uri;
-  if (!newUri.includes('?')) {
-    newUri += '?';
-  }
-  const base = newUri.split('?')[0];
-  let searchParams = '';
-  for (let i = 0; i < params.length; i++) {
-    if (params[i].key === '' && params[i].value === '') {
-      continue;
-    }
-    if (i !== 0) searchParams += '&';
-    searchParams += `${params[i].key}=${params[i].value}`;
-  }
-  if (searchParams === '') {
-    return base;
-  }
-  return `${base}?${searchParams}`;
-}
-
 type RequestPanelProps = {
-  currentRequest: CurrentRequest;
+  currentRequest: CurrentRestRequest;
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
-  sendRequest(request: Request, envName?: string, n?: number): Promise<Response>;
-  saveOnSend: (request: Request) => Promise<void>;
+  sendRequest(request: RestRequest, envName?: string, n?: number): Promise<RestResponse>;
+  saveOnSend: (request: RestRequest) => Promise<void>;
   handleSaveRequestClick: () => Promise<void>;
   selectedEnv: Record<string, string>;
 };
@@ -250,7 +184,7 @@ function RequestPanel({
         isLoading: true,
       });
 
-      let requestToSend = currentRequestToRequest(currentRequest);
+      let requestToSend = currentRestRequestToRequest(currentRequest);
 
       const envName = getSelectedEnvs()[requestToSend.collectionId];
 
@@ -261,7 +195,7 @@ function RequestPanel({
         data: { response },
       });
 
-      const newRequest: Request = {
+      const newRequest: RestRequest = {
         ...currentRequest,
         data: { ...currentRequest.data, response: response },
       };

@@ -1,6 +1,8 @@
 import Collection from '../model/Collection';
-import Request from '../model/Request';
+import { RestRequest, WebsocketRequest } from '../model/Request';
 import Script from '../model/Script';
+
+type Request = RestRequest | WebsocketRequest;
 
 const defaultCollections: Collection[] = [];
 
@@ -438,7 +440,7 @@ function moveRequest(
       ...currentRequest.data,
       rank: newRank,
     },
-  };
+  } as Request;
 
   return modifyCollection(result, newCollectionId, (c) => {
     if (!c.requests) c.requests = [];

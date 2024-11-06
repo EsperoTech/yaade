@@ -2,7 +2,7 @@ import beautify from 'beautify';
 import { Location } from 'react-router-dom';
 
 import KVRow from '../model/KVRow';
-import Request, { AuthData, CurrentRequest } from '../model/Request';
+import { AuthData, CurrentRestRequest, RestRequest } from '../model/Request';
 import { parseResponse } from './parseResponseEvent';
 
 const BASE_PATH =
@@ -164,7 +164,7 @@ function createMessageId(requestId: number): string {
   return `${requestId}_${Date.now()}`;
 }
 
-function currentRequestToRequest(currentRequest: CurrentRequest): Request {
+function currentRestRequestToRequest(currentRequest: CurrentRestRequest): RestRequest {
   return {
     id: currentRequest.id,
     collectionId: currentRequest.collectionId,
@@ -260,7 +260,7 @@ export {
   beautifyBody,
   cn,
   createMessageId,
-  currentRequestToRequest,
+  currentRestRequestToRequest,
   errorToast,
   extractAuthorizationHeader,
   getMethodColor,

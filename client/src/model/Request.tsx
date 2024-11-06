@@ -1,39 +1,64 @@
 import KVRow from './KVRow';
-import Response from './Response';
+import { RestResponse, WebsocketResponse } from './Response';
 
 interface Request {
   id: number;
   collectionId: number;
-  type: string;
   version: string;
-  data: RequestData;
+}
+
+interface RestRequest extends Request {
+  type: 'REST';
+  data: RestRequestData;
+}
+
+interface WebsocketRequest extends Request {
+  type: 'WS';
+  data: WebsocketRequestData;
 }
 
 interface CurrentRequest {
   id: number;
   collectionId: number;
-  type: string;
   version: string;
-  data: RequestData;
   isChanged: boolean;
+}
+
+interface CurrentRestRequest extends CurrentRequest {
+  type: 'REST';
   isLoading: boolean;
+  data: RestRequestData;
+}
+
+interface CurrentWebsocketRequest extends CurrentRequest {
+  type: 'WS';
+  state: 'connected' | 'disconnected';
+  data: WebsocketRequestData;
 }
 
 interface RequestData {
   name?: string;
   description?: string;
   uri?: string;
-  method?: string;
   headers?: Array<KVRow>;
-  body?: string;
   rank?: number;
+  params?: Array<KVRow>;
+}
+
+interface RestRequestData extends RequestData {
+  method?: string;
+  body?: string;
   formDataBody?: Array<KVRow>;
   contentType?: string;
   auth?: AuthData;
   requestScript?: string;
   responseScript?: string;
-  response?: Response;
-  params?: Array<KVRow>;
+  response?: RestResponse;
+}
+
+interface WebsocketRequestData extends RequestData {
+  message?: string;
+  response?: WebsocketResponse;
 }
 
 interface AuthData {
@@ -61,9 +86,18 @@ interface SidebarRequest {
   id: number;
   collectionId: number;
   name: string;
-  method: string;
+  type: 'REST' | 'WS';
+  method?: string;
 }
 
-export type { AuthData, CurrentRequest, SidebarRequest };
-
-export default Request;
+export type {
+  AuthData,
+  CurrentRestRequest,
+  CurrentWebsocketRequest,
+  Request,
+  RestRequest,
+  RestRequestData,
+  SidebarRequest,
+  WebsocketRequest,
+  WebsocketRequestData,
+};

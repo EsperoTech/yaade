@@ -1,7 +1,7 @@
 import KVRow from './KVRow';
 import { JasmineReport } from './Script';
 
-interface Response {
+interface RestResponse {
   status: number;
   headers: Array<KVRow>;
   body: string;
@@ -11,4 +11,14 @@ interface Response {
   jasmineReport?: JasmineReport | null;
 }
 
-export default Response;
+interface WebsocketResponse {
+  messages: Array<WebsocketResponseMessage>;
+}
+
+interface WebsocketResponseMessage {
+  message: string;
+  date: number;
+  type: 'incoming' | 'outgoing';
+}
+
+export type { RestResponse, WebsocketResponse };

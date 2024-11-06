@@ -4,8 +4,8 @@ import { Dispatch, MutableRefObject, useMemo, useRef, useState } from 'react';
 import api from '../../api';
 import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
-import Request, { CurrentRequest } from '../../model/Request';
-import Response from '../../model/Response';
+import { CurrentRestRequest, RestRequest } from '../../model/Request';
+import { RestResponse } from '../../model/Response';
 import { JasmineReport } from '../../model/Script';
 import {
   CollectionsAction,
@@ -40,7 +40,7 @@ type NewReqFormState = {
 };
 
 type RequestSenderProps = {
-  currentRequest: CurrentRequest;
+  currentRequest: CurrentRestRequest;
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
   collections: Collection[];
   dispatchCollections: Dispatch<CollectionsAction>;
@@ -108,13 +108,13 @@ function RequestSender({
     }
   }
 
-  async function handleSaveNewRequestClick() {
+  async function handleSaveNewRESTRequestClick() {
     try {
-      const response = await api.createRequest(newReqForm.collectionId, {
+      const response = await api.createRestRequest(newReqForm.collectionId, {
         ...currentRequest?.data,
         name: newReqForm.name,
       });
-      const newRequest = (await response.json()) as Request;
+      const newRequest = (await response.json()) as RestRequest;
 
       dispatchCollections({
         type: CollectionsActionType.PATCH_REQUEST_DATA,
@@ -198,10 +198,10 @@ function RequestSender({
   };
 
   async function sendRequest(
-    request: Request,
+    request: RestRequest,
     envName?: string,
     n?: number,
-  ): Promise<Response> {
+  ): Promise<RestResponse> {
     if (n && n >= 5) {
       throw Error('Exec loop detected in request script');
     }
@@ -219,7 +219,7 @@ function RequestSender({
       auth = request.data.auth;
     }
 
-    const injectedReq: Request = {
+    const injectedReq: RestRequest = {
       ...request,
       data: {
         ...request.data,
@@ -263,7 +263,7 @@ function RequestSender({
       );
     }
 
-    let response = null;
+    let response: RestResponse | null = null;
     switch (proxy) {
       case 'server':
         response = await sendRequestToServer(injectedReq, envName);
@@ -315,7 +315,7 @@ function RequestSender({
   }
 
   async function doRequestScript(
-    request: Request,
+    request: RestRequest,
     requestScript: string,
     isCollectionLevel: boolean,
     envName?: string,
@@ -328,8 +328,8 @@ function RequestSender({
       getEnvVar(request.collectionId, envName)(collections, key);
     const exec = async (requestId: number, envName?: string) => {
       const request = findRequest(collections, requestId);
-      if (!request) {
-        throw Error(`Request with id ${requestId} not found`);
+      if (!request || request.type !== 'REST') {
+        throw Error(`REST Request with id ${requestId} not found`);
       }
       if (!n) n = 0;
       return await sendRequest(request, envName, n + 1);
@@ -346,8 +346,8 @@ function RequestSender({
   }
 
   async function doResponseScript(
-    request: Request,
-    response: Response,
+    request: RestRequest,
+    response: RestResponse,
     responseScript: string,
     isCollectionLevel: boolean,
     envName?: string,
@@ -360,8 +360,8 @@ function RequestSender({
       getEnvVar(request.collectionId, envName)(collections, key);
     const exec = async (requestId: number, envName?: string) => {
       const request = findRequest(collections, requestId);
-      if (!request) {
-        throw Error(`Request with id ${requestId} not found`);
+      if (!request || request.type !== 'REST') {
+        throw Error(`REST Request with id ${requestId} not found`);
       }
       if (!n) n = 0;
       return await sendRequest(request, envName, n + 1);
@@ -380,10 +380,10 @@ function RequestSender({
   }
 
   async function sendRequestToExtension(
-    request: Request,
+    request: RestRequest,
     envName?: string,
     timeout = 5,
-  ): Promise<Response> {
+  ): Promise<RestResponse> {
     return new Promise((resolve, reject) => {
       const messageId = createMessageId(request.id);
 
@@ -472,7 +472,7 @@ function RequestSender({
     });
   }
 
-  async function saveOnSend(request: Request) {
+  async function saveOnSend(request: RestRequest) {
     if (request.id === -1) return;
 
     let response = await api.updateRequest(request);
@@ -495,9 +495,9 @@ function RequestSender({
   }
 
   async function sendRequestToServer(
-    request: Request,
+    request: RestRequest,
     envName?: string,
-  ): Promise<Response> {
+  ): Promise<RestResponse> {
     if (envName) {
       const collection = findCollection(collections, request.collectionId);
       if (!collection) {
@@ -555,7 +555,7 @@ function RequestSender({
         onClose={onCloseClear}
         initialRef={initialRef}
         heading="Save a new request"
-        onClick={handleSaveNewRequestClick}
+        onClick={handleSaveNewRESTRequestClick}
         isButtonDisabled={newReqForm.name === '' || newReqForm.collectionId === -1}
         buttonText="Save"
         buttonColor="green"
