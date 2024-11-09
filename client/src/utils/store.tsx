@@ -1,4 +1,4 @@
-import Collection, { CurrentCollection } from '../model/Collection';
+import Collection, { CurrentCollection, Environment } from '../model/Collection';
 
 function getSelectedEnvs(): Record<number, string> {
   try {

@@ -1,5 +1,7 @@
 "use strict";
 
+const websockets = new Map();
+
 async function sendRequest(request, sendResponse, senderUrl) {
   try {
     const startTime = Date.now();
@@ -82,6 +84,98 @@ async function buildFormDataBody(body, senderUrl) {
   return formData;
 }
 
+function connectWebsocket(request, senderTabId, sendResponse) {
+  const wsId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  let ws;
+  try {
+    ws = new WebSocket(request.uri);
+  } catch (err) {
+    console.error("error connecting to websocket", err);
+    sendResponse({ status: "error", err: err.message });
+    return;
+  }
+
+  console.log("connected to websocket", wsId);
+
+  const connectionTimeout = setTimeout(() => {
+    if (ws.readyState !== WebSocket.OPEN) {
+      ws.close();
+      console.error("websocket connection timeout", wsId);
+      sendResponse({ status: "error", err: "Connection timeout" });
+    }
+  }, 5000);
+
+  ws.onclose = () => {
+    console.log("websocket closed", wsId);
+    websockets.delete(wsId);
+    clearTimeout(connectionTimeout);
+  };
+  ws.onerror = (err) => {
+    console.error("websocket error", wsId, err);
+    chrome.tabs.sendMessage(senderTabId, {
+      type: "ws-error",
+      wsId: wsId,
+      err: err.message
+    });
+  };
+  ws.onopen = () => {
+    websockets.set(wsId, ws);
+    console.log("websocket opened", wsId);
+    sendResponse({ status: "success", wsId, metaData: request.metaData });
+  };
+  ws.onmessage = (event) => {
+    let parsedData;
+    try {
+      parsedData = JSON.stringify(event.data);
+    } catch (e) {
+      // If parsing fails, treat as string message
+      parsedData = event.data;
+    }
+    console.log("websocket message", wsId, parsedData);
+    chrome.tabs.sendMessage(senderTabId, {
+      type: "ws-read",
+      response: {
+        wsId: wsId,
+        message: parsedData,
+      }
+    });
+  };
+}
+
+function writeWebsocket(request, sendResponse) {
+  const ws = websockets.get(request.data.wsId);
+  console.log("writeWebsocket", request.data);
+  if (!ws) {
+    sendResponse({ status: "error", err: "WebSocket not found", wsId: request.data.wsId, metaData: request.metaData });
+    return;
+  }
+  if (ws.readyState !== WebSocket.OPEN) {
+    sendResponse({ status: "error", err: "WebSocket is not open", wsId: request.data.wsId, metaData: request.metaData });
+    return;
+  }
+  try {
+    ws.send(request.data.message);
+    sendResponse({ status: "success", wsId: request.data.wsId, metaData: request.metaData });
+  } catch (err) {
+    sendResponse({ status: "error", err: err.message, wsId: request.data.wsId, metaData: request.metaData });
+  }
+}
+
+function disconnectWebsocket(request, sendResponse) {
+  const ws = websockets.get(request.wsId);
+  if (!ws) {
+    sendResponse({ status: "error", err: "WebSocket not found", wsId: request.wsId, metaData: request.metaData });
+    return;
+  }
+  try {
+    ws.close();
+    websockets.delete(request.wsId);
+    sendResponse({ status: "success", wsId: request.wsId, metaData: request.metaData });
+  } catch (err) {
+    sendResponse({ status: "error", err: err.message, wsId: request.wsId, metaData: request.metaData });
+  }
+}
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   chrome.storage.sync.get("host", ({ host }) => {
     let hostOrigin = ""
@@ -98,6 +192,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       } else if (request.type === "ping") {
         console.log("Connected:", host)
         sendResponse();
+      } else if (request.type === "ws-connect") {
+        console.log("background ws-connect", request);
+        connectWebsocket(request, sender.tab.id, sendResponse);
+      } else if (request.type === "ws-write") {
+        writeWebsocket(request, sendResponse);
+      } else if (request.type === "ws-disconnect") {
+        disconnectWebsocket(request, sendResponse);
       } else {
         console.log("bad request type", request.type);
       }

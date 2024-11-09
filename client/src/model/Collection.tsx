@@ -64,6 +64,6 @@ interface CurrentCollection {
   isChanged: boolean;
 }
 
-export type { CollectionSettings, CurrentCollection, SidebarCollection };
+export type { CollectionSettings, CurrentCollection, Environment, SidebarCollection };
 
 export default Collection;

@@ -36,7 +36,8 @@ import ScriptPanel from '../../components/scriptPanel/ScriptPanel';
 import ScriptResultsPanel from '../../components/scriptResultsPanel';
 import Sidebar from '../../components/sidebar';
 import WebsocketPanel from '../../components/websocketPanel';
-import WebsocketResponsePanel from '../../components/websocketPanel/WebsocketResponsePanel';
+import WebsocketHandler from '../../components/websocketPanel/WebsocketHandler';
+import WebsocketResponsePanel from '../../components/websocketResponsePanel/WebsocketResponsePanel';
 import { UserContext } from '../../context';
 import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
 import {
@@ -956,14 +957,20 @@ function Dashboard() {
     panel = (
       <Allotment vertical defaultSizes={[200, 100]} snap>
         <div className={styles.requestPanel}>
-          <WebsocketPanel
+          <WebsocketHandler
             currentRequest={currentRequest as CurrentWebsocketRequest}
             dispatchCurrentRequest={dispatchCurrentRequest}
+            dispatchCollections={dispatchCollections}
             collections={collections}
+            isExtInitialized={isExtInitialized}
+            extVersion={extVersion}
+            openExtModal={onOpen}
           />
         </div>
         <div className={styles.responsePanel}>
-          <WebsocketResponsePanel />
+          {currentRequest.data.response && (
+            <WebsocketResponsePanel response={currentRequest.data.response} />
+          )}
         </div>
       </Allotment>
     );

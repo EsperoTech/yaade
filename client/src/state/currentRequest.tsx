@@ -6,6 +6,7 @@ import {
   WebsocketRequest,
   WebsocketRequestData,
 } from '../model/Request';
+import { WebsocketResponseMessage } from '../model/Response';
 
 const defaultCurrentRequest: CurrentRestRequest | undefined = {
   id: -1,
@@ -35,6 +36,7 @@ enum CurrentRequestActionType {
   SET_IS_LOADING = 'SET_IS_LOADING',
   SET_IS_CHANGED = 'SET_IS_CHANGED',
   SET_CONTENT_TYPE_HEADER = 'SET_CONTENT_TYPE_HEADER',
+  ADD_WEBSOCKET_RESPONSE_MESSAGE = 'ADD_WEBSOCKET_RESPONSE_MESSAGE',
 }
 
 type SetAction = {
@@ -64,6 +66,11 @@ type SetIsChangedAction = {
 type SetContentTypeHeader = {
   type: CurrentRequestActionType.SET_CONTENT_TYPE_HEADER;
   value: string;
+};
+
+type AddWebsocketResponseMessage = {
+  type: CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE;
+  message: WebsocketResponseMessage;
 };
 
 function set(
@@ -168,13 +175,33 @@ function setContentTypeHeader(
   };
 }
 
+function addWebsocketResponseMessage(
+  state: CurrentWebsocketRequest | CurrentRestRequest | undefined,
+  message: WebsocketResponseMessage,
+) {
+  console.log('addWebsocketResponseMessage', message);
+  if (!state) return state;
+  if (state.type !== 'WS') return state;
+  return {
+    ...state,
+    data: {
+      ...state.data,
+      response: {
+        ...state.data.response,
+        messages: [...(state.data.response?.messages ?? []), message],
+      },
+    },
+  };
+}
+
 type CurrentRequestAction =
   | SetAction
   | UnsetAction
   | PatchDataAction
   | SetIsLoadingAction
   | SetIsChangedAction
-  | SetContentTypeHeader;
+  | SetContentTypeHeader
+  | AddWebsocketResponseMessage;
 
 function currentRequestReducer(
   state: CurrentRestRequest | CurrentWebsocketRequest | undefined = defaultCurrentRequest,
@@ -193,6 +220,8 @@ function currentRequestReducer(
       return setIsChanged(state, action.isChanged);
     case CurrentRequestActionType.SET_CONTENT_TYPE_HEADER:
       return setContentTypeHeader(state, action.value);
+    case CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE:
+      return addWebsocketResponseMessage(state, action.message);
     default:
       console.error('Invalid action type');
       return state;

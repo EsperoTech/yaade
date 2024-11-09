@@ -58,6 +58,7 @@ interface RestRequestData extends RequestData {
 
 interface WebsocketRequestData extends RequestData {
   message?: string;
+  contentType?: string;
   response?: WebsocketResponse;
 }
 

@@ -12,7 +12,7 @@ interface RestResponse {
 }
 
 interface WebsocketResponse {
-  messages: Array<WebsocketResponseMessage>;
+  messages?: Array<WebsocketResponseMessage>;
 }
 
 interface WebsocketResponseMessage {
@@ -21,4 +21,4 @@ interface WebsocketResponseMessage {
   type: 'incoming' | 'outgoing';
 }
 
-export type { RestResponse, WebsocketResponse };
+export type { RestResponse, WebsocketResponse, WebsocketResponseMessage };

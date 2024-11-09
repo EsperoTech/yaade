@@ -61,3 +61,9 @@
   overflow: hidden;
   height: 100%;
 }
+
+.iconBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
