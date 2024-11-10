@@ -7,12 +7,10 @@ import com.espero.yaade.services.SecretInterpolator
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Future
 import io.vertx.core.Vertx
-import io.vertx.core.eventbus.Message
 import io.vertx.core.http.ServerWebSocket
 import io.vertx.core.http.WebSocket
 import io.vertx.core.http.WebSocketConnectOptions
 import io.vertx.core.json.JsonObject
-import io.vertx.ext.web.sstore.SessionStore
 import java.net.URI
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -20,32 +18,111 @@ import java.util.concurrent.ConcurrentHashMap
 class WebsocketRoute(
     private val vertx: Vertx,
     private val daoManager: DaoManager,
-    private val sessionStore: SessionStore
 ) {
 
     private val websockets = ConcurrentHashMap<String, WebSocket>()
     private val secretInterpolator = SecretInterpolator(daoManager)
+
+    fun wsMessage(type: String, result: JsonObject): String {
+        return JsonObject().put("type", type).put("result", result).encode()
+    }
 
     fun handle(ws: ServerWebSocket, user: UserDb) {
         try {
             if (ws.path() == "/api/ws") {
                 val wsId = UUID.randomUUID().toString()
                 ws.accept()
+                ws.closeHandler {
+                    websockets[wsId]?.close()
+                    websockets.remove(wsId)
+                }
                 ws.textMessageHandler { msg ->
                     val data = JsonObject(msg)
                     when (data.getString("type")) {
-                        "ws-connect" -> connect(data.getJsonObject("request"), user, ws, wsId)
+                        "ws-connect" -> connect(data.getJsonObject("request"), user, ws)
                             .onSuccess {
-                                ws.writeTextMessage(it.body().encode())
+                                websockets[wsId] = it
+                                it.closeHandler {
+                                    if (websockets.containsKey(wsId)) {
+                                        ws.writeTextMessage(
+                                            wsMessage(
+                                                "ws-close",
+                                                JsonObject()
+                                                    .put("status", "error")
+                                                    .put("err", "WebSocket closed unexpectedly")
+                                                    .put("wsId", wsId)
+                                            )
+                                        )
+                                        websockets.remove(wsId)
+                                    }
+                                }
+                                it.textMessageHandler { msg ->
+                                    ws.writeTextMessage(
+                                        wsMessage(
+                                            "ws-read", JsonObject()
+                                                .put("wsId", wsId)
+                                                .put("message", msg)
+                                        )
+                                    )
+                                }
+                                ws.writeTextMessage(
+                                    wsMessage(
+                                        "ws-connect-result",
+                                        JsonObject()
+                                            .put("status", "success")
+                                            .put("metaData", data.getJsonObject("metaData"))
+                                            .put("wsId", wsId)
+                                    )
+                                )
+                            }.onFailure {
+                                ws.close()
                             }
 
                         "ws-write" -> {
-                            vertx.eventBus().send("ws.write", data.getJsonObject("message"))
+                            handleWrite(
+                                wsId,
+                                data.getJsonObject("data", JsonObject()).getString("message")
+                            ).onSuccess {
+                                ws.writeTextMessage(
+                                    wsMessage(
+                                        "ws-write-result", JsonObject()
+                                            .put("status", "success")
+                                            .put("wsId", wsId)
+                                            .put("metaData", data.getJsonObject("metaData"))
+                                    )
+                                )
+                            }.onFailure {
+                                wsMessage(
+                                    "ws-write-result", JsonObject()
+                                        .put("status", "error")
+                                        .put("err", it.message)
+                                        .put("wsId", wsId)
+                                        .put("metaData", data.getJsonObject("metaData"))
+                                )
+                            }
                         }
+
+                        "ws-disconnect" -> disconnect(wsId)
+                            .onSuccess {
+                                ws.writeTextMessage(
+                                    wsMessage(
+                                        "ws-disconnect-result", JsonObject()
+                                            .put("status", "success")
+                                            .put("wsId", wsId)
+                                            .put("metaData", data.getJsonObject("metaData"))
+                                    )
+                                )
+                            }
+                            .onFailure {
+                                wsMessage(
+                                    "ws-disconnect-result", JsonObject()
+                                        .put("status", "error")
+                                        .put("err", it.message)
+                                        .put("wsId", wsId)
+                                        .put("metaData", data.getJsonObject("metaData"))
+                                )
+                            }
                     }
-                }
-                vertx.eventBus().consumer("ws.read:$wsId") { msg: Message<String> ->
-                    ws.writeTextMessage(msg.body())
                 }
             } else {
                 ws.reject()
@@ -60,8 +137,7 @@ class WebsocketRoute(
         request: JsonObject,
         user: UserDb,
         ws: ServerWebSocket,
-        wsId: String
-    ): Future<Message<JsonObject>> {
+    ): Future<WebSocket> {
         if (request.getString("type") != "WS") {
             throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "Request type must be WS")
         }
@@ -82,89 +158,55 @@ class WebsocketRoute(
             )
         }
         val envName: String? = request.getString("envName")
-        val data = request.getJsonObject("data") ?: throw ServerError(
+        val requestData = request.getJsonObject("data") ?: throw ServerError(
             HttpResponseStatus.BAD_REQUEST.code(),
             "No data provided"
         )
-
-        return vertx.eventBus()
-            .request(
-                "ws.connect",
-                JsonObject().put("data", data).put("envName", envName).put("wsId", wsId)
-            )
-    }
-
-    private fun connect(msg: Message<JsonObject>) {
-        try {
-            val wsId = msg.body().getString("wsId") ?: throw Exception("wsId is required")
-            val requestData = msg.body().getJsonObject("data")
-            val envName = msg.body().getString("envName")
-            val collectionId = requestData.getLong("collectionId")
-            val interpolated = if (envName != null)
-                secretInterpolator.interpolate(requestData, collectionId, envName)
-            else
-                requestData
-            val uri = URI(requestData.getString("uri"))
-            val options = WebSocketConnectOptions()
-                .setHost(uri.host)
-                .setURI(uri.path)
-            if (uri.scheme == "wss") {
-                options.setSsl(true)
-                if (uri.port == -1) {
-                    options.setPort(443)
-                } else {
-                    options.setPort(uri.port)
-                }
+        val interpolated = if (envName != null)
+            secretInterpolator.interpolate(requestData, collectionId, envName)
+        else
+            requestData
+        val uri = URI(interpolated.getString("uri"))
+        val options = WebSocketConnectOptions()
+            .setHost(uri.host)
+            .setURI(uri.path)
+        if (uri.scheme == "wss") {
+            options.setSsl(true)
+            if (uri.port == -1) {
+                options.setPort(443)
             } else {
-                if (uri.port == -1) {
-                    options.setPort(80)
-                } else {
-                    options.setPort(uri.port)
-                }
+                options.setPort(uri.port)
             }
-            vertx.createWebSocketClient().connect(options).onSuccess {
-                it.textMessageHandler { msg -> handleRead(msg, wsId) }
-                websockets[wsId] = it
-                msg.reply(
-                    JsonObject()
-                        .put("type", "ws-connected")
-                        .put("wsId", wsId)
-                )
-            }.onFailure {
-                msg.fail(500, it.message)
+        } else {
+            if (uri.port == -1) {
+                options.setPort(80)
+            } else {
+                options.setPort(uri.port)
             }
-        } catch (e: Throwable) {
-            msg.fail(500, e.message)
         }
-
+        interpolated.getJsonArray("headers")?.forEach { header ->
+            if (header is JsonObject) {
+                options.addHeader(header.getString("key"), header.getString("value"))
+            }
+        }
+        return vertx.createWebSocketClient().connect(options)
     }
 
-    private fun handleRead(msg: String, wsId: String) {
-        vertx.eventBus().send("ws.read:$wsId", msg)
+    private fun handleWrite(wsId: String, data: String): Future<Void> {
+        if (!websockets.containsKey(wsId)) {
+            return Future.failedFuture("WebSocket not found")
+        }
+        if (websockets[wsId]!!.isClosed) {
+            return Future.failedFuture("WebSocket is closed")
+        }
+        return websockets[wsId]!!.writeTextMessage(data)
     }
 
-    private fun handleWrite(msg: Message<JsonObject>) {
-        val socketId = msg.body().getString("socketId")
-        val data = msg.body().getString("data")
-        if (!websockets.containsKey(socketId)) {
-            msg.fail(500, "Socket not found")
-            return
+    private fun disconnect(wsId: String): Future<Void> {
+        if (!websockets.containsKey(wsId)) {
+            return Future.failedFuture("WebSocket not found")
         }
-        websockets[socketId]!!.writeTextMessage(data).onSuccess {
-            msg.reply(JsonObject().put("status", "sent"))
-        }.onFailure {
-            msg.fail(500, it.message)
-        }
-    }
-
-    private fun disconnect(msg: Message<JsonObject>) {
-        val socketId = msg.body().getString("socketId")
-        if (!websockets.containsKey(socketId)) {
-            msg.fail(500, "Socket not found")
-            return
-        }
-        websockets[socketId]!!.close()
-        websockets.remove(socketId)
-        msg.reply(JsonObject().put("status", "disconnected"))
+        websockets.remove(wsId)?.close()
+        return Future.succeededFuture()
     }
 }

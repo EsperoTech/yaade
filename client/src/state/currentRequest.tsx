@@ -37,6 +37,7 @@ enum CurrentRequestActionType {
   SET_IS_CHANGED = 'SET_IS_CHANGED',
   SET_CONTENT_TYPE_HEADER = 'SET_CONTENT_TYPE_HEADER',
   ADD_WEBSOCKET_RESPONSE_MESSAGE = 'ADD_WEBSOCKET_RESPONSE_MESSAGE',
+  CLEAR_WEBSOCKET_RESPONSE_MESSAGES = 'CLEAR_WEBSOCKET_RESPONSE_MESSAGES',
 }
 
 type SetAction = {
@@ -71,6 +72,10 @@ type SetContentTypeHeader = {
 type AddWebsocketResponseMessage = {
   type: CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE;
   message: WebsocketResponseMessage;
+};
+
+type ClearWebsocketResponseMessages = {
+  type: CurrentRequestActionType.CLEAR_WEBSOCKET_RESPONSE_MESSAGES;
 };
 
 function set(
@@ -179,7 +184,6 @@ function addWebsocketResponseMessage(
   state: CurrentWebsocketRequest | CurrentRestRequest | undefined,
   message: WebsocketResponseMessage,
 ) {
-  console.log('addWebsocketResponseMessage', message);
   if (!state) return state;
   if (state.type !== 'WS') return state;
   return {
@@ -188,7 +192,24 @@ function addWebsocketResponseMessage(
       ...state.data,
       response: {
         ...state.data.response,
-        messages: [...(state.data.response?.messages ?? []), message],
+        messages: [message, ...(state.data.response?.messages ?? [])],
+      },
+    },
+  };
+}
+
+function clearWebsocketResponseMessages(
+  state: CurrentWebsocketRequest | CurrentRestRequest | undefined,
+) {
+  if (!state) return state;
+  if (state.type !== 'WS') return state;
+  return {
+    ...state,
+    data: {
+      ...state.data,
+      response: {
+        ...state.data.response,
+        messages: [],
       },
     },
   };
@@ -201,7 +222,8 @@ type CurrentRequestAction =
   | SetIsLoadingAction
   | SetIsChangedAction
   | SetContentTypeHeader
-  | AddWebsocketResponseMessage;
+  | AddWebsocketResponseMessage
+  | ClearWebsocketResponseMessages;
 
 function currentRequestReducer(
   state: CurrentRestRequest | CurrentWebsocketRequest | undefined = defaultCurrentRequest,
@@ -222,6 +244,8 @@ function currentRequestReducer(
       return setContentTypeHeader(state, action.value);
     case CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE:
       return addWebsocketResponseMessage(state, action.message);
+    case CurrentRequestActionType.CLEAR_WEBSOCKET_RESPONSE_MESSAGES:
+      return clearWebsocketResponseMessages(state);
     default:
       console.error('Invalid action type');
       return state;

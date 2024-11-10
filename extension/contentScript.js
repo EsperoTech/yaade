@@ -24,30 +24,23 @@ window.addEventListener("message", function (event) {
         );
       });
     } else if (event.data.type == "ws-connect") {
-      console.log("ws-connect2", event.data);
-      chrome.runtime.sendMessage(event.data, function (response) {
-        console.log("ws-connected", response);
-        window.postMessage({ type: "ws-connected", response }, "*");
+      chrome.runtime.sendMessage(event.data, function (result) {
+        window.postMessage({ type: "ws-connect-result", result }, "*");
       });
     } else if (event.data.type == "ws-disconnect") {
-      chrome.runtime.sendMessage(event.data, function (response) {
-        window.postMessage({ type: "ws-disconnected", response }, "*");
+      chrome.runtime.sendMessage(event.data, function (result) {
+        window.postMessage({ type: "ws-disconnect-result", result }, "*");
       });
     } else if (event.data.type == "ws-write") {
-      console.log("ws-write", event.data);
-      chrome.runtime.sendMessage(event.data, function (response) {
-        console.log("ws-written", response);
-        window.postMessage({ type: "ws-written", response }, "*");
+      chrome.runtime.sendMessage(event.data, function (result) {
+        window.postMessage({ type: "ws-write-result", result }, "*");
       });
     }
   }
 });
 
-chrome.runtime.onMessage.addListener((message, sender) => {
+chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'ws-read') {
-    console.log("ws-read", message);
     window.postMessage(message, "*");
-  } else {
-    console.log("unknown message", message);
   }
 });

@@ -37,5 +37,4 @@ fun main() {
     )
     vertx.deployVerticle(ScriptRunner(daoManager))
     vertx.deployVerticle(BackupRunner(daoManager))
-    vertx.deployVerticle(WebsocketManager(daoManager))
 }

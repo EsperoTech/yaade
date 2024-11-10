@@ -969,7 +969,10 @@ function Dashboard() {
         </div>
         <div className={styles.responsePanel}>
           {currentRequest.data.response && (
-            <WebsocketResponsePanel response={currentRequest.data.response} />
+            <WebsocketResponsePanel
+              response={currentRequest.data.response}
+              dispatchCurrentRequest={dispatchCurrentRequest}
+            />
           )}
         </div>
       </Allotment>

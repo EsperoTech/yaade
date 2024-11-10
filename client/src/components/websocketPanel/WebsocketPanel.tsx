@@ -20,7 +20,7 @@ import { Dispatch, useCallback, useEffect, useMemo, useRef } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import api from '../../api';
-import Collection from '../../model/Collection';
+import Collection, { Environment } from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import { CurrentWebsocketRequest, WebsocketRequest } from '../../model/Request';
 import {
@@ -48,7 +48,6 @@ import {
   cmThemeDark,
   cmThemeLight,
 } from '../../utils/codemirror/themes';
-import { getSelectedEnv } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BodyTextEditor from '../bodyEditor/BodyTextEditor';
 import OverviewTab from '../collectionPanel/OverviewTab';
@@ -59,22 +58,22 @@ type WebsocketPanelProps = {
   currentRequest: CurrentWebsocketRequest;
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
   dispatchCollections: Dispatch<CollectionsAction>;
-  collections: Collection[];
   connectionStatus: 'connected' | 'disconnected' | 'connecting';
   onConnect: () => void;
   onWrite: (message: string) => void;
   onDisconnect: () => void;
+  selectedEnv: Environment | null;
 };
 
 function WebsocketPanel({
   currentRequest,
   dispatchCurrentRequest,
   dispatchCollections,
-  collections,
   connectionStatus,
   onConnect,
   onWrite,
   onDisconnect,
+  selectedEnv,
 }: WebsocketPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { colorMode } = useColorMode();
@@ -105,13 +104,6 @@ function WebsocketPanel({
   }
 
   useKeyPress(handleSaveRequestClick, 's', true);
-
-  const requestCollection = useMemo(() => {
-    return findCollection(collections, currentRequest?.collectionId);
-  }, [collections, currentRequest?.collectionId]);
-  const selectedEnv = useMemo(() => {
-    return requestCollection ? getSelectedEnv(requestCollection) : null;
-  }, [requestCollection]);
 
   const setUri = useCallback(
     (uri: string) => {

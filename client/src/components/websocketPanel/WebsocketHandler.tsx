@@ -1,3 +1,4 @@
+import { useToast } from '@chakra-ui/react';
 import {
   Dispatch,
   MutableRefObject,
@@ -15,8 +16,11 @@ import {
   CurrentRequestAction,
   CurrentRequestActionType,
 } from '../../state/currentRequest';
+import { errorToast } from '../../utils';
 import { sendMessageToExtension } from '../../utils/extension';
+import interpolate from '../../utils/interpolate';
 import { getSelectedEnv } from '../../utils/store';
+import { sendMessageToWebsocket } from '../../utils/websocket';
 import WebsocketPanel from './WebsocketPanel';
 
 type WebsocketHandlerProps = {
@@ -29,11 +33,6 @@ type WebsocketHandlerProps = {
   openExtModal: () => void;
 };
 
-type WebsocketState = {
-  connectionStatus: 'connected' | 'disconnected' | 'connecting';
-  wsId: string | null;
-};
-
 export default function WebsocketHandler({
   currentRequest,
   dispatchCurrentRequest,
@@ -42,10 +41,10 @@ export default function WebsocketHandler({
   isExtInitialized,
   openExtModal,
 }: WebsocketHandlerProps) {
-  const [state, setState] = useState<WebsocketState>({
-    connectionStatus: 'disconnected',
-    wsId: null,
-  });
+  const wsId = useRef<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connected' | 'disconnected' | 'connecting'
+  >('disconnected');
   const requestCollection = useMemo(() => {
     return findCollection(collections, currentRequest?.collectionId);
   }, [collections, currentRequest?.collectionId]);
@@ -53,41 +52,54 @@ export default function WebsocketHandler({
     return requestCollection ? getSelectedEnv(requestCollection) : null;
   }, [requestCollection]);
   const ws = useRef<WebSocket | null>(null);
+  const toast = useToast();
 
-  async function extensionConnect(): Promise<string> {
-    const res = await sendMessageToExtension(
-      currentRequest.id,
-      {
-        uri: currentRequest.data.uri,
-        type: 'ws-connect',
-      },
-      'ws-connected',
-    );
+  useEffect(() => {
+    return () => {
+      ws.current?.close();
+    };
+  }, []);
+
+  async function extensionConnect(request: CurrentWebsocketRequest): Promise<string> {
+    const res = await sendMessageToExtension(currentRequest.id, {
+      type: 'ws-connect',
+      request,
+    });
     return res.wsId;
   }
 
-  async function serverConnect(): Promise<string> {
+  async function serverConnect(request: CurrentWebsocketRequest): Promise<string> {
     return new Promise((resolve, reject) => {
       try {
         const websocket = new WebSocket('/api/ws');
         websocket.onopen = () => {
-          websocket.send(
-            JSON.stringify({
-              request: currentRequest,
-              type: 'ws-connect',
-            }),
-          );
+          sendMessageToWebsocket(websocket, currentRequest.id, {
+            type: 'ws-connect',
+            request,
+          })
+            .then((msg: any) => {
+              ws.current = websocket;
+              resolve(msg.wsId);
+            })
+            .catch(reject);
         };
         websocket.onmessage = (event) => {
           const msg = JSON.parse(event.data);
-          if (msg.type === 'ws-connected') {
-            ws.current = websocket;
-            console.log('server connected', msg.wsId);
-            resolve(msg.wsId);
-          } else if (msg.type === 'ws-read') {
+          if (!msg) {
+            console.error('server message', msg);
+            return;
+          }
+          if (msg.type === 'ws-read') {
+            if (!msg || msg?.type !== 'ws-read' || msg.result?.wsId !== wsId.current) {
+              return;
+            }
             dispatchCurrentRequest({
               type: CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE,
-              message: msg.response,
+              message: {
+                message: msg.result.message,
+                date: Date.now(),
+                type: 'incoming',
+              },
             });
           }
         };
@@ -102,35 +114,38 @@ export default function WebsocketHandler({
 
   async function handleConnect() {
     try {
-      setState((s) => ({
-        ...s,
-        connectionStatus: 'connecting',
-      }));
+      setConnectionStatus('connecting');
       let proxy = 'ext';
       if (selectedEnv) {
         proxy = selectedEnv.proxy;
       }
-      let wsId: string | null = null;
+      let newWsId: string | null = null;
+      let interpolatedRequest = { ...currentRequest };
+      if (selectedEnv) {
+        const collection = findCollection(collections, currentRequest.collectionId);
+        if (!collection) {
+          throw Error('Collection not found for id: ' + currentRequest.collectionId);
+        }
+        const selectedEnvData = selectedEnv?.data ?? {};
+        const interpolateResult = interpolate(currentRequest, selectedEnvData);
+        interpolatedRequest = interpolateResult.result;
+      }
       switch (proxy) {
         case 'server':
-          wsId = await serverConnect();
-          console.log('server wsId', wsId);
+          newWsId = await serverConnect(interpolatedRequest);
           break;
         case 'ext':
           if (!isExtInitialized.current) {
             openExtModal();
             throw Error('Extension not initialized');
           }
-          wsId = await extensionConnect();
+          newWsId = await extensionConnect(interpolatedRequest);
           break;
         default:
           throw Error('Unknown proxy');
       }
-      setState((s) => ({
-        ...s,
-        connectionStatus: 'connected',
-        wsId,
-      }));
+      setConnectionStatus('connected');
+      wsId.current = newWsId;
       dispatchCurrentRequest({
         type: CurrentRequestActionType.PATCH_DATA,
         data: {
@@ -142,55 +157,111 @@ export default function WebsocketHandler({
         },
       });
     } catch (err) {
-      setState((s) => ({
-        ...s,
-        connectionStatus: 'disconnected',
-      }));
+      setConnectionStatus('disconnected');
       console.error(err);
+      errorToast('Failed to connect: ' + err, toast);
     }
+  }
+
+  async function extensionDisconnect() {
+    return await sendMessageToExtension(currentRequest.id, {
+      type: 'ws-disconnect',
+      wsId: wsId.current,
+    });
+  }
+
+  async function serverDisconnect() {
+    if (!ws.current) {
+      return;
+    }
+    const res: any = await sendMessageToWebsocket(ws.current, currentRequest.id, {
+      type: 'ws-disconnect',
+    });
+    ws.current.close();
+    return res;
   }
 
   async function handleDisconnect() {
     try {
-      await sendMessageToExtension(
-        currentRequest.id,
-        {
-          type: 'ws-disconnect',
-        },
-        'ws-disconnected',
-      );
-      setState((s) => ({
-        ...s,
-        connectionStatus: 'disconnected',
-      }));
+      let proxy = 'ext';
+      if (selectedEnv) {
+        proxy = selectedEnv.proxy;
+      }
+      setConnectionStatus('connecting');
+      let res: any;
+      switch (proxy) {
+        case 'server':
+          res = await serverDisconnect();
+          break;
+        case 'ext':
+          res = await extensionDisconnect();
+          break;
+        default:
+          throw Error('Unknown proxy');
+      }
+      if (res.status === 'error') {
+        throw Error(res.err);
+      }
+      setConnectionStatus('disconnected');
+      wsId.current = null;
     } catch (err) {
-      console.error(err);
+      setConnectionStatus('connected');
+      errorToast('Failed to disconnect: ' + err, toast);
     }
+  }
+
+  async function extensionWrite(message: string) {
+    return await sendMessageToExtension(currentRequest.id, {
+      type: 'ws-write',
+      data: {
+        wsId: wsId.current,
+        message,
+      },
+    });
+  }
+
+  async function serverWrite(message: string) {
+    if (!ws.current) {
+      throw Error('WebSocket not connected');
+    }
+    return await sendMessageToWebsocket(ws.current, currentRequest.id, {
+      type: 'ws-write',
+      data: {
+        wsId: wsId.current,
+        message,
+      },
+    });
   }
 
   async function handleWrite(message: string) {
     try {
-      console.log('writing', message);
-      const res = await sendMessageToExtension(
-        currentRequest.id,
-        {
-          type: 'ws-write',
-          data: {
-            wsId: state.wsId,
-            message,
-          },
-        },
-        'ws-written',
-      );
-      if (res.status === 'success') {
-        console.log('write success', { message, date: Date.now(), type: 'outgoing' });
-        dispatchCurrentRequest({
-          type: CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE,
-          message: { message, date: Date.now(), type: 'outgoing' },
-        });
-      } else {
-        console.error('write error', res);
+      let proxy = 'ext';
+      if (selectedEnv) {
+        proxy = selectedEnv.proxy;
       }
+      let res: any;
+      switch (proxy) {
+        case 'server':
+          res = await serverWrite(message);
+          break;
+        case 'ext':
+          res = await extensionWrite(message);
+          break;
+        default:
+          throw Error('Unknown proxy');
+      }
+      if (res.status === 'error') {
+        console.error('write error', res);
+        return;
+      }
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE,
+        message: {
+          message: message,
+          date: Date.now(),
+          type: 'outgoing',
+        },
+      });
     } catch (err) {
       console.error(err);
     }
@@ -201,21 +272,20 @@ export default function WebsocketHandler({
       if (
         !event.data ||
         event.data?.type !== 'ws-read' ||
-        event.data.response?.wsId !== state.wsId
+        event.data.result?.wsId !== wsId.current
       ) {
-        console.log('ignoring', event.data);
         return;
       }
       dispatchCurrentRequest({
         type: CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE,
         message: {
-          message: event.data.response.message,
+          message: event.data.result.message,
           date: Date.now(),
           type: 'incoming',
         },
       });
     },
-    [dispatchCurrentRequest, state.wsId],
+    [dispatchCurrentRequest],
   );
 
   useEffect(() => {
@@ -230,11 +300,11 @@ export default function WebsocketHandler({
       currentRequest={currentRequest}
       dispatchCurrentRequest={dispatchCurrentRequest}
       dispatchCollections={dispatchCollections}
-      collections={collections}
-      connectionStatus={state.connectionStatus}
+      connectionStatus={connectionStatus}
       onConnect={handleConnect}
       onWrite={handleWrite}
       onDisconnect={handleDisconnect}
+      selectedEnv={selectedEnv}
     />
   );
 }

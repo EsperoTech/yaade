@@ -88,7 +88,13 @@ function connectWebsocket(request, senderTabId, sendResponse) {
   const wsId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   let ws;
   try {
-    ws = new WebSocket(request.uri);
+    const headers = request.request.headers?.reduce((acc, el) => {
+      acc[el.key] = el.value;
+      return acc;
+    }, {}) ?? {};
+    ws = new WebSocket(request.request.data.uri, [], {
+      headers
+    });
   } catch (err) {
     console.error("error connecting to websocket", err);
     sendResponse({ status: "error", err: err.message });
@@ -106,16 +112,26 @@ function connectWebsocket(request, senderTabId, sendResponse) {
   }, 5000);
 
   ws.onclose = () => {
-    console.log("websocket closed", wsId);
-    websockets.delete(wsId);
-    clearTimeout(connectionTimeout);
+    if (websockets.has(wsId)) {
+      chrome.tabs.sendMessage(senderTabId, {
+        type: "ws-close",
+        result: {
+          status: "error",
+          err: "WebSocket closed unexpectedly",
+          wsId: wsId,
+        }
+      });
+      websockets.delete(wsId);
+      clearTimeout(connectionTimeout);
+    }
   };
   ws.onerror = (err) => {
-    console.error("websocket error", wsId, err);
     chrome.tabs.sendMessage(senderTabId, {
       type: "ws-error",
-      wsId: wsId,
-      err: err.message
+      result: {
+        wsId: wsId,
+        err: err.message
+      }
     });
   };
   ws.onopen = () => {
@@ -124,17 +140,14 @@ function connectWebsocket(request, senderTabId, sendResponse) {
     sendResponse({ status: "success", wsId, metaData: request.metaData });
   };
   ws.onmessage = (event) => {
-    let parsedData;
-    try {
+    let parsedData = event.data;
+    if (typeof event.data === 'object') {
       parsedData = JSON.stringify(event.data);
-    } catch (e) {
-      // If parsing fails, treat as string message
-      parsedData = event.data;
     }
     console.log("websocket message", wsId, parsedData);
     chrome.tabs.sendMessage(senderTabId, {
       type: "ws-read",
-      response: {
+      result: {
         wsId: wsId,
         message: parsedData,
       }
@@ -144,7 +157,6 @@ function connectWebsocket(request, senderTabId, sendResponse) {
 
 function writeWebsocket(request, sendResponse) {
   const ws = websockets.get(request.data.wsId);
-  console.log("writeWebsocket", request.data);
   if (!ws) {
     sendResponse({ status: "error", err: "WebSocket not found", wsId: request.data.wsId, metaData: request.metaData });
     return;
@@ -168,8 +180,8 @@ function disconnectWebsocket(request, sendResponse) {
     return;
   }
   try {
-    ws.close();
     websockets.delete(request.wsId);
+    ws.close();
     sendResponse({ status: "success", wsId: request.wsId, metaData: request.metaData });
   } catch (err) {
     sendResponse({ status: "error", err: err.message, wsId: request.wsId, metaData: request.metaData });
@@ -193,7 +205,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         console.log("Connected:", host)
         sendResponse();
       } else if (request.type === "ws-connect") {
-        console.log("background ws-connect", request);
         connectWebsocket(request, sender.tab.id, sendResponse);
       } else if (request.type === "ws-write") {
         writeWebsocket(request, sendResponse);

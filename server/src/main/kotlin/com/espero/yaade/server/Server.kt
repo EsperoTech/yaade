@@ -58,7 +58,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val fileRoute = FileRoute(daoManager)
             val scriptRoute = ScriptRoute(daoManager, vertx)
             val accessTokenRoute = AccessTokenRoute(daoManager)
-            val websocketRoute = WebsocketRoute(vertx, daoManager, sessionStore!!)
+            val websocketRoute = WebsocketRoute(vertx, daoManager)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 

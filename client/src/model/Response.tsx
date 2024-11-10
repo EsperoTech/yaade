@@ -13,6 +13,7 @@ interface RestResponse {
 
 interface WebsocketResponse {
   messages?: Array<WebsocketResponseMessage>;
+  date?: string;
 }
 
 interface WebsocketResponseMessage {
