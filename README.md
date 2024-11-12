@@ -90,21 +90,12 @@ node index.js
 ```
 7. Now open your browser and visit http://localhost:9337
 
-## 🐋🔨 Docker Build
+## 🔨 Build
 
-Build it for AMD64 
 ```bash
-docker build --platform linux/amd64 --tag yaade:latest .
-```
-
-Build it for AMD64
-```bash
-docker build --platform linux/arm64 --tag yaade:latest .
-```
-
-Build it for AMD64 and ARM64 with docker buildx
-```bash
-docker buildx build --push --platform linux/arm64,linux/amd64 --tag yaade:latest .
+cd scripts/
+chmod +x build.sh
+./build.sh
 ```
 
 ## Screenshots
