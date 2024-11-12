@@ -3,7 +3,6 @@ package com.espero.yaade
 import com.espero.yaade.init.createDaoManager
 import com.espero.yaade.server.Server
 import com.espero.yaade.server.utils.configureDatabindCodec
-import com.espero.yaade.services.BackupRunner
 import com.espero.yaade.services.CronScriptRunner
 import com.espero.yaade.services.ScriptRunner
 import io.vertx.core.DeploymentOptions
@@ -36,5 +35,4 @@ fun main() {
         DeploymentOptions().setThreadingModel(ThreadingModel.WORKER)
     )
     vertx.deployVerticle(ScriptRunner(daoManager))
-    vertx.deployVerticle(BackupRunner(daoManager))
 }
