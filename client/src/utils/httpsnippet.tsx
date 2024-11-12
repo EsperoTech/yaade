@@ -1,6 +1,6 @@
 import { HTTPSnippet } from 'httpsnippet';
 
-import { CurrentRequest } from '../model/Request';
+import { CurrentRestRequest } from '../model/Request';
 import interpolate from './interpolate';
 
 export type Target =
@@ -24,13 +24,13 @@ export type Target =
   | 'swift';
 
 function generateHTTPSnippet(
-  request: CurrentRequest,
+  request: CurrentRestRequest,
   target: Target,
   client?: string,
   env: Record<string, any> = {},
 ): string {
   const interpolatedResult = interpolate(request, env?.data ?? {});
-  const interpolated = (interpolatedResult.result as CurrentRequest) ?? request;
+  const interpolated = (interpolatedResult.result as CurrentRestRequest) ?? request;
   const postData: any = {};
   if (interpolated.data.contentType === 'application/x-www-form-urlencoded') {
     const params = interpolated.data.formDataBody

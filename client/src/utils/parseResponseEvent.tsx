@@ -1,5 +1,5 @@
 import KVRow from '../model/KVRow';
-import Response from '../model/Response';
+import { RestResponse } from '../model/Response';
 import { beautifyBody } from '.';
 
 function getSize(headers: Array<KVRow>): number {
@@ -13,7 +13,7 @@ function getSize(headers: Array<KVRow>): number {
 const getContentType = (headers: Array<KVRow>) =>
   headers.find((header) => header.key.toLowerCase() === 'content-type')?.value ?? '';
 
-function parseResponse(res: any): Response {
+function parseResponse(res: any): RestResponse {
   const headers: Array<KVRow> = res.headers;
   const contentType = getContentType(headers);
   let body = res.body;

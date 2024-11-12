@@ -2,12 +2,12 @@ import { useState } from 'react';
 import CommandPalette, { Command } from 'react-command-palette';
 
 import Collection, { CurrentCollection } from '../../model/Collection';
-import { CurrentRequest } from '../../model/Request';
+import { CurrentRestRequest } from '../../model/Request';
 import { useKeyPress } from '../../utils/useKeyPress';
 
 type CmdPaletteProps = {
   collections: Collection[];
-  currentRequest?: CurrentRequest;
+  currentRequest?: CurrentRestRequest;
   currentCollection?: CurrentCollection;
   selectCollection: any;
   setCollectionPanelTabIndex: (index: number) => void;

@@ -10,7 +10,7 @@ import { LanguageName, loadLanguage } from '@uiw/codemirror-extensions-langs';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 
-import { CurrentRequest } from '../../model/Request';
+import { CurrentRestRequest } from '../../model/Request';
 import { successToast } from '../../utils';
 import { generateHTTPSnippet, Target } from '../../utils/httpsnippet';
 import styles from './GenerateCodeTab.module.css';
@@ -132,7 +132,7 @@ const options: Array<StateTarget> = [
 ];
 
 type Props = {
-  request: CurrentRequest;
+  request: CurrentRestRequest;
   env: any;
 };
 

@@ -33,7 +33,7 @@ import { VscEllipsis, VscFolder, VscFolderOpened } from 'react-icons/vsc';
 
 import api from '../../api';
 import { SidebarCollection } from '../../model/Collection';
-import Request, { SidebarRequest } from '../../model/Request';
+import { RestRequest, SidebarRequest } from '../../model/Request';
 import { SidebarScript } from '../../model/Script';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import { errorToast, successToast } from '../../utils';

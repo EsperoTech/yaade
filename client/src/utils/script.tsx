@@ -2,8 +2,8 @@ import jp from 'jsonpath';
 import { DateTime } from 'luxon';
 import { MersenneTwister19937, Random } from 'random-js';
 
-import Request from '../model/Request';
-import Response from '../model/Response';
+import { RestRequest } from '../model/Request';
+import { RestResponse } from '../model/Response';
 import { JasmineReport } from '../model/Script';
 import { kvRowsToMap } from '.';
 import bootJasmine from './jasmine/jasmine';
@@ -19,8 +19,8 @@ const jpath = function (expr: string, value: string) {
 };
 
 async function executeResponseScript(
-  request: Request,
-  response: Response,
+  request: RestRequest,
+  response: RestResponse,
   script: string,
   set: any,
   get: any,
@@ -79,7 +79,7 @@ async function executeResponseScript(
 }
 
 async function executeRequestScript(
-  request: Request,
+  request: RestRequest,
   script: string,
   set: any,
   get: any,
