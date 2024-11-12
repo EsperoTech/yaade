@@ -16,7 +16,7 @@ import {
   CurrentRequestAction,
   CurrentRequestActionType,
 } from '../../state/currentRequest';
-import { errorToast } from '../../utils';
+import { errorToast, getMinorVersion } from '../../utils';
 import { sendMessageToExtension } from '../../utils/extension';
 import interpolate from '../../utils/interpolate';
 import { getSelectedEnv } from '../../utils/store';
@@ -39,6 +39,7 @@ export default function WebsocketHandler({
   dispatchCollections,
   collections,
   isExtInitialized,
+  extVersion,
   openExtModal,
 }: WebsocketHandlerProps) {
   const wsId = useRef<string | null>(null);
@@ -138,6 +139,11 @@ export default function WebsocketHandler({
           if (!isExtInitialized.current) {
             openExtModal();
             throw Error('Extension not initialized');
+          }
+          if (getMinorVersion(extVersion.current) < 10) {
+            throw Error(
+              'Upgrade to the latest version of the extension to use websocket requests.',
+            );
           }
           newWsId = await extensionConnect(interpolatedRequest);
           break;

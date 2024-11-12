@@ -3,7 +3,6 @@
 window.addEventListener("message", function (event) {
   if (event.source == window && event.data) {
     if (event.data.type == "send-request") {
-      console.log("send-request", event.data);
       chrome.runtime.sendMessage(event.data, function (response) {
         window.postMessage(
           {

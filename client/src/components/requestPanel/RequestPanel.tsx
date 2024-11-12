@@ -11,8 +11,12 @@ import {
   CurrentRequestAction,
   CurrentRequestActionType,
 } from '../../state/currentRequest';
-import { currentRestRequestToRequest, errorToast } from '../../utils';
-import { getParamsFromUri, getUriFromParams } from '../../utils/codemirror';
+import {
+  currentRestRequestToRequest,
+  errorToast,
+  getParamsFromUri,
+  getUriFromParams,
+} from '../../utils';
 import { getSelectedEnvs } from '../../utils/store';
 import AuthTab from '../authTab';
 import BodyEditor from '../bodyEditor';

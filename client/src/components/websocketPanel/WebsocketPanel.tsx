@@ -32,10 +32,16 @@ import {
   CurrentRequestAction,
   CurrentRequestActionType,
 } from '../../state/currentRequest';
-import { BASE_PATH, beautifyBody, cn, errorToast, successToast } from '../../utils';
 import {
+  BASE_PATH,
+  beautifyBody,
+  cn,
+  errorToast,
   getParamsFromUri,
   getUriFromParams,
+  successToast,
+} from '../../utils';
+import {
   helpCursor,
   singleLineExtension,
   singleLineSetupOptions,

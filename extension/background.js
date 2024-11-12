@@ -101,8 +101,6 @@ function connectWebsocket(request, senderTabId, sendResponse) {
     return;
   }
 
-  console.log("connected to websocket", wsId);
-
   const connectionTimeout = setTimeout(() => {
     if (ws.readyState !== WebSocket.OPEN) {
       ws.close();
@@ -136,7 +134,6 @@ function connectWebsocket(request, senderTabId, sendResponse) {
   };
   ws.onopen = () => {
     websockets.set(wsId, ws);
-    console.log("websocket opened", wsId);
     sendResponse({ status: "success", wsId, metaData: request.metaData });
   };
   ws.onmessage = (event) => {
@@ -144,7 +141,6 @@ function connectWebsocket(request, senderTabId, sendResponse) {
     if (typeof event.data === 'object') {
       parsedData = JSON.stringify(event.data);
     }
-    console.log("websocket message", wsId, parsedData);
     chrome.tabs.sendMessage(senderTabId, {
       type: "ws-read",
       result: {

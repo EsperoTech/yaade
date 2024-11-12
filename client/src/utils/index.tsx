@@ -254,6 +254,73 @@ function validateCronExpression(cronExpression: string): boolean {
   return cronRegex.test(cronExpression);
 }
 
+function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
+  const paramString = uri.split('?')[1];
+  if (!paramString) {
+    return params?.filter((param) => param.isEnabled === false) ?? [];
+  }
+
+  const uriParams = paramString.split('&').map((kv) => {
+    const [k, ...v] = kv.split('='); // ...v with v.join('=') handle cases where the value contains '='
+    return {
+      key: k,
+      value: v.join('='),
+    };
+  });
+
+  if (!params) {
+    return uriParams;
+  }
+
+  const newParams: KVRow[] = [];
+
+  let indexEnabledParams = 0;
+  for (const [_, param] of params.entries()) {
+    if (param.isEnabled === false) {
+      newParams.push(param);
+    } else {
+      const uriParam = uriParams[indexEnabledParams];
+      if (!uriParam) {
+        console.warn('params and URI params out of sync (enabled params > URI params)');
+        newParams.push({ key: '', value: '' });
+      } else {
+        newParams.push(uriParam);
+      }
+      indexEnabledParams++;
+    }
+  }
+
+  if (uriParams.length > indexEnabledParams) {
+    console.warn('params and URI params out of sync (URI params > enabled params)');
+  }
+  // add remaining URI params to newParams in case they go out of sync
+  for (let i = indexEnabledParams; i < uriParams.length; i++) {
+    newParams.push(uriParams[i]);
+  }
+
+  return newParams;
+}
+
+function getUriFromParams(uri: string, params: Array<KVRow>): string {
+  let newUri = uri;
+  if (!newUri.includes('?')) {
+    newUri += '?';
+  }
+  const base = newUri.split('?')[0];
+  let searchParams = '';
+  for (let i = 0; i < params.length; i++) {
+    if (params[i].key === '' && params[i].value === '') {
+      continue;
+    }
+    if (i !== 0) searchParams += '&';
+    searchParams += `${params[i].key}=${params[i].value}`;
+  }
+  if (searchParams === '') {
+    return base;
+  }
+  return `${base}?${searchParams}`;
+}
+
 export {
   appendHttpIfNoProtocol,
   BASE_PATH,
@@ -265,7 +332,9 @@ export {
   extractAuthorizationHeader,
   getMethodColor,
   getMinorVersion,
+  getParamsFromUri,
   getRequestIdFromMessageId,
+  getUriFromParams,
   groupsArrayToStr,
   groupsStrToArray,
   isValidVariableName,
