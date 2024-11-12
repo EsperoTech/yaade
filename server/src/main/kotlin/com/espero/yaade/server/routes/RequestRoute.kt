@@ -15,10 +15,9 @@ class RequestRoute(private val daoManager: DaoManager) {
         val collectionId = body.getLong("collectionId")
             ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No collectionId provided")
         assertUserCanReadCollection(ctx, collectionId)
-        val newRequest = if (body.containsKey("data"))
-            RequestDb(collectionId, body.getJsonObject("data"))
-        else
-            RequestDb(collectionId, body.getString("name"))
+        val type = body.getString("type")
+            ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No type provided")
+        val newRequest = RequestDb(collectionId, type, body.getJsonObject("data"))
 
         daoManager.requestDao.create(newRequest)
 

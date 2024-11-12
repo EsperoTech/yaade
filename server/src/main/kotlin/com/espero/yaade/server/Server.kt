@@ -10,13 +10,11 @@ import com.espero.yaade.model.db.ConfigDb
 import com.espero.yaade.server.auth.AuthHandler
 import com.espero.yaade.server.errors.handleFailure
 import com.espero.yaade.server.routes.*
-import com.espero.yaade.server.utils.adminCoroutineHandler
-import com.espero.yaade.server.utils.coroutineHandler
-import com.espero.yaade.server.utils.tokenCoroutineHandler
-import com.espero.yaade.server.utils.userCoroutineHandler
+import com.espero.yaade.server.utils.*
 import com.espero.yaade.services.RequestSender
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServer
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
@@ -26,8 +24,6 @@ import io.vertx.ext.web.sstore.LocalSessionStore
 import io.vertx.ext.web.sstore.SessionStore
 import io.vertx.kotlin.coroutines.CoroutineVerticle
 import io.vertx.kotlin.coroutines.coAwait
-import io.vertx.core.http.HttpServerOptions
-
 
 class Server(private val port: Int, private val daoManager: DaoManager) : CoroutineVerticle() {
 
@@ -62,6 +58,7 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val fileRoute = FileRoute(daoManager)
             val scriptRoute = ScriptRoute(daoManager, vertx)
             val accessTokenRoute = AccessTokenRoute(daoManager)
+            val websocketRoute = WebsocketRoute(vertx, daoManager)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
@@ -235,6 +232,25 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
 
             val mainRouter = Router.router(vertx)
             mainRouter.route("$BASE_PATH/*").subRouter(router)
+            mainRouter.route("$BASE_PATH/api/ws")
+                .authorizedCoroutineHandler(this) { ctx ->
+                    val user = ctx.user()
+                    ctx.request().toWebSocket {
+                        if (it.failed()) {
+                            log.error("Failed to create websocket", it.cause())
+                            return@toWebSocket
+                        }
+                        val ws = it.result()
+                        try {
+                            val userDb = daoManager.userDao.getById(user.principal().getLong("id"))
+                                ?: throw RuntimeException("User not found")
+                            websocketRoute.handle(ws, userDb)
+                        } catch (e: Throwable) {
+                            log.error("Error: ${e.message}")
+                            ws.reject()
+                        }
+                    }
+                }
 
             try {
                 authHandler.init(mainRouter, authConfig)
@@ -242,7 +258,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
                 log.error("Bad auth config: $e")
             }
 
-            val options: HttpServerOptions = HttpServerOptions().setMaxHeaderSize(YAADE_SERVER_MAX_HEADER_SIZE)
+            val options: HttpServerOptions =
+                HttpServerOptions().setMaxHeaderSize(YAADE_SERVER_MAX_HEADER_SIZE)
             server = vertx.createHttpServer(options)
                 .requestHandler(mainRouter)
                 .listen(port)

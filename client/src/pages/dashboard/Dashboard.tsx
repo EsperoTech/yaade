@@ -35,9 +35,19 @@ import ResponsePanel from '../../components/responsePanel';
 import ScriptPanel from '../../components/scriptPanel/ScriptPanel';
 import ScriptResultsPanel from '../../components/scriptResultsPanel';
 import Sidebar from '../../components/sidebar';
+import WebsocketPanel from '../../components/websocketPanel';
+import WebsocketHandler from '../../components/websocketPanel/WebsocketHandler';
+import WebsocketResponsePanel from '../../components/websocketResponsePanel/WebsocketResponsePanel';
 import { UserContext } from '../../context';
 import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
-import Request, { SidebarRequest } from '../../model/Request';
+import {
+  CurrentRestRequest,
+  CurrentWebsocketRequest,
+  RestRequest,
+  SidebarRequest,
+  WebsocketRequest,
+  WebsocketRequestData,
+} from '../../model/Request';
 import Script, { ScriptResult, SidebarScript } from '../../model/Script';
 import {
   CollectionsActionType,
@@ -52,6 +62,7 @@ import {
   currentCollectionReducer,
 } from '../../state/currentCollection';
 import {
+  CurrentRequestAction,
   CurrentRequestActionType,
   currentRequestReducer,
   defaultCurrentRequest,
@@ -60,12 +71,13 @@ import { CurrentScriptActionType, currentScriptReducer } from '../../state/curre
 import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
 import styles from './Dashboard.module.css';
 
-function mapRequestToSidebarRequest(r: Request): SidebarRequest {
+function mapRequestToSidebarRequest(r: RestRequest | WebsocketRequest): SidebarRequest {
   return {
     id: r.id,
     collectionId: r.collectionId,
     name: r.data.name ?? '',
-    method: r.data.method ?? '',
+    type: r.type,
+    method: 'method' in r.data ? r.data.method : undefined,
   };
 }
 
@@ -185,7 +197,7 @@ function Dashboard() {
           const r = findRequest(collections, loc.requestId);
           if (r) {
             const code = new URLSearchParams(window.location.search).get('code');
-            if (code) {
+            if (code && r.type === 'REST') {
               await getRequestAccessTokenFromCode(code, r);
             }
             dispatchCurrentRequest({
@@ -246,7 +258,7 @@ function Dashboard() {
     getCollections();
   }, []);
 
-  async function getRequestAccessTokenFromCode(code: string, request: Request) {
+  async function getRequestAccessTokenFromCode(code: string, request: RestRequest) {
     const oauthConfig = request.data.auth?.oauth2;
     if (!oauthConfig) {
       errorToast('Auth data not found for request.', toast);
@@ -455,7 +467,7 @@ function Dashboard() {
   );
 
   const updateRequest = useCallback(
-    (request: Request) =>
+    (request: RestRequest | WebsocketRequest) =>
       api
         .updateRequest(request)
         .then((res) => {
@@ -498,6 +510,17 @@ function Dashboard() {
         }),
     [toast],
   );
+
+  const saveRequest = useCallback(() => {
+    if (currentRequest?.isChanged) {
+      updateRequest(currentRequest);
+      dispatchCollections({
+        type: CollectionsActionType.PATCH_REQUEST_DATA,
+        id: currentRequest.id,
+        data: { ...currentRequest.data },
+      });
+    }
+  }, [currentRequest, updateRequest]);
 
   const selectRequest = useCallback(
     async (id: number) => {
@@ -705,8 +728,8 @@ function Dashboard() {
       try {
         const request = findRequest(collections, id);
         if (!request) return;
-        const newRequest = { ...request, data: { ...request.data, name: name } };
-        await api.updateRequest(newRequest);
+        request.data.name = name;
+        await api.updateRequest(request);
         dispatchCollections({
           type: CollectionsActionType.PATCH_REQUEST_DATA,
           id: id,
@@ -754,10 +777,18 @@ function Dashboard() {
       try {
         const request = findRequest(collections, id);
         if (!request) return;
-        const res = await api.createRequest(request.collectionId, {
-          ...request.data,
-          name: newName,
-        });
+        let res: any;
+        if (request.type === 'REST') {
+          res = await api.createRestRequest(request.collectionId, {
+            ...request.data,
+            name: newName,
+          });
+        } else if (request.type === 'WS') {
+          res = await api.createWebsocketRequest(request.collectionId, {
+            ...request.data,
+            name: newName,
+          });
+        }
         if (res.status !== 200) throw new Error();
         const newRequestData = await res.json();
         dispatchCollections({
@@ -860,7 +891,7 @@ function Dashboard() {
         errorToast('Could not take ownership of script', toast);
       }
     },
-    [toast],
+    [toast, user?.id],
   );
 
   const onRefreshResults = useCallback(async () => {
@@ -902,12 +933,12 @@ function Dashboard() {
       />
     );
   }
-  if (currentRequest) {
+  if (currentRequest && currentRequest.type === 'REST') {
     panel = (
       <Allotment vertical defaultSizes={[200, 100]} snap>
         <div className={styles.requestPanel}>
           <RequestSender
-            currentRequest={currentRequest}
+            currentRequest={currentRequest as CurrentRestRequest}
             dispatchCurrentRequest={dispatchCurrentRequest}
             collections={collections}
             dispatchCollections={dispatchCollections}
@@ -918,6 +949,31 @@ function Dashboard() {
         </div>
         <div className={styles.responsePanel}>
           <ResponsePanel response={currentRequest?.data?.response} />
+        </div>
+      </Allotment>
+    );
+  }
+  if (currentRequest && currentRequest.type === 'WS') {
+    panel = (
+      <Allotment vertical defaultSizes={[200, 100]} snap>
+        <div className={styles.requestPanel}>
+          <WebsocketHandler
+            currentRequest={currentRequest as CurrentWebsocketRequest}
+            dispatchCurrentRequest={dispatchCurrentRequest}
+            dispatchCollections={dispatchCollections}
+            collections={collections}
+            isExtInitialized={isExtInitialized}
+            extVersion={extVersion}
+            openExtModal={onOpen}
+          />
+        </div>
+        <div className={styles.responsePanel}>
+          {currentRequest.data.response && (
+            <WebsocketResponsePanel
+              response={currentRequest.data.response}
+              dispatchCurrentRequest={dispatchCurrentRequest}
+            />
+          )}
         </div>
       </Allotment>
     );

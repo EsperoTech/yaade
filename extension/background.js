@@ -1,5 +1,7 @@
 "use strict";
 
+const websockets = new Map();
+
 async function sendRequest(request, sendResponse, senderUrl) {
   try {
     const startTime = Date.now();
@@ -82,6 +84,106 @@ async function buildFormDataBody(body, senderUrl) {
   return formData;
 }
 
+function connectWebsocket(request, senderTabId, sendResponse) {
+  const wsId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  let ws;
+  try {
+    const headers = request.request.headers?.reduce((acc, el) => {
+      acc[el.key] = el.value;
+      return acc;
+    }, {}) ?? {};
+    ws = new WebSocket(request.request.data.uri, [], {
+      headers
+    });
+  } catch (err) {
+    console.error("error connecting to websocket", err);
+    sendResponse({ status: "error", err: err.message });
+    return;
+  }
+
+  const connectionTimeout = setTimeout(() => {
+    if (ws.readyState !== WebSocket.OPEN) {
+      ws.close();
+      console.error("websocket connection timeout", wsId);
+      sendResponse({ status: "error", err: "Connection timeout" });
+    }
+  }, 5000);
+
+  ws.onclose = () => {
+    if (websockets.has(wsId)) {
+      chrome.tabs.sendMessage(senderTabId, {
+        type: "ws-close",
+        result: {
+          status: "error",
+          err: "WebSocket closed unexpectedly",
+          wsId: wsId,
+        }
+      });
+      websockets.delete(wsId);
+      clearTimeout(connectionTimeout);
+    }
+  };
+  ws.onerror = (err) => {
+    chrome.tabs.sendMessage(senderTabId, {
+      type: "ws-error",
+      result: {
+        wsId: wsId,
+        err: err.message
+      }
+    });
+  };
+  ws.onopen = () => {
+    websockets.set(wsId, ws);
+    sendResponse({ status: "success", wsId, metaData: request.metaData });
+  };
+  ws.onmessage = (event) => {
+    let parsedData = event.data;
+    if (typeof event.data === 'object') {
+      parsedData = JSON.stringify(event.data);
+    }
+    chrome.tabs.sendMessage(senderTabId, {
+      type: "ws-read",
+      result: {
+        wsId: wsId,
+        message: parsedData,
+      }
+    });
+  };
+}
+
+function writeWebsocket(request, sendResponse) {
+  const ws = websockets.get(request.data.wsId);
+  if (!ws) {
+    sendResponse({ status: "error", err: "WebSocket not found", wsId: request.data.wsId, metaData: request.metaData });
+    return;
+  }
+  if (ws.readyState !== WebSocket.OPEN) {
+    sendResponse({ status: "error", err: "WebSocket is not open", wsId: request.data.wsId, metaData: request.metaData });
+    return;
+  }
+  try {
+    ws.send(request.data.message);
+    sendResponse({ status: "success", wsId: request.data.wsId, metaData: request.metaData });
+  } catch (err) {
+    sendResponse({ status: "error", err: err.message, wsId: request.data.wsId, metaData: request.metaData });
+  }
+}
+
+function disconnectWebsocket(request, sendResponse) {
+  const ws = websockets.get(request.wsId);
+  if (!ws) {
+    sendResponse({ status: "error", err: "WebSocket not found", wsId: request.wsId, metaData: request.metaData });
+    return;
+  }
+  try {
+    websockets.delete(request.wsId);
+    ws.close();
+    sendResponse({ status: "success", wsId: request.wsId, metaData: request.metaData });
+  } catch (err) {
+    sendResponse({ status: "error", err: err.message, wsId: request.wsId, metaData: request.metaData });
+  }
+}
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   chrome.storage.sync.get("host", ({ host }) => {
     let hostOrigin = ""
@@ -98,6 +200,12 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       } else if (request.type === "ping") {
         console.log("Connected:", host)
         sendResponse();
+      } else if (request.type === "ws-connect") {
+        connectWebsocket(request, sender.tab.id, sendResponse);
+      } else if (request.type === "ws-write") {
+        writeWebsocket(request, sendResponse);
+      } else if (request.type === "ws-disconnect") {
+        disconnectWebsocket(request, sendResponse);
       } else {
         console.log("bad request type", request.type);
       }

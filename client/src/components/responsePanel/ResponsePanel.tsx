@@ -16,7 +16,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import React from 'react';
 
 import KVRow from '../../model/KVRow';
-import Response from '../../model/Response';
+import { RestResponse } from '../../model/Response';
 import { cn, successToast } from '../../utils';
 import { json } from '../../utils/codemirror/lang-json';
 import KVEditor from '../kvEditor';
@@ -39,7 +39,7 @@ function getExtensions(contentType: string): Array<any> {
 }
 
 type ResponsePanelProps = {
-  response: Response | undefined;
+  response: RestResponse | undefined;
 };
 
 const getContentType = (headers: Array<KVRow>) =>
