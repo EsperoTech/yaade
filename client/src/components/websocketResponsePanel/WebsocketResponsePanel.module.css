@@ -1,17 +1,14 @@
 .container {
   height: 100%;
   max-width: 100%;
-  white-space: nowrap; /* Prevent text from wrapping to a new line */
-  overflow: hidden; /* Hide the overflowing text */
-  text-overflow: ellipsis;
   background: var(--chakra-colors-panelBg);
   padding: 1rem 1rem 0 1rem;
 }
 
 .logContainer--closed {
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .tabList {
