@@ -66,6 +66,9 @@ export default function WebsocketHandler({
       type: 'ws-connect',
       request,
     });
+    if (res.status === 'error') {
+      throw Error(res.err);
+    }
     return res.wsId;
   }
 
@@ -79,8 +82,12 @@ export default function WebsocketHandler({
             request,
           })
             .then((msg: any) => {
-              ws.current = websocket;
-              resolve(msg.wsId);
+              if (msg.status === 'error') {
+                reject(msg.err);
+              } else {
+                ws.current = websocket;
+                resolve(msg.wsId);
+              }
             })
             .catch(reject);
         };
@@ -102,9 +109,20 @@ export default function WebsocketHandler({
                 type: 'incoming',
               },
             });
+          } else if (msg.type === 'ws-error') {
+            ws.current?.close();
+            wsId.current = null;
+            setConnectionStatus('disconnected');
+            errorToast('WebSocket error: ' + msg.result.error, toast);
+          } else if (msg.type === 'ws-close') {
+            ws.current?.close();
+            wsId.current = null;
+            setConnectionStatus('disconnected');
+            errorToast('WebSocket closed unexpectedly', toast);
           }
         };
         websocket.onerror = (err) => {
+          ws.current?.close();
           reject(err);
         };
       } catch (err) {
@@ -273,33 +291,35 @@ export default function WebsocketHandler({
     }
   }
 
-  const handleRead = useCallback(
+  const handleExtensionMessage = useCallback(
     (event: MessageEvent) => {
-      if (
-        !event.data ||
-        event.data?.type !== 'ws-read' ||
-        event.data.result?.wsId !== wsId.current
-      ) {
+      if (!event.data || event.data.result?.wsId !== wsId.current) {
         return;
       }
-      dispatchCurrentRequest({
-        type: CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE,
-        message: {
-          message: event.data.result.message,
-          date: Date.now(),
-          type: 'incoming',
-        },
-      });
+      if (event.data.type === 'ws-read') {
+        dispatchCurrentRequest({
+          type: CurrentRequestActionType.ADD_WEBSOCKET_RESPONSE_MESSAGE,
+          message: {
+            message: event.data.result.message,
+            date: Date.now(),
+            type: 'incoming',
+          },
+        });
+      } else if (event.data.type === 'ws-close') {
+        setConnectionStatus('disconnected');
+        errorToast('WebSocket closed unexpectedly', toast);
+        wsId.current = null;
+      }
     },
-    [dispatchCurrentRequest],
+    [dispatchCurrentRequest, toast],
   );
 
   useEffect(() => {
-    window.addEventListener('message', handleRead);
+    window.addEventListener('message', handleExtensionMessage);
     return () => {
-      window.removeEventListener('message', handleRead);
+      window.removeEventListener('message', handleExtensionMessage);
     };
-  }, [handleRead]);
+  }, [handleExtensionMessage]);
 
   return (
     <WebsocketPanel
