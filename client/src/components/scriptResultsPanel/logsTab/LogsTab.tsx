@@ -59,7 +59,7 @@ const LogsTab = ({ logs }: LogsTabProps) => {
   return (
     <div className={cn(styles, 'container', [colorMode])}>
       <TableContainer overflow="hidden">
-        <Table size="sm" whiteSpace="normal">
+        <Table size="sm" whiteSpace="normal" width="100%" sx={{ tableLayout: 'fixed' }}>
           <Thead>
             <Tr>
               <Th width="25px" minWidth="25px" maxWidth="25px" p="5px"></Th>

@@ -186,13 +186,18 @@ function addWebsocketResponseMessage(
 ) {
   if (!state) return state;
   if (state.type !== 'WS') return state;
+  const newMessages = [message, ...(state.data.response?.messages ?? [])];
+  console.log('newMessages', newMessages.length);
+  if (newMessages.length > 100) {
+    newMessages.pop();
+  }
   return {
     ...state,
     data: {
       ...state.data,
       response: {
         ...state.data.response,
-        messages: [message, ...(state.data.response?.messages ?? [])],
+        messages: newMessages,
       },
     },
   };

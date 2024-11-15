@@ -104,13 +104,16 @@ function connectWebsocket(request, senderTabId, sendResponse) {
   const connectionTimeout = setTimeout(() => {
     if (ws.readyState !== WebSocket.OPEN) {
       ws.close();
+      websockets.delete(wsId);
       console.error("websocket connection timeout", wsId);
       sendResponse({ status: "error", err: "Connection timeout" });
     }
-  }, 5000);
+  }, 3000);
 
   ws.onclose = () => {
     if (websockets.has(wsId)) {
+      websockets.delete(wsId);
+      clearTimeout(connectionTimeout);
       chrome.tabs.sendMessage(senderTabId, {
         type: "ws-close",
         result: {
@@ -119,18 +122,12 @@ function connectWebsocket(request, senderTabId, sendResponse) {
           wsId: wsId,
         }
       });
-      websockets.delete(wsId);
-      clearTimeout(connectionTimeout);
     }
   };
-  ws.onerror = (err) => {
-    chrome.tabs.sendMessage(senderTabId, {
-      type: "ws-error",
-      result: {
-        wsId: wsId,
-        err: err.message
-      }
-    });
+  ws.onerror = (e) => {
+    ws.close();
+    clearTimeout(connectionTimeout);
+    sendResponse({ status: "error", err: "WebSocket error", wsId, metaData: request.metaData });
   };
   ws.onopen = () => {
     websockets.set(wsId, ws);

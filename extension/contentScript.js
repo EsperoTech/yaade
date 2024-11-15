@@ -24,6 +24,7 @@ window.addEventListener("message", function (event) {
       });
     } else if (event.data.type == "ws-connect") {
       chrome.runtime.sendMessage(event.data, function (result) {
+        console.log("ws-connect-result", result);
         window.postMessage({ type: "ws-connect-result", result }, "*");
       });
     } else if (event.data.type == "ws-disconnect") {
@@ -39,7 +40,10 @@ window.addEventListener("message", function (event) {
 });
 
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === 'ws-read') {
+  if (
+    message.type === "ws-read" ||
+    message.type === "ws-close"
+  ) {
     window.postMessage(message, "*");
   }
 });

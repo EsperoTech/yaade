@@ -10,6 +10,7 @@ import io.vertx.core.Vertx
 import io.vertx.core.http.ServerWebSocket
 import io.vertx.core.http.WebSocket
 import io.vertx.core.http.WebSocketConnectOptions
+import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonObject
 import java.net.URI
 import java.util.*
@@ -20,10 +21,12 @@ class WebsocketRoute(
     private val daoManager: DaoManager,
 ) {
 
+    private val log = LoggerFactory.getLogger(WebsocketRoute::class.java)
+
     private val websockets = ConcurrentHashMap<String, WebSocket>()
     private val secretInterpolator = SecretInterpolator(daoManager)
 
-    fun wsMessage(type: String, result: JsonObject): String {
+    private fun wsMessage(type: String, result: JsonObject): String {
         return JsonObject().put("type", type).put("result", result).encode()
     }
 
@@ -75,6 +78,17 @@ class WebsocketRoute(
                                     )
                                 )
                             }.onFailure {
+                                log.info("Failed to connect websocket: ${it.message}")
+                                ws.writeTextMessage(
+                                    wsMessage(
+                                        "ws-connect-result",
+                                        JsonObject()
+                                            .put("status", "error")
+                                            .put("err", "Websocket connection failed")
+                                            .put("metaData", data.getJsonObject("metaData"))
+                                    )
+                                )
+                                websockets.remove(wsId)
                                 ws.close()
                             }
 
@@ -167,9 +181,11 @@ class WebsocketRoute(
         else
             requestData
         val uri = URI(interpolated.getString("uri"))
+        val pathAndQuery = uri.rawPath + if (uri.rawQuery != null) "?" + uri.rawQuery else ""
+
         val options = WebSocketConnectOptions()
             .setHost(uri.host)
-            .setURI(uri.path)
+            .setURI(pathAndQuery)
         if (uri.scheme == "wss") {
             options.setSsl(true)
             if (uri.port == -1) {
