@@ -22,11 +22,11 @@ I was looking for a self-hosted Postman alternative so that API collections can 
 2. Multi-user: manage users and their permissions
 3. Persistent: even across container or server restarts
 4. Easy single-file data import / export
-5. Requests are executed on your machine so you can call localhost as well as remote servers
-6. Documentation: Annotate your requests and collections using markdown
-7. Scripts: Run scripts as cron jobs or via the API. Execute requests or run tests all in pure JavaScript
-8. Import collections from OpenAPI or Postman. Export to all different languages and frameworks.
-9. Most importantly: dark mode default
+5. Proxy requests through your browser or through the server
+6. REST and Websockets with Markdown documentation support
+8. Scripts: Run scripts as cron jobs or via the API. Execute requests or run tests all in pure JavaScript
+9. Import collections from OpenAPI or Postman. Export to all different languages and frameworks.
+10. Most importantly: dark mode default
 
 ## ⚡ Install
 
