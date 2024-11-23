@@ -296,17 +296,24 @@ function Dashboard() {
       }
       const body: any = await res.json();
 
+      const patchedOAuthConfig: any = {
+        accessToken: body.access_token,
+        refreshToken: body.refresh_token,
+        tokenType: body.token_type,
+        expiresIn: body.expires_in,
+      };
+
+      if (body.scope) {
+        patchedOAuthConfig.scope = body.scope;
+      }
+
       const newData = {
         ...request.data,
         auth: {
           ...request.data.auth,
           oauth2: {
             ...oauthConfig,
-            accessToken: body.access_token,
-            refreshToken: body.refresh_token,
-            tokenType: body.token_type,
-            expiresIn: body.expires_in,
-            scope: body.scope,
+            ...patchedOAuthConfig,
           },
         },
       };
