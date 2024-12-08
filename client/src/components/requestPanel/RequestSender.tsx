@@ -27,6 +27,7 @@ import {
   parseResponse,
   successToast,
 } from '../../utils';
+import getMergedEnvData from '../../utils/env';
 import interpolate from '../../utils/interpolate';
 import { executeRequestScript, executeResponseScript } from '../../utils/script';
 import { getSelectedEnv } from '../../utils/store';
@@ -160,16 +161,9 @@ function RequestSender({
     return (collections: Collection[], key: string): string => {
       if (!envName) return '';
 
-      const c = findCollection(collections, collectionId);
-      if (!c) return '';
+      const envData = getMergedEnvData(collections, collectionId, envName);
 
-      const envs = c.data?.envs;
-      if (!envs) return '';
-
-      const newEnv = envs[envName];
-      if (!newEnv) return '';
-
-      return newEnv.data[key] ?? '';
+      return envData?.[key] ?? '';
     };
   }
 
