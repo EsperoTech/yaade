@@ -61,19 +61,19 @@ type SingleRowEditorProps = {
   value: string;
   onChange: (content: string) => void;
   placeholder?: string;
-  selectedEnv?: any;
+  selectedEnvData?: Record<string, string>;
 };
 
 export default function SingleRowEditor({
   value,
   onChange,
   placeholder,
-  selectedEnv,
+  selectedEnvData,
 }: SingleRowEditorProps) {
   const { colorMode } = useColorMode();
   const extensions = [
     cursorTooltipBaseTheme,
-    wordHover(selectedEnv?.data),
+    wordHover(selectedEnvData),
     helpCursor,
     yaade(colorMode),
     singleLineExtension,

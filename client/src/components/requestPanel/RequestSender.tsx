@@ -30,7 +30,7 @@ import {
 import getMergedEnvData from '../../utils/env';
 import interpolate from '../../utils/interpolate';
 import { executeRequestScript, executeResponseScript } from '../../utils/script';
-import { getSelectedEnv } from '../../utils/store';
+import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import RequestPanel from './RequestPanel';
@@ -141,9 +141,11 @@ function RequestSender({
   const requestCollection = useMemo(() => {
     return findCollection(collections, currentRequest?.collectionId);
   }, [collections, currentRequest?.collectionId]);
-  const selectedEnv = useMemo(() => {
-    return requestCollection ? getSelectedEnv(requestCollection) : null;
-  }, [requestCollection]);
+  const selectedEnvData = useMemo(() => {
+    if (!requestCollection) return null;
+    const envName = getSelectedEnvs()[requestCollection.id];
+    return envName ? getMergedEnvData(collections, requestCollection.id, envName) : null;
+  }, [collections, requestCollection]);
 
   if (collections.length > 0 && newReqForm.collectionId === -1) {
     setNewReqForm({ ...newReqForm, collectionId: collections[0].id });
@@ -408,8 +410,8 @@ function RequestSender({
         if (!collection) {
           throw Error('Collection not found for id: ' + request.collectionId);
         }
-        const selectedEnv = collection.data?.envs?.[envName];
-        const selectedEnvData = selectedEnv?.data ?? {};
+        const selectedEnvData =
+          getMergedEnvData(collections, request.collectionId, envName) ?? {};
         const interpolateResult = interpolate(request, selectedEnvData);
         interpolatedRequest = interpolateResult.result;
       }
@@ -497,8 +499,8 @@ function RequestSender({
       if (!collection) {
         throw Error('Collection not found for id: ' + request.collectionId);
       }
-      const selectedEnv = collection.data?.envs?.[envName];
-      const selectedEnvData = selectedEnv?.data ?? {};
+      const selectedEnvData =
+        getMergedEnvData(collections, request.collectionId, envName) ?? {};
       const interpolateResult = interpolate(request, selectedEnvData);
       request = interpolateResult.result;
     }
@@ -541,7 +543,7 @@ function RequestSender({
           handleSaveRequestClick={handleSaveRequestClick}
           sendRequest={sendRequest}
           saveOnSend={saveOnSend}
-          selectedEnv={selectedEnv}
+          selectedEnvData={selectedEnvData ?? {}}
         />
       )}
       <BasicModal

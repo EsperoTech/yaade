@@ -27,7 +27,7 @@ type UriBarProps = {
   setMethod: any;
   isLoading: boolean;
   handleSendButtonClick: () => void;
-  env: any;
+  envData: Record<string, string>;
 };
 
 type MethodOptionProps = {
@@ -41,10 +41,12 @@ function UriBar({
   setMethod,
   isLoading,
   handleSendButtonClick,
-  env,
+  envData,
 }: UriBarProps) {
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
+
+  console.log('env', envData);
 
   const { setContainer } = useCodeMirror({
     container: ref.current,
@@ -54,7 +56,7 @@ function UriBar({
       colorMode === 'light' ? baseThemeLight : baseThemeDark,
       singleLineExtension,
       history(),
-      wordHover(env?.data),
+      wordHover(envData),
       helpCursor,
       cursorTooltipBaseTheme,
       drawSelection(),

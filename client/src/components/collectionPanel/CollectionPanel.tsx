@@ -12,10 +12,17 @@ import {
 import React from 'react';
 import { VscSave } from 'react-icons/vsc';
 
-import { CollectionSettings, CurrentCollection } from '../../model/Collection';
+import Collection, {
+  CollectionSettings,
+  CurrentCollection,
+} from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import { AuthData } from '../../model/Request';
-import { CollectionsAction, CollectionsActionType } from '../../state/collections';
+import {
+  CollectionsAction,
+  CollectionsActionType,
+  findCollection,
+} from '../../state/collections';
 import {
   CurrentCollectionAction,
   CurrentCollectionActionType,
@@ -33,6 +40,7 @@ import OverviewTab from './OverviewTab';
 
 interface CollectionPanelProps {
   currentCollection: CurrentCollection;
+  collections: Collection[];
   dispatchCurrentCollection: React.Dispatch<CurrentCollectionAction>;
   dispatchCollections: React.Dispatch<CollectionsAction>;
   tabIndex: number;
@@ -41,6 +49,7 @@ interface CollectionPanelProps {
 
 export default function CollectionPanel({
   currentCollection,
+  collections,
   dispatchCurrentCollection,
   dispatchCollections,
   tabIndex,
@@ -54,6 +63,11 @@ export default function CollectionPanel({
     currentCollection.data?.headers && currentCollection.data.headers.length !== 0
       ? currentCollection.data.headers
       : [{ key: '', value: '', isEnabled: true }];
+
+  const parentCollection = currentCollection.data?.parentId
+    ? findCollection(collections, currentCollection.data.parentId)
+    : undefined;
+  const parentEnvNames = Object.keys(parentCollection?.data?.envs ?? {});
 
   const handleSaveCollection = async () => {
     try {
@@ -190,6 +204,7 @@ export default function CollectionPanel({
               collectionId={currentCollection.id}
               envs={currentCollection.data.envs ?? {}}
               setEnvs={setEnvs}
+              parentEnvNames={parentEnvNames}
             />
           </TabPanel>
           <TabPanel>
@@ -199,7 +214,7 @@ export default function CollectionPanel({
               setKvs={setHeaders}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              env={selectedEnv}
+              envData={selectedEnv}
             />
           </TabPanel>
           <TabPanel h="100%">
@@ -207,7 +222,7 @@ export default function CollectionPanel({
               authData={currentCollection.data.auth}
               setAuthData={setAuthData}
               doSave={handleSaveCollection}
-              selectedEnv={selectedEnv}
+              selectedEnvData={selectedEnv}
             />
           </TabPanel>
           <TabPanel h="100%">

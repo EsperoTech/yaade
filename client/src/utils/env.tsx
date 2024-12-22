@@ -14,11 +14,7 @@ function getMergedEnvData(
   collections: Collection[],
   collectionId: number,
   envName?: string,
-):
-  | {
-      [key: string]: string;
-    }
-  | undefined {
+): Record<string, string> | undefined {
   if (!envName) return undefined;
   const collection = findCollection(collections, collectionId);
   if (!collection) return undefined;
@@ -30,14 +26,20 @@ function getMergedEnvData(
     [key: string]: string;
   } = {};
 
-  for (let i = tree.length - 1; i >= 0; i--) {
+  let currentEnvName = envName;
+  for (let i = 0; i < tree.length; i++) {
     const c = tree[i];
-    const env = c.data?.envs?.[envName];
-    if (!env) continue;
+    console.log('c', c);
+    const env = c.data?.envs?.[currentEnvName];
+    console.log('env', env);
+    if (!env) break;
     result = {
       ...result,
       ...env.data,
     };
+    if (!env.parentEnvName) break;
+    currentEnvName = env.parentEnvName;
+    console.log('currentEnvName', currentEnvName);
   }
 
   return result;

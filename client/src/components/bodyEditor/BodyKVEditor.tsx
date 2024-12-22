@@ -4,7 +4,7 @@ import KVEditor from '../kvEditor';
 type BodyKVEditorProps = {
   content: KVRow[];
   setContent: any;
-  selectedEnv: any;
+  selectedEnvData: Record<string, string>;
   contentType: string;
   isMultipart?: boolean;
 };
@@ -12,7 +12,7 @@ type BodyKVEditorProps = {
 function BodyKVEditor({
   content,
   setContent,
-  selectedEnv,
+  selectedEnvData,
   contentType,
   isMultipart,
 }: BodyKVEditorProps) {
@@ -24,7 +24,7 @@ function BodyKVEditor({
         setKvs={(kvs: KVRow[]) => setContent(kvs)}
         canDisableRows={true}
         hasEnvSupport={'BOTH'}
-        env={selectedEnv}
+        envData={selectedEnvData}
         isMultiPart={isMultipart}
       />
     </>

@@ -13,7 +13,7 @@ type BodyEditorProps = {
   formDataContent?: KVRow[];
   setContent: any;
   setFormDataContent: any;
-  selectedEnv: any;
+  selectedEnvData: Record<string, string>;
   contentType: string;
   setContentType: any;
   setContentTypeHeader: any;
@@ -24,7 +24,7 @@ function BodyEditor({
   formDataContent,
   setContent,
   setFormDataContent,
-  selectedEnv,
+  selectedEnvData,
   contentType,
   setContentType,
   setContentTypeHeader,
@@ -47,7 +47,7 @@ function BodyEditor({
         <BodyKVEditor
           content={formDataContent ?? []}
           setContent={setFormDataContent}
-          selectedEnv={selectedEnv}
+          selectedEnvData={selectedEnvData}
           contentType={contentType}
           isMultipart={false}
         />
@@ -58,7 +58,7 @@ function BodyEditor({
         <BodyKVEditor
           content={formDataContent ?? []}
           setContent={setFormDataContent}
-          selectedEnv={selectedEnv}
+          selectedEnvData={selectedEnvData}
           contentType={contentType}
           isMultipart={true}
         />
@@ -69,7 +69,7 @@ function BodyEditor({
         <BodyTextEditor
           content={content ?? ''}
           setContent={setContent}
-          selectedEnv={selectedEnv}
+          selectedEnvData={selectedEnvData}
           contentType={contentType}
         />
       );
