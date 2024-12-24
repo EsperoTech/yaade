@@ -323,7 +323,7 @@ function RequestPanel({
             />
           </TabPanel>
           <TabPanel>
-            <GenerateCodeTab request={currentRequest} env={selectedEnvData} />
+            <GenerateCodeTab request={currentRequest} selectedEnvData={selectedEnvData} />
           </TabPanel>
         </TabPanels>
       </Tabs>

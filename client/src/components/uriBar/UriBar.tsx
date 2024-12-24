@@ -46,8 +46,6 @@ function UriBar({
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
 
-  console.log('env', envData);
-
   const { setContainer } = useCodeMirror({
     container: ref.current,
     onChange: (value: string) => setUri(value),

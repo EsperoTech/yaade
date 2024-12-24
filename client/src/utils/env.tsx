@@ -29,9 +29,7 @@ function getMergedEnvData(
   let currentEnvName = envName;
   for (let i = 0; i < tree.length; i++) {
     const c = tree[i];
-    console.log('c', c);
     const env = c.data?.envs?.[currentEnvName];
-    console.log('env', env);
     if (!env) break;
     result = {
       ...result,
@@ -39,7 +37,6 @@ function getMergedEnvData(
     };
     if (!env.parentEnvName) break;
     currentEnvName = env.parentEnvName;
-    console.log('currentEnvName', currentEnvName);
   }
 
   return result;

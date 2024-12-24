@@ -9,7 +9,7 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import Collection, {
@@ -28,7 +28,8 @@ import {
   CurrentCollectionActionType,
 } from '../../state/currentCollection';
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
-import { getSelectedEnv } from '../../utils/store';
+import getMergedEnvData from '../../utils/env';
+import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import AuthTab from '../authTab';
 import Editor from '../editor';
@@ -57,7 +58,19 @@ export default function CollectionPanel({
 }: CollectionPanelProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const selectedEnv = currentCollection ? getSelectedEnv(currentCollection) : null;
+  const selectedEnvName = useMemo(() => {
+    const envName = getSelectedEnvs()[currentCollection.id];
+    return envName ? envName : null;
+  }, [currentCollection.id]);
+  const selectedEnv = useMemo(() => {
+    return currentCollection ? getSelectedEnv(currentCollection) : null;
+  }, [currentCollection]);
+  const selectedEnvData = useMemo(() => {
+    if (!currentCollection) return null;
+    return selectedEnvName
+      ? getMergedEnvData(collections, currentCollection.id, selectedEnvName)
+      : null;
+  }, [collections, currentCollection, selectedEnvName]);
 
   const headers =
     currentCollection.data?.headers && currentCollection.data.headers.length !== 0
@@ -214,7 +227,7 @@ export default function CollectionPanel({
               setKvs={setHeaders}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              envData={selectedEnv}
+              envData={selectedEnvData ?? {}}
             />
           </TabPanel>
           <TabPanel h="100%">
@@ -222,7 +235,7 @@ export default function CollectionPanel({
               authData={currentCollection.data.auth}
               setAuthData={setAuthData}
               doSave={handleSaveCollection}
-              selectedEnvData={selectedEnv}
+              selectedEnvData={selectedEnvData ?? {}}
             />
           </TabPanel>
           <TabPanel h="100%">
