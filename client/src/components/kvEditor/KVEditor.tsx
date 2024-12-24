@@ -13,7 +13,7 @@ type KVEditorProps = {
   readOnly?: boolean;
   canDisableRows?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
-  envData?: Record<string, string>;
+  selectedEnvData?: Record<string, string>;
   isMultiPart?: boolean;
 };
 
@@ -28,7 +28,7 @@ function KVEditor({
   readOnly,
   canDisableRows = false,
   hasEnvSupport,
-  envData,
+  selectedEnvData,
   isMultiPart,
 }: KVEditorProps) {
   // we copy the data so we can append an empty last row without
@@ -83,7 +83,7 @@ function KVEditor({
           isDeleteDisabled={!key && !file && !value ? true : readOnly}
           readOnly={readOnly}
           hasEnvSupport={hasEnvSupport}
-          envData={envData}
+          selectedEnvData={selectedEnvData}
           isMultipart={isMultiPart ?? false}
           type={type || 'kv'}
           file={file}

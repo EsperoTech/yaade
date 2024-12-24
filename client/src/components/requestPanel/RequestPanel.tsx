@@ -227,7 +227,7 @@ function RequestPanel({
           setMethod={setMethod}
           handleSendButtonClick={handleSendButtonClick}
           isLoading={currentRequest.isLoading}
-          envData={selectedEnvData}
+          selectedEnvData={selectedEnvData}
         />
         <IconButton
           aria-label="save-request-button"
@@ -277,7 +277,7 @@ function RequestPanel({
               setKvs={setParams}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              envData={selectedEnvData}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel>
@@ -287,7 +287,7 @@ function RequestPanel({
               setKvs={setHeaders}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              envData={selectedEnvData}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel h="100%">

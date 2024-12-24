@@ -66,10 +66,6 @@ export default function WebsocketHandler({
   const ws = useRef<WebSocket | null>(null);
   const toast = useToast();
 
-  console.log('selectedEnvName', selectedEnvName);
-  console.log('selectedEnv', selectedEnv);
-  console.log('selectedEnvData', selectedEnvData);
-
   useEffect(() => {
     return () => {
       ws.current?.close();

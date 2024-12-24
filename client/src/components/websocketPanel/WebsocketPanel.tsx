@@ -255,7 +255,7 @@ function WebsocketPanel({
               setKvs={setParams}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              envData={selectedEnvData}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel>
@@ -270,7 +270,7 @@ function WebsocketPanel({
               }
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              envData={selectedEnvData}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel h="calc(100% - 4rem)">

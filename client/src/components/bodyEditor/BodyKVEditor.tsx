@@ -24,7 +24,7 @@ function BodyKVEditor({
         setKvs={(kvs: KVRow[]) => setContent(kvs)}
         canDisableRows={true}
         hasEnvSupport={'BOTH'}
-        envData={selectedEnvData}
+        selectedEnvData={selectedEnvData}
         isMultiPart={isMultipart}
       />
     </>

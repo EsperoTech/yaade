@@ -131,7 +131,7 @@ type KVEditorRowProps = {
   isEnableDisabled?: boolean;
   readOnly?: boolean;
   hasEnvSupport: 'BOTH' | 'NONE' | 'VALUE_ONLY';
-  envData?: Record<string, string>;
+  selectedEnvData?: Record<string, string>;
   isMultipart: boolean;
   type: 'kv' | 'file';
   file?: KVRowFile;
@@ -151,7 +151,7 @@ function KVEditorRow({
   isEnableDisabled,
   readOnly,
   hasEnvSupport,
-  envData,
+  selectedEnvData,
   isMultipart,
   type,
   file,
@@ -168,7 +168,7 @@ function KVEditorRow({
   if (hasEnvSupport !== 'NONE') {
     const envExtensions = [];
     envExtensions.push(yaade(colorMode));
-    envExtensions.push(wordHover(envData));
+    envExtensions.push(wordHover(selectedEnvData));
     envExtensions.push(helpCursor);
     envExtensions.push(cursorTooltipBaseTheme);
     if (hasEnvSupport === 'BOTH') {

@@ -227,7 +227,7 @@ export default function CollectionPanel({
               setKvs={setHeaders}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              envData={selectedEnvData ?? {}}
+              selectedEnvData={selectedEnvData ?? {}}
             />
           </TabPanel>
           <TabPanel h="100%">
