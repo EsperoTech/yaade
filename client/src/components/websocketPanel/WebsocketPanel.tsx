@@ -33,7 +33,6 @@ import {
   CurrentRequestActionType,
 } from '../../state/currentRequest';
 import {
-  BASE_PATH,
   beautifyBody,
   cn,
   errorToast,
@@ -68,7 +67,7 @@ type WebsocketPanelProps = {
   onConnect: () => void;
   onWrite: (message: string) => void;
   onDisconnect: () => void;
-  selectedEnv: Environment | null;
+  selectedEnvData: Record<string, string>;
 };
 
 function WebsocketPanel({
@@ -79,7 +78,7 @@ function WebsocketPanel({
   onConnect,
   onWrite,
   onDisconnect,
-  selectedEnv,
+  selectedEnvData,
 }: WebsocketPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { colorMode } = useColorMode();
@@ -130,7 +129,7 @@ function WebsocketPanel({
       colorMode === 'light' ? baseThemeLight : baseThemeDark,
       singleLineExtension,
       history(),
-      wordHover(selectedEnv?.data),
+      wordHover(selectedEnvData),
       helpCursor,
       cursorTooltipBaseTheme,
       drawSelection(),
@@ -162,7 +161,6 @@ function WebsocketPanel({
   );
 
   function handleSendButtonClick() {
-    console.log('send', currentRequest.data.message);
     onWrite(currentRequest.data.message ?? '');
   }
 
@@ -257,7 +255,7 @@ function WebsocketPanel({
               setKvs={setParams}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              env={selectedEnv}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel>
@@ -272,7 +270,7 @@ function WebsocketPanel({
               }
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              env={selectedEnv}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel h="calc(100% - 4rem)">
@@ -313,7 +311,7 @@ function WebsocketPanel({
                   data: { message },
                 })
               }
-              selectedEnv={selectedEnv}
+              selectedEnvData={selectedEnvData}
               contentType={currentRequest.data.contentType ?? 'text/plain'}
             />
             <Button

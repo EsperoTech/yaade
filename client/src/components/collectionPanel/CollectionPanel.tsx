@@ -9,19 +9,27 @@ import {
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
-import { CollectionSettings, CurrentCollection } from '../../model/Collection';
+import Collection, {
+  CollectionSettings,
+  CurrentCollection,
+} from '../../model/Collection';
 import KVRow from '../../model/KVRow';
 import { AuthData } from '../../model/Request';
-import { CollectionsAction, CollectionsActionType } from '../../state/collections';
+import {
+  CollectionsAction,
+  CollectionsActionType,
+  findCollection,
+} from '../../state/collections';
 import {
   CurrentCollectionAction,
   CurrentCollectionActionType,
 } from '../../state/currentCollection';
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
-import { getSelectedEnv } from '../../utils/store';
+import getMergedEnvData from '../../utils/env';
+import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import AuthTab from '../authTab';
 import Editor from '../editor';
@@ -33,6 +41,7 @@ import OverviewTab from './OverviewTab';
 
 interface CollectionPanelProps {
   currentCollection: CurrentCollection;
+  collections: Collection[];
   dispatchCurrentCollection: React.Dispatch<CurrentCollectionAction>;
   dispatchCollections: React.Dispatch<CollectionsAction>;
   tabIndex: number;
@@ -41,6 +50,7 @@ interface CollectionPanelProps {
 
 export default function CollectionPanel({
   currentCollection,
+  collections,
   dispatchCurrentCollection,
   dispatchCollections,
   tabIndex,
@@ -48,12 +58,29 @@ export default function CollectionPanel({
 }: CollectionPanelProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const selectedEnv = currentCollection ? getSelectedEnv(currentCollection) : null;
+  const selectedEnvName = useMemo(() => {
+    const envName = getSelectedEnvs()[currentCollection.id];
+    return envName ? envName : null;
+  }, [currentCollection.id]);
+  const selectedEnv = useMemo(() => {
+    return currentCollection ? getSelectedEnv(currentCollection) : null;
+  }, [currentCollection]);
+  const selectedEnvData = useMemo(() => {
+    if (!currentCollection) return null;
+    return selectedEnvName
+      ? getMergedEnvData(collections, currentCollection.id, selectedEnvName)
+      : null;
+  }, [collections, currentCollection, selectedEnvName]);
 
   const headers =
     currentCollection.data?.headers && currentCollection.data.headers.length !== 0
       ? currentCollection.data.headers
       : [{ key: '', value: '', isEnabled: true }];
+
+  const parentCollection = currentCollection.data?.parentId
+    ? findCollection(collections, currentCollection.data.parentId)
+    : undefined;
+  const parentEnvNames = Object.keys(parentCollection?.data?.envs ?? {});
 
   const handleSaveCollection = async () => {
     try {
@@ -190,6 +217,7 @@ export default function CollectionPanel({
               collectionId={currentCollection.id}
               envs={currentCollection.data.envs ?? {}}
               setEnvs={setEnvs}
+              parentEnvNames={parentEnvNames}
             />
           </TabPanel>
           <TabPanel>
@@ -199,7 +227,7 @@ export default function CollectionPanel({
               setKvs={setHeaders}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              env={selectedEnv}
+              selectedEnvData={selectedEnvData ?? {}}
             />
           </TabPanel>
           <TabPanel h="100%">
@@ -207,7 +235,7 @@ export default function CollectionPanel({
               authData={currentCollection.data.auth}
               setAuthData={setAuthData}
               doSave={handleSaveCollection}
-              selectedEnv={selectedEnv}
+              selectedEnvData={selectedEnvData ?? {}}
             />
           </TabPanel>
           <TabPanel h="100%">

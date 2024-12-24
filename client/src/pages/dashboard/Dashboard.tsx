@@ -933,6 +933,7 @@ function Dashboard() {
     panel = (
       <CollectionPanel
         currentCollection={currentCollection}
+        collections={collections}
         dispatchCurrentCollection={dispatchCurrentCollection}
         dispatchCollections={dispatchCollections}
         tabIndex={collectionPanelTabIndex}

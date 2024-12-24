@@ -33,7 +33,7 @@ type RequestPanelProps = {
   sendRequest(request: RestRequest, envName?: string, n?: number): Promise<RestResponse>;
   saveOnSend: (request: RestRequest) => Promise<void>;
   handleSaveRequestClick: () => Promise<void>;
-  selectedEnv: Record<string, string>;
+  selectedEnvData: Record<string, string>;
 };
 
 function RequestPanel({
@@ -42,7 +42,7 @@ function RequestPanel({
   sendRequest,
   saveOnSend,
   handleSaveRequestClick,
-  selectedEnv,
+  selectedEnvData,
 }: RequestPanelProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
@@ -227,7 +227,7 @@ function RequestPanel({
           setMethod={setMethod}
           handleSendButtonClick={handleSendButtonClick}
           isLoading={currentRequest.isLoading}
-          env={selectedEnv}
+          selectedEnvData={selectedEnvData}
         />
         <IconButton
           aria-label="save-request-button"
@@ -277,7 +277,7 @@ function RequestPanel({
               setKvs={setParams}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              env={selectedEnv}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel>
@@ -287,7 +287,7 @@ function RequestPanel({
               setKvs={setHeaders}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              env={selectedEnv}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel h="100%">
@@ -296,7 +296,7 @@ function RequestPanel({
               formDataContent={currentRequest.data.formDataBody}
               setContent={setBody}
               setFormDataContent={setFormDataBody}
-              selectedEnv={selectedEnv}
+              selectedEnvData={selectedEnvData}
               contentType={contentType}
               setContentType={setContentType}
               setContentTypeHeader={setContentTypeHeader}
@@ -307,7 +307,7 @@ function RequestPanel({
               authData={currentRequest.data.auth}
               setAuthData={setAuthData}
               doSave={handleSaveRequestClick}
-              selectedEnv={selectedEnv}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel h="100%">
@@ -323,7 +323,7 @@ function RequestPanel({
             />
           </TabPanel>
           <TabPanel>
-            <GenerateCodeTab request={currentRequest} env={selectedEnv} />
+            <GenerateCodeTab request={currentRequest} selectedEnvData={selectedEnvData} />
           </TabPanel>
         </TabPanels>
       </Tabs>

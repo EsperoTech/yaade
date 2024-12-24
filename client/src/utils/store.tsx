@@ -10,12 +10,12 @@ function getSelectedEnvs(): Record<number, string> {
   return {};
 }
 
-function getSelectedEnv(collection: Collection | CurrentCollection): any {
+function getSelectedEnv(collection: Collection | CurrentCollection): Environment | null {
   const selectedEnvName = getSelectedEnvs()[collection.id];
 
-  if (!selectedEnvName) return {};
+  if (!selectedEnvName) return null;
 
-  return collection.data?.envs?.[selectedEnvName] ?? {};
+  return collection.data?.envs?.[selectedEnvName] ?? null;
 }
 
 function saveSelectedEnv(collectionId: number, name: string) {

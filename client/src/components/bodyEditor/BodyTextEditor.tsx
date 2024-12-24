@@ -20,21 +20,21 @@ const theme = EditorView.theme({
 type BodyTextEditorProps = {
   content: string;
   setContent: any;
-  selectedEnv: any;
+  selectedEnvData: Record<string, string>;
   contentType: string;
 };
 
 function BodyTextEditor({
   content,
   setContent,
-  selectedEnv,
+  selectedEnvData,
   contentType,
 }: BodyTextEditorProps) {
   const { colorMode } = useColorMode();
 
   const extensions = [
     cursorTooltipBaseTheme,
-    wordHover(selectedEnv?.data),
+    wordHover(selectedEnvData),
     helpCursor,
     theme,
   ];

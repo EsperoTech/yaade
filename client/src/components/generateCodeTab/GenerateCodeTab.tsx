@@ -133,10 +133,10 @@ const options: Array<StateTarget> = [
 
 type Props = {
   request: CurrentRestRequest;
-  env: any;
+  selectedEnvData: Record<string, string>;
 };
 
-const GenerateCodeTab: FC<Props> = ({ request, env }) => {
+const GenerateCodeTab: FC<Props> = ({ request, selectedEnvData }) => {
   const { colorMode } = useColorMode();
   const toast = useToast();
   const [target, setTarget] = useState<StateTarget>({
@@ -155,7 +155,12 @@ const GenerateCodeTab: FC<Props> = ({ request, env }) => {
 
   useEffect(() => {
     try {
-      const code = generateHTTPSnippet(request, target.target, target.client, env);
+      const code = generateHTTPSnippet(
+        request,
+        target.target,
+        target.client,
+        selectedEnvData,
+      );
       setSnippet(code);
     } catch (e: any) {
       toast({
@@ -166,7 +171,7 @@ const GenerateCodeTab: FC<Props> = ({ request, env }) => {
         isClosable: true,
       });
     }
-  }, [env, request, target, toast]);
+  }, [selectedEnvData, request, target, toast]);
 
   const { setContainer } = useCodeMirror({
     container: ref.current,

@@ -40,6 +40,7 @@ interface Environment {
   };
   proxy: string;
   secretKeys: string[];
+  parentEnvName?: string;
 }
 
 interface SidebarCollection {

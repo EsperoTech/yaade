@@ -17,9 +17,10 @@ import {
   CurrentRequestActionType,
 } from '../../state/currentRequest';
 import { errorToast, getMinorVersion } from '../../utils';
+import getMergedEnvData from '../../utils/env';
 import { sendMessageToExtension } from '../../utils/extension';
 import interpolate from '../../utils/interpolate';
-import { getSelectedEnv } from '../../utils/store';
+import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { sendMessageToWebsocket } from '../../utils/websocket';
 import WebsocketPanel from './WebsocketPanel';
 
@@ -49,9 +50,19 @@ export default function WebsocketHandler({
   const requestCollection = useMemo(() => {
     return findCollection(collections, currentRequest?.collectionId);
   }, [collections, currentRequest?.collectionId]);
+  const selectedEnvName = useMemo(() => {
+    const envName = getSelectedEnvs()[currentRequest.collectionId];
+    return envName ? envName : null;
+  }, [currentRequest.collectionId]);
   const selectedEnv = useMemo(() => {
     return requestCollection ? getSelectedEnv(requestCollection) : null;
   }, [requestCollection]);
+  const selectedEnvData = useMemo(() => {
+    if (!requestCollection) return null;
+    return selectedEnvName
+      ? getMergedEnvData(collections, requestCollection.id, selectedEnvName)
+      : null;
+  }, [collections, requestCollection, selectedEnvName]);
   const ws = useRef<WebSocket | null>(null);
   const toast = useToast();
 
@@ -131,6 +142,18 @@ export default function WebsocketHandler({
     });
   }
 
+  function getEnv(collectionId: number, envName?: string) {
+    if (!envName) return;
+
+    const c = findCollection(collections, collectionId);
+    if (!c) return;
+
+    const envs = c.data?.envs;
+    if (!envs) return;
+
+    return envs[envName];
+  }
+
   async function handleConnect() {
     try {
       setConnectionStatus('connecting');
@@ -140,12 +163,11 @@ export default function WebsocketHandler({
       }
       let newWsId: string | null = null;
       let interpolatedRequest = { ...currentRequest };
-      if (selectedEnv) {
+      if (selectedEnvData) {
         const collection = findCollection(collections, currentRequest.collectionId);
         if (!collection) {
           throw Error('Collection not found for id: ' + currentRequest.collectionId);
         }
-        const selectedEnvData = selectedEnv?.data ?? {};
         const interpolateResult = interpolate(currentRequest, selectedEnvData);
         interpolatedRequest = interpolateResult.result;
       }
@@ -330,7 +352,7 @@ export default function WebsocketHandler({
       onConnect={handleConnect}
       onWrite={handleWrite}
       onDisconnect={handleDisconnect}
-      selectedEnv={selectedEnv}
+      selectedEnvData={selectedEnvData ?? {}}
     />
   );
 }

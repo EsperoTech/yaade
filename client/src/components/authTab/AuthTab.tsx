@@ -30,14 +30,14 @@ type AuthTabProps = {
   authData?: AuthData;
   setAuthData: (authData: AuthData) => void;
   doSave: (preventSuccessToast?: boolean) => Promise<void>;
-  selectedEnv: any;
+  selectedEnvData: Record<string, string>;
 };
 
 export default function AuthTab({
   authData,
   setAuthData,
   doSave,
-  selectedEnv,
+  selectedEnvData,
 }: AuthTabProps) {
   const toast = useToast();
   const location = useLocation();
@@ -62,7 +62,7 @@ export default function AuthTab({
     // we need to save the request so that upon redirect we don't loose the data
     await doSave(true);
 
-    const interpolatedAuthData = interpolate(authData, selectedEnv?.data ?? {});
+    const interpolatedAuthData = interpolate(authData, selectedEnvData);
     if (interpolatedAuthData.errors.length > 0) {
       errorToast('Failed to interpolate auth data.', toast);
     }
@@ -203,7 +203,7 @@ export default function AuthTab({
         console.error('Unsupported grant type.');
         break;
     }
-  }, [authData, doSave, location, selectedEnv, setAuthData, toast]);
+  }, [authData, doSave, location, selectedEnvData, setAuthData, toast]);
 
   const patch = useCallback(
     (data: AuthData) => {
@@ -235,14 +235,14 @@ export default function AuthTab({
                 value={authData?.basic?.username || ''}
                 onChange={(e) => patchBasic({ username: e })}
                 placeholder="username"
-                selectedEnv={selectedEnv}
+                selectedEnvData={selectedEnvData}
               />
               <Text fontSize="sm">Password</Text>
               <SingleRowEditor
                 value={authData?.basic?.password || ''}
                 onChange={(e) => patchBasic({ password: e })}
                 placeholder="password"
-                selectedEnv={selectedEnv}
+                selectedEnvData={selectedEnvData}
               />
             </div>
           </>
@@ -257,28 +257,28 @@ export default function AuthTab({
                   value={authData?.oauth2?.authUrl || ''}
                   onChange={(e) => patchOAuth2({ authUrl: e })}
                   placeholder="https://example.com/oauth2/auth"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Token URL</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.tokenUrl || ''}
                   onChange={(e) => patchOAuth2({ tokenUrl: e })}
                   placeholder="https://example.com/oauth2/token"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Client ID</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.clientId || ''}
                   onChange={(e) => patchOAuth2({ clientId: e })}
                   placeholder="client-id"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Client Secret</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.clientSecret || ''}
                   onChange={(e) => patchOAuth2({ clientSecret: e })}
                   placeholder="client-secret"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
               </>
             );
@@ -291,21 +291,21 @@ export default function AuthTab({
                   value={authData?.oauth2?.tokenUrl || ''}
                   onChange={(e) => patchOAuth2({ tokenUrl: e })}
                   placeholder="https://example.com/oauth2/token"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Client ID</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.clientId || ''}
                   onChange={(e) => patchOAuth2({ clientId: e })}
                   placeholder="client-id"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Client Secret</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.clientSecret || ''}
                   onChange={(e) => patchOAuth2({ clientSecret: e })}
                   placeholder="client-secret"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
               </>
             );
@@ -318,35 +318,35 @@ export default function AuthTab({
                   value={authData?.oauth2?.tokenUrl || ''}
                   onChange={(e) => patchOAuth2({ tokenUrl: e })}
                   placeholder="https://example.com/oauth2/token"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Client ID</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.clientId || ''}
                   onChange={(e) => patchOAuth2({ clientId: e })}
                   placeholder="client-id"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Client Secret</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.clientSecret || ''}
                   onChange={(e) => patchOAuth2({ clientSecret: e })}
                   placeholder="client-secret"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Username</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.username || ''}
                   onChange={(e) => patchOAuth2({ username: e })}
                   placeholder="username"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
                 <Text fontSize="sm">Password</Text>
                 <SingleRowEditor
                   value={authData?.oauth2?.password || ''}
                   onChange={(e) => patchOAuth2({ password: e })}
                   placeholder="password"
-                  selectedEnv={selectedEnv}
+                  selectedEnvData={selectedEnvData}
                 />
               </>
             );
@@ -405,7 +405,7 @@ export default function AuthTab({
                 value={authData?.oauth2?.scope || ''}
                 onChange={(e) => patchOAuth2({ scope: e })}
                 placeholder="read:all"
-                selectedEnv={selectedEnv}
+                selectedEnvData={selectedEnvData}
               />
             </div>
             <Button
@@ -423,7 +423,7 @@ export default function AuthTab({
       default:
         return null;
     }
-  }, [authData, generateToken, onCopy, patch, selectedEnv, toast]);
+  }, [authData, generateToken, onCopy, patch, selectedEnvData, toast]);
 
   const tooltip = useMemo(() => {
     switch (authData?.type) {
