@@ -69,18 +69,20 @@ interface AuthData {
     username?: string;
     password?: string;
   };
-  oauth2?: {
-    grantType?: 'authorization_code' | 'client_credentials' | 'password' | 'implicit';
-    accessToken?: string;
-    refreshToken?: string;
-    authUrl?: string;
-    tokenUrl?: string;
-    clientId?: string;
-    clientSecret?: string;
-    username?: string;
-    password?: string;
-    scope?: string;
-  };
+  oauth2?: OAuth2Config;
+}
+
+interface OAuth2Config {
+  grantType?: 'authorization_code' | 'client_credentials' | 'password' | 'implicit';
+  accessToken?: string;
+  refreshToken?: string;
+  authUrl?: string;
+  tokenUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+  username?: string;
+  password?: string;
+  scope?: string;
 }
 
 interface SidebarRequest {
@@ -95,6 +97,7 @@ export type {
   AuthData,
   CurrentRestRequest,
   CurrentWebsocketRequest,
+  OAuth2Config,
   Request,
   RestRequest,
   RestRequestData,
