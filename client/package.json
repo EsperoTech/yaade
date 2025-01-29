@@ -33,7 +33,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react": "^7.29.2",
     "framer-motion": "^6.2.8",
-    "httpsnippet": "^3.0.1",
+    "httpsnippet": "^3.0.7",
     "json-beautify": "^1.1.1",
     "jsonpath": "^1.1.1",
     "luxon": "^3.3.0",
