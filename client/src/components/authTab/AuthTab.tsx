@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import api from '../../api';
-import { AuthData } from '../../model/Request';
+import { AuthData, OAuth2Config } from '../../model/Request';
 import { errorToast, parseLocation, successToast } from '../../utils';
 import interpolate from '../../utils/interpolate';
 import SingleRowEditor from '../SingleRowEditor';
@@ -137,13 +137,20 @@ export default function AuthTab({
           }
           const body: any = await res.json();
 
+          const patchedOAuthConfig: OAuth2Config = {
+            accessToken: body.access_token,
+            refreshToken: body.refresh_token,
+          };
+
+          if (body.scope) {
+            patchedOAuthConfig.scope = body.scope;
+          }
+
           setAuthData({
             ...authData,
             oauth2: {
               ...authData.oauth2,
-              accessToken: body.access_token,
-              refreshToken: body.refresh_token,
-              scope: body.scope,
+              ...patchedOAuthConfig,
             },
           });
           successToast('Token was successfully generated.', toast);
