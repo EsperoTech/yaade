@@ -31,8 +31,9 @@ dependencies {
     implementation("io.vertx:vertx-web-validation")
     implementation("io.vertx:vertx-auth-oauth2")
     implementation("io.vertx:vertx-web-client")
-
+    
     implementation("com.h2database:h2:1.4.200")
+    implementation("org.xerial:sqlite-jdbc:3.47.2.0")
     implementation("com.zaxxer:HikariCP:5.0.1")
     implementation("com.j256.ormlite:ormlite-core:4.48")
     implementation("com.j256.ormlite:ormlite-jdbc:4.48")
