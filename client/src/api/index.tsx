@@ -220,13 +220,20 @@ const takeScriptOwnership = (id: number): Promise<Response> =>
     method: 'POST',
   });
 
-const exchangeOAuthToken = (tokenUrl: string, data: string): Promise<Response> =>
+const exchangeOAuthToken = (
+  tokenUrl: string,
+  data: string,
+  envName?: string,
+  collectionId?: number,
+): Promise<Response> =>
   fetch(BASE_PATH + 'api/oauth2/token', {
     method: 'POST',
     headers: DEFAULT_HEADERS,
     body: JSON.stringify({
       tokenUrl,
       data,
+      envName,
+      collectionId,
     }),
   });
 

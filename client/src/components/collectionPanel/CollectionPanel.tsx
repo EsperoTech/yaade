@@ -236,6 +236,8 @@ export default function CollectionPanel({
               setAuthData={setAuthData}
               doSave={handleSaveCollection}
               selectedEnvData={selectedEnvData ?? {}}
+              selectedEnvName={selectedEnvName ?? ''}
+              selectedCollectionId={currentCollection.id}
             />
           </TabPanel>
           <TabPanel h="100%">

@@ -146,6 +146,10 @@ function RequestSender({
     const envName = getSelectedEnvs()[requestCollection.id];
     return envName ? getMergedEnvData(collections, requestCollection.id, envName) : null;
   }, [collections, requestCollection]);
+  const selectedEnvName = useMemo(() => {
+    if (!requestCollection) return null;
+    return getSelectedEnvs()[requestCollection.id];
+  }, [requestCollection]);
 
   if (collections.length > 0 && newReqForm.collectionId === -1) {
     setNewReqForm({ ...newReqForm, collectionId: collections[0].id });
@@ -544,6 +548,7 @@ function RequestSender({
           sendRequest={sendRequest}
           saveOnSend={saveOnSend}
           selectedEnvData={selectedEnvData ?? {}}
+          selectedEnvName={selectedEnvName ?? ''}
         />
       )}
       <BasicModal
