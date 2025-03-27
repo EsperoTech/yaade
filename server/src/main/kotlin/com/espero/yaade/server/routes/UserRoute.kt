@@ -71,6 +71,20 @@ class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
         )
         val envName = body.getString("envName")
         val collectionId = body.getLong("collectionId")
+            ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No collectionId provided")
+        val collection = daoManager.collectionDao.getById(collectionId)
+            ?: throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "No collection found for id: $collectionId"
+            )
+        val userId = ctx.user().principal().getLong("id")
+        val user = daoManager.userDao.getById(userId)
+            ?: throw ServerError(HttpResponseStatus.FORBIDDEN.code(), "User is not logged in")
+        if (!collection.canRead(user))
+            throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "No collection found for id: $collectionId"
+            )
         val decoder = QueryStringDecoder("?$data", false)
         val params = MultiMap.caseInsensitiveMultiMap()
         decoder.parameters().forEach { (key: String?, values: List<String?>?) ->

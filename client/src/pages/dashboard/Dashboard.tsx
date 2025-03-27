@@ -267,14 +267,20 @@ function Dashboard() {
     code: string,
     oauthConfig: OAuth2Config,
     redirectUri: string,
-    envName?: string,
-    collectionId?: number,
+    collectionId: number,
+    fetchedCollections: Collection[],
   ): Promise<OAuth2Config> {
     // NOTE: set a default for backwards compatibility
     if (!oauthConfig.grantType) {
       oauthConfig.grantType = 'authorization_code';
     }
-    const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
+    const envName = getSelectedEnvs()[collectionId];
+    const selectedEnvData = getMergedEnvData(fetchedCollections, collectionId, envName);
+    const interpolationResult = interpolate(oauthConfig, selectedEnvData ?? {});
+    if (interpolationResult.errors.length > 0) {
+      errorToast('Failed to interpolate auth data.', toast);
+    }
+    const { tokenUrl, clientId, clientSecret, grantType } = interpolationResult.result;
 
     if (!tokenUrl || !clientId || !grantType) {
       throw new Error('Required oauth2 parameters are missing.');
@@ -327,23 +333,12 @@ function Dashboard() {
     let redirectUri = `${url.protocol}//${url.host}/#/${request.collectionId}/${request.id}`;
 
     try {
-      const envName = getSelectedEnvs()[request.collectionId];
-      const selectedEnvData = getMergedEnvData(
-        fetchedCollections,
-        request.collectionId,
-        envName,
-      );
-      const interpolationResult = interpolate(oauthConfig, selectedEnvData ?? {});
-      if (interpolationResult.errors.length > 0) {
-        errorToast('Failed to interpolate auth data.', toast);
-      }
-      const interpolatedOAuthConfig = interpolationResult.result;
       const patchedOAuthConfig = await getTokenFromCode(
         code,
-        interpolatedOAuthConfig,
+        oauthConfig,
         redirectUri,
-        envName,
         request.collectionId,
+        fetchedCollections,
       );
       const newData = {
         ...request.data,
@@ -390,23 +385,12 @@ function Dashboard() {
     let redirectUri = `${url.protocol}//${url.host}/#/${collection.id}`;
 
     try {
-      const envName = getSelectedEnvs()[collection.id];
-      const selectedEnvData = getMergedEnvData(
-        fetchedCollections,
-        collection.id,
-        envName,
-      );
-      const interpolationResult = interpolate(oauthConfig, selectedEnvData ?? {});
-      if (interpolationResult.errors.length > 0) {
-        errorToast('Failed to interpolate auth data.', toast);
-      }
-      const interpolatedOAuthConfig = interpolationResult.result;
       const patchedOAuthConfig = await getTokenFromCode(
         code,
-        interpolatedOAuthConfig,
+        oauthConfig,
         redirectUri,
-        envName,
         collection.id,
+        fetchedCollections,
       );
       const newData = {
         ...collection.data,
