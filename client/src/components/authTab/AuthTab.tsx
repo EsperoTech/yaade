@@ -45,8 +45,6 @@ export default function AuthTab({
 }: AuthTabProps) {
   const toast = useToast();
   const location = useLocation();
-  console.log('selectedEnvName', selectedEnvName);
-  console.log('selectedCollectionId', selectedCollectionId);
   useEffect(() => {
     if (!authData) {
       setAuthData(DEFAULT_AUTH_DATA);
