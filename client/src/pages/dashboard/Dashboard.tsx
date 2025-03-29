@@ -27,7 +27,6 @@ import { useEventListener } from 'usehooks-ts';
 
 import api from '../../api';
 import BasicModal from '../../components/basicModal';
-import CmdPalette from '../../components/cmdPalette';
 import CollectionPanel from '../../components/collectionPanel';
 import Header from '../../components/header';
 import RequestSender from '../../components/requestPanel/RequestSender';
@@ -35,20 +34,17 @@ import ResponsePanel from '../../components/responsePanel';
 import ScriptPanel from '../../components/scriptPanel/ScriptPanel';
 import ScriptResultsPanel from '../../components/scriptResultsPanel';
 import Sidebar from '../../components/sidebar';
-import WebsocketPanel from '../../components/websocketPanel';
 import WebsocketHandler from '../../components/websocketPanel/WebsocketHandler';
 import WebsocketResponsePanel from '../../components/websocketResponsePanel/WebsocketResponsePanel';
 import { UserContext } from '../../context';
 import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
 import {
-  AuthData,
   CurrentRestRequest,
   CurrentWebsocketRequest,
   OAuth2Config,
   RestRequest,
   SidebarRequest,
   WebsocketRequest,
-  WebsocketRequestData,
 } from '../../model/Request';
 import Script, { ScriptResult, SidebarScript } from '../../model/Script';
 import {
@@ -64,7 +60,6 @@ import {
   currentCollectionReducer,
 } from '../../state/currentCollection';
 import {
-  CurrentRequestAction,
   CurrentRequestActionType,
   currentRequestReducer,
   defaultCurrentRequest,
@@ -298,8 +293,8 @@ function Dashboard() {
     const res = await api.exchangeOAuthToken(
       tokenUrl,
       data.toString(),
-      envName,
       collectionId,
+      envName,
     );
     if (!res.ok) {
       throw new Error('Failed to exchange code for token');

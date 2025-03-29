@@ -223,8 +223,8 @@ const takeScriptOwnership = (id: number): Promise<Response> =>
 const exchangeOAuthToken = (
   tokenUrl: string,
   data: string,
+  collectionId: number,
   envName?: string,
-  collectionId?: number,
 ): Promise<Response> =>
   fetch(BASE_PATH + 'api/oauth2/token', {
     method: 'POST',
@@ -232,8 +232,8 @@ const exchangeOAuthToken = (
     body: JSON.stringify({
       tokenUrl,
       data,
-      envName,
       collectionId,
+      envName,
     }),
   });
 
