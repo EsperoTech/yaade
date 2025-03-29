@@ -34,6 +34,7 @@ type RequestPanelProps = {
   saveOnSend: (request: RestRequest) => Promise<void>;
   handleSaveRequestClick: () => Promise<void>;
   selectedEnvData: Record<string, string>;
+  selectedEnvName?: string;
 };
 
 function RequestPanel({
@@ -43,6 +44,7 @@ function RequestPanel({
   saveOnSend,
   handleSaveRequestClick,
   selectedEnvData,
+  selectedEnvName,
 }: RequestPanelProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
@@ -308,6 +310,8 @@ function RequestPanel({
               setAuthData={setAuthData}
               doSave={handleSaveRequestClick}
               selectedEnvData={selectedEnvData}
+              selectedEnvName={selectedEnvName}
+              selectedCollectionId={currentRequest.collectionId}
             />
           </TabPanel>
           <TabPanel h="100%">

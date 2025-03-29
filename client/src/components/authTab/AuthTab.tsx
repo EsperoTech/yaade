@@ -31,6 +31,8 @@ type AuthTabProps = {
   setAuthData: (authData: AuthData) => void;
   doSave: (preventSuccessToast?: boolean) => Promise<void>;
   selectedEnvData: Record<string, string>;
+  selectedEnvName?: string;
+  selectedCollectionId: number;
 };
 
 export default function AuthTab({
@@ -38,6 +40,8 @@ export default function AuthTab({
   setAuthData,
   doSave,
   selectedEnvData,
+  selectedEnvName,
+  selectedCollectionId,
 }: AuthTabProps) {
   const toast = useToast();
   const location = useLocation();
@@ -131,6 +135,8 @@ export default function AuthTab({
           const res = await api.exchangeOAuthToken(
             tokenUrl,
             clientCredentialsBody.toString(),
+            selectedCollectionId,
+            selectedEnvName,
           );
           if (!res.ok) {
             throw new Error('Failed to exchange code for token');
@@ -181,6 +187,8 @@ export default function AuthTab({
           const res = await api.exchangeOAuthToken(
             tokenUrl,
             clientCredentialsBody.toString(),
+            selectedCollectionId,
+            selectedEnvName,
           );
           if (!res.ok) {
             throw new Error('Failed to exchange code for token');

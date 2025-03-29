@@ -27,7 +27,6 @@ import { useEventListener } from 'usehooks-ts';
 
 import api from '../../api';
 import BasicModal from '../../components/basicModal';
-import CmdPalette from '../../components/cmdPalette';
 import CollectionPanel from '../../components/collectionPanel';
 import Header from '../../components/header';
 import RequestSender from '../../components/requestPanel/RequestSender';
@@ -35,20 +34,17 @@ import ResponsePanel from '../../components/responsePanel';
 import ScriptPanel from '../../components/scriptPanel/ScriptPanel';
 import ScriptResultsPanel from '../../components/scriptResultsPanel';
 import Sidebar from '../../components/sidebar';
-import WebsocketPanel from '../../components/websocketPanel';
 import WebsocketHandler from '../../components/websocketPanel/WebsocketHandler';
 import WebsocketResponsePanel from '../../components/websocketResponsePanel/WebsocketResponsePanel';
 import { UserContext } from '../../context';
 import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
 import {
-  AuthData,
   CurrentRestRequest,
   CurrentWebsocketRequest,
   OAuth2Config,
   RestRequest,
   SidebarRequest,
   WebsocketRequest,
-  WebsocketRequestData,
 } from '../../model/Request';
 import Script, { ScriptResult, SidebarScript } from '../../model/Script';
 import {
@@ -64,13 +60,15 @@ import {
   currentCollectionReducer,
 } from '../../state/currentCollection';
 import {
-  CurrentRequestAction,
   CurrentRequestActionType,
   currentRequestReducer,
   defaultCurrentRequest,
 } from '../../state/currentRequest';
 import { CurrentScriptActionType, currentScriptReducer } from '../../state/currentScript';
 import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
+import getMergedEnvData from '../../utils/env';
+import interpolate from '../../utils/interpolate';
+import { getSelectedEnvs } from '../../utils/store';
 import styles from './Dashboard.module.css';
 
 function mapRequestToSidebarRequest(r: RestRequest | WebsocketRequest): SidebarRequest {
@@ -210,7 +208,7 @@ function Dashboard() {
             });
             const code = new URLSearchParams(window.location.search).get('code');
             if (code && r.type === 'REST') {
-              await getRequestAccessTokenFromCode(code, r);
+              await getRequestAccessTokenFromCode(code, r, collections);
             }
           }
           openCollectionTree(collections, loc.collectionId);
@@ -244,7 +242,7 @@ function Dashboard() {
             });
             const code = new URLSearchParams(window.location.search).get('code');
             if (code) {
-              await getCollectionAccessTokenFromCode(code, c);
+              await getCollectionAccessTokenFromCode(code, c, collections);
             }
           }
           openCollectionTree(collections, loc.collectionId);
@@ -264,12 +262,20 @@ function Dashboard() {
     code: string,
     oauthConfig: OAuth2Config,
     redirectUri: string,
+    collectionId: number,
+    fetchedCollections: Collection[],
   ): Promise<OAuth2Config> {
     // NOTE: set a default for backwards compatibility
     if (!oauthConfig.grantType) {
       oauthConfig.grantType = 'authorization_code';
     }
-    const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
+    const envName = getSelectedEnvs()[collectionId];
+    const selectedEnvData = getMergedEnvData(fetchedCollections, collectionId, envName);
+    const interpolationResult = interpolate(oauthConfig, selectedEnvData ?? {});
+    if (interpolationResult.errors.length > 0) {
+      errorToast('Failed to interpolate auth data.', toast);
+    }
+    const { tokenUrl, clientId, clientSecret, grantType } = interpolationResult.result;
 
     if (!tokenUrl || !clientId || !grantType) {
       throw new Error('Required oauth2 parameters are missing.');
@@ -284,7 +290,12 @@ function Dashboard() {
     data.append('redirect_uri', redirectUri);
     data.append('grant_type', grantType);
 
-    const res = await api.exchangeOAuthToken(tokenUrl, data.toString());
+    const res = await api.exchangeOAuthToken(
+      tokenUrl,
+      data.toString(),
+      collectionId,
+      envName,
+    );
     if (!res.ok) {
       throw new Error('Failed to exchange code for token');
     }
@@ -302,7 +313,11 @@ function Dashboard() {
     return { ...oauthConfig, ...patchedOAuthConfig };
   }
 
-  async function getRequestAccessTokenFromCode(code: string, request: RestRequest) {
+  async function getRequestAccessTokenFromCode(
+    code: string,
+    request: RestRequest,
+    fetchedCollections: Collection[], // NOTE: we need to pass collections because they are not set yet in the state
+  ) {
     const oauthConfig = request.data.auth?.oauth2;
     if (!oauthConfig) {
       errorToast('Auth data not found for request.', toast);
@@ -313,7 +328,13 @@ function Dashboard() {
     let redirectUri = `${url.protocol}//${url.host}/#/${request.collectionId}/${request.id}`;
 
     try {
-      const patchedOAuthConfig = await getTokenFromCode(code, oauthConfig, redirectUri);
+      const patchedOAuthConfig = await getTokenFromCode(
+        code,
+        oauthConfig,
+        redirectUri,
+        request.collectionId,
+        fetchedCollections,
+      );
       const newData = {
         ...request.data,
         auth: {
@@ -344,7 +365,11 @@ function Dashboard() {
     }
   }
 
-  async function getCollectionAccessTokenFromCode(code: string, collection: Collection) {
+  async function getCollectionAccessTokenFromCode(
+    code: string,
+    collection: Collection,
+    fetchedCollections: Collection[], // NOTE: we need to pass collections because they are not set yet in the state
+  ) {
     const oauthConfig = collection.data.auth?.oauth2;
     if (!oauthConfig) {
       errorToast('Auth data not found for collection.', toast);
@@ -355,7 +380,13 @@ function Dashboard() {
     let redirectUri = `${url.protocol}//${url.host}/#/${collection.id}`;
 
     try {
-      const patchedOAuthConfig = await getTokenFromCode(code, oauthConfig, redirectUri);
+      const patchedOAuthConfig = await getTokenFromCode(
+        code,
+        oauthConfig,
+        redirectUri,
+        collection.id,
+        fetchedCollections,
+      );
       const newData = {
         ...collection.data,
         auth: {

@@ -2,6 +2,7 @@ package com.espero.yaade.server.routes
 
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.server.errors.ServerError
+import com.espero.yaade.services.SecretInterpolator
 import com.password4j.Password
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.QueryStringDecoder
@@ -13,6 +14,8 @@ import io.vertx.ext.web.client.WebClient
 import io.vertx.kotlin.coroutines.coAwait
 
 class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
+
+    private val secretInterpolator = SecretInterpolator(daoManager)
 
     suspend fun getCurrentUser(ctx: RoutingContext) {
         val user = ctx.user()
@@ -66,12 +69,37 @@ class UserRoute(private val daoManager: DaoManager, private val vertx: Vertx) {
             HttpResponseStatus.BAD_REQUEST.code(),
             "No code provided"
         )
+        val envName = body.getString("envName")
+        val collectionId = body.getLong("collectionId")
+            ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No collectionId provided")
+        val collection = daoManager.collectionDao.getById(collectionId)
+            ?: throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "No collection found for id: $collectionId"
+            )
+        val userId = ctx.user().principal().getLong("id")
+        val user = daoManager.userDao.getById(userId)
+            ?: throw ServerError(HttpResponseStatus.FORBIDDEN.code(), "User is not logged in")
+        if (!collection.canRead(user))
+            throw ServerError(
+                HttpResponseStatus.NOT_FOUND.code(),
+                "No collection found for id: $collectionId"
+            )
         val decoder = QueryStringDecoder("?$data", false)
         val params = MultiMap.caseInsensitiveMultiMap()
         decoder.parameters().forEach { (key: String?, values: List<String?>?) ->
+            val jsonData = JsonObject().put(key, values)
+            val interpolatedJsonValues = if (envName != null)
+                secretInterpolator.interpolate(jsonData, collectionId, envName)
+            else
+                jsonData
+            val vv = mutableListOf<String>()
+            for (value in interpolatedJsonValues.getJsonArray(key)) {
+                vv.add(value as String)
+            }
             params.add(
                 key,
-                values
+                vv
             )
         }
 
