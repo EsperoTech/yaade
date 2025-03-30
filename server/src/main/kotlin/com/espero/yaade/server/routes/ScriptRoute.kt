@@ -99,6 +99,49 @@ class ScriptRoute(
         ctx.end()
     }
 
+    fun tokenListScripts(ctx: RoutingContext) {
+        val principal = ctx.user().principal()
+        val userId = principal.getLong("id")
+        val user = daoManager.userDao.getById(userId)
+            ?: throw ServerError(HttpResponseStatus.FORBIDDEN.code(), "User is not logged in")
+        val rawCollections = if (daoManager.userDao.isAdmin(userId))
+            daoManager.collectionDao.getAll()
+        else {
+            daoManager.collectionDao.getForUser(user)
+        }
+
+        val scripts = daoManager.jobScriptDao.getAll()
+        val result = JsonArray()
+        for (script in scripts) {
+            val collection = rawCollections.find { it.id == script.collectionId }
+            if (collection != null && collection.canRead(user)) {
+                val scriptJson = script.toJson()
+                val collectionJson = collection.toJson()
+                result.add(
+                    JsonObject().put(
+                        "scriptName",
+                        scriptJson.getJsonObject("data")?.getString("name")
+                    )
+                        .put(
+                            "scriptDescription",
+                            scriptJson.getJsonObject("data")?.getString("description")
+                        )
+                        .put(
+                            "collectionName",
+                            collectionJson.getJsonObject("data")?.getString("name")
+                        )
+                        .put(
+                            "collectionDescription",
+                            collectionJson.getJsonObject("data")?.getString("description")
+                        )
+                        .put("collectionId", collectionJson.getLong("id"))
+                        .put("scriptId", scriptJson.getLong("id"))
+                )
+            }
+        }
+        ctx.end(result.encode())
+    }
+
     suspend fun tokenRunScript(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
         val envName = ctx.queryParam("env").firstOrNull()

@@ -8,6 +8,11 @@ import {
   Input,
   Select,
   Spinner,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
   Text,
   Tooltip,
   useColorMode,
@@ -52,13 +57,10 @@ import {
   validateCronExpression,
 } from '../../utils';
 import { useKeyPress } from '../../utils/useKeyPress';
+import OverviewTab from '../collectionPanel/OverviewTab';
 import styles from './ScriptPanel.module.css';
-
-const theme = EditorView.theme({
-  '&': {
-    height: 'calc(100% - 5rem)',
-  },
-});
+import ScriptTab from './ScriptTab';
+import SettingsTab from './SettingsTab';
 
 type ScriptPanelProps = {
   currentScript: CurrentScript;
@@ -77,31 +79,13 @@ function ScriptPanel({
 }: ScriptPanelProps) {
   const { colorMode } = useColorMode();
   const toast = useToast();
-  const extensions = [javascript(), theme, indentUnit.of('    ')];
   const [isRunning, setIsRunning] = useState(false);
-
-  const ref = useRef<HTMLDivElement>(null);
-
-  const script = useMemo(
-    () => currentScript.data.script ?? '',
-    [currentScript.data.script],
-  );
 
   const envNames = useMemo(() => {
     const collection = findCollection(collections, currentScript.collectionId);
     if (!collection) return [];
     return Object.keys(collection.data?.envs ?? {});
   }, [collections, currentScript.collectionId]);
-
-  const setScript = useCallback(
-    (s: string) => {
-      dispatchCurrentScript({
-        type: CurrentScriptActionType.PATCH_DATA,
-        data: { script: s },
-      });
-    },
-    [dispatchCurrentScript],
-  );
 
   const setName = useCallback(
     (name: string) => {
@@ -113,39 +97,51 @@ function ScriptPanel({
     [dispatchCurrentScript],
   );
 
-  const setCronExpression = useCallback(
-    (cronExpression: string) => {
+  const setDescription = useCallback(
+    (description: string) => {
       dispatchCurrentScript({
         type: CurrentScriptActionType.PATCH_DATA,
-        data: { cronExpression },
+        data: { description },
       });
     },
     [dispatchCurrentScript],
   );
 
-  const { setContainer } = useCodeMirror({
-    container: ref.current,
-    onChange: (value: string) => setScript(value),
-    extensions: [extensions],
-    theme: colorMode,
-    value: script,
-    style: { height: '100%' },
-  });
-
-  useEffect(() => {
-    if (ref.current) {
-      setContainer(ref.current);
-    }
-  }, [ref, setContainer]);
-
-  function handleBeautifyClick() {
+  const handleRunClick = useCallback(async () => {
     try {
-      const beautifiedBody = beautify(script, { format: 'js' });
-      setScript(beautifiedBody);
+      if (isRunning) return;
+      setIsRunning(true);
+      const envName = currentScript.data.selectedEnvName;
+      const res = await api.runScript(currentScript, envName);
+      if (res.status !== 200) throw new Error();
+      const newResult = await res.json();
+      dispatchCurrentScript({
+        type: CurrentScriptActionType.PATCH_DATA,
+        data: { results: [newResult, ...(currentScript.data.results ?? [])] },
+      });
+      dispatchCollections({
+        type: CollectionsActionType.PATCH_SCRIPT_DATA,
+        id: currentScript.id,
+        data: { results: [newResult, ...(currentScript.data.results ?? [])] },
+      });
+      if (forceSetScriptResult.current) {
+        forceSetScriptResult.current(newResult);
+      }
+      successToast('Run finished', toast);
     } catch (e) {
-      errorToast('Could not format script.', toast);
+      console.error(e);
+      errorToast('Failed to run script. Check the console for errors.', toast);
+    } finally {
+      setIsRunning(false);
     }
-  }
+  }, [
+    currentScript,
+    dispatchCollections,
+    dispatchCurrentScript,
+    forceSetScriptResult,
+    isRunning,
+    toast,
+  ]);
 
   const saveScript = useCallback(
     async (script: CurrentScript) => {
@@ -188,70 +184,6 @@ function ScriptPanel({
     saveScript(currentScript);
   }, [currentScript, saveScript]);
 
-  const setEnabled = useCallback(
-    (enabled: boolean) => {
-      saveScript({
-        ...currentScript,
-        data: {
-          ...currentScript.data,
-          enabled,
-          lastRun: enabled ? Date.now() : undefined,
-        },
-      });
-      dispatchCurrentScript({
-        type: CurrentScriptActionType.PATCH_DATA,
-        data: { enabled },
-      });
-    },
-    [currentScript, dispatchCurrentScript, saveScript],
-  );
-
-  const setSelectedEnvName = useCallback(
-    (selectedEnvName: string) => {
-      dispatchCurrentScript({
-        type: CurrentScriptActionType.PATCH_DATA,
-        data: { selectedEnvName },
-      });
-    },
-    [dispatchCurrentScript],
-  );
-
-  const handleRunClick = useCallback(async () => {
-    try {
-      if (isRunning) return;
-      setIsRunning(true);
-      const envName = currentScript.data.selectedEnvName;
-      const res = await api.runScript(currentScript, envName);
-      if (res.status !== 200) throw new Error();
-      const newResult = await res.json();
-      dispatchCurrentScript({
-        type: CurrentScriptActionType.PATCH_DATA,
-        data: { results: [newResult, ...(currentScript.data.results ?? [])] },
-      });
-      dispatchCollections({
-        type: CollectionsActionType.PATCH_SCRIPT_DATA,
-        id: currentScript.id,
-        data: { results: [newResult, ...(currentScript.data.results ?? [])] },
-      });
-      if (forceSetScriptResult.current) {
-        forceSetScriptResult.current(newResult);
-      }
-      successToast('Run finished', toast);
-    } catch (e) {
-      console.error(e);
-      errorToast('Failed to run script. Check the console for errors.', toast);
-    } finally {
-      setIsRunning(false);
-    }
-  }, [
-    currentScript,
-    dispatchCollections,
-    dispatchCurrentScript,
-    forceSetScriptResult,
-    isRunning,
-    toast,
-  ]);
-
   useKeyPress(handleSaveScript, 's', true);
 
   return (
@@ -281,100 +213,44 @@ function ScriptPanel({
           onClick={handleSaveScript}
         />
       </div>
-      <div className={styles.menu}>
-        <div className={styles.cronPanel}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <Text fontSize="sm" fontWeight="bold" color="gray.500" mr="2">
-                Cron Configuration
-              </Text>
-              <Tooltip
-                label="Configure the script as a cron job to run periodically on the server. Visit the docs for more information."
-                fontSize="md"
-              >
-                <QuestionOutlineIcon color="gray.500" />
-              </Tooltip>
-            </div>
-            <div style={{ display: 'flex' }}>
-              <Input
-                placeholder="* * * * *"
-                w="120px"
-                mr="2"
-                size="sm"
-                colorScheme="green"
-                backgroundColor={colorMode === 'light' ? 'white' : undefined}
-                value={currentScript.data.cronExpression ?? ''}
-                isInvalid={
-                  !validateCronExpression(currentScript.data.cronExpression ?? '')
-                }
-                onChange={(e) => setCronExpression(e.target.value)}
-              />
-              <Select
-                size="sm"
-                w="150px"
-                onChange={(e) => setSelectedEnvName(e.target.value)}
-                disabled={envNames.length === 0}
-                value={currentScript.data.selectedEnvName ?? 'No Env Selected'}
-              >
-                <option key="NO_ENV" value="NO_ENV">
-                  NO_ENV
-                </option>
-                {envNames.length > 0 ? (
-                  envNames
-                    .filter((e) => e !== '')
-                    .map((envName) => (
-                      <option key={envName} value={envName}>
-                        {envName}
-                      </option>
-                    ))
-                ) : (
-                  <option value="">No Envs</option>
-                )}
-              </Select>
-              <IconButton
-                aria-label="pause-button"
-                icon={<VscDebugPause />}
-                variant="ghost"
-                colorScheme="red"
-                size="sm"
-                ml="2"
-                disabled={!currentScript.data.enabled}
-                onClick={() => setEnabled(false)}
-              />
-              <IconButton
-                aria-label="save-button"
-                icon={<VscPlay />}
-                colorScheme="green"
-                variant="ghost"
-                size="sm"
-                ml="2"
-                disabled={currentScript.data.enabled}
-                onClick={() => setEnabled(true)}
-              />
-            </div>
-          </div>
-        </div>
-        <div className={styles.iconBar}>
-          <IconButton
-            aria-label="beautify-content"
-            isRound
-            variant="ghost"
-            size="xs"
-            onClick={handleBeautifyClick}
-            icon={<StarIcon />}
-          />
-          <IconButton
-            aria-label="delete-script-content"
-            isRound
-            variant="ghost"
-            size="xs"
-            disabled={script.length === 0}
-            onClick={() => setScript('')}
-            icon={<DeleteIcon />}
-          />
-        </div>
-      </div>
-      <div className={styles.container} ref={ref} />
+      <Tabs
+        isLazy
+        colorScheme="green"
+        mt="1"
+        display="flex"
+        flexDirection="column"
+        maxHeight="100%"
+        h="100%"
+        mb="4"
+      >
+        <TabList>
+          <Tab>Description</Tab>
+          <Tab>Script</Tab>
+          <Tab>Settings</Tab>
+        </TabList>
+        <TabPanels overflowY="auto" sx={{ scrollbarGutter: 'stable' }} h="100%">
+          <TabPanel h="100%">
+            <OverviewTab
+              description={currentScript?.data?.description ?? ''}
+              setDescription={setDescription}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <ScriptTab
+              currentScript={currentScript}
+              dispatchCurrentScript={dispatchCurrentScript}
+            />
+          </TabPanel>
+          <TabPanel h="100%">
+            <SettingsTab
+              currentScript={currentScript}
+              envNames={envNames}
+              dispatchCurrentScript={dispatchCurrentScript}
+              saveScript={saveScript}
+            />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </Box>
   );
 }
