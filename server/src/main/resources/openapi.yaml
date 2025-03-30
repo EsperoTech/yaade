@@ -905,6 +905,19 @@ paths:
       responses:
         '200':
           description: Success
+  /api/v1/list-scripts:
+    get:
+      tags:
+        - Scripts
+      summary: List all scripts the token can execute
+      operationId: tokenListScripts
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
   /api/v1/scripts/{id}/run:
     post:
       tags:

@@ -201,6 +201,8 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
 
             routerBuilder.operation("tokenRunScript")
                 .tokenCoroutineHandler(this, daoManager, scriptRoute::tokenRunScript)
+            routerBuilder.operation("tokenListScripts")
+                .tokenCoroutineHandler(this, daoManager, scriptRoute::tokenListScripts)
 
             val router = routerBuilder.createRouter()
             router.route("/*").coroutineHandler(this, StaticHandler.create())
