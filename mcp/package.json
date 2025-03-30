@@ -1,0 +1,30 @@
+{
+  "name": "yaade-mcp",
+  "version": "1.0.3",
+  "description": "Yaade MCP Server",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "yaade-mcp": "./index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "axios": "^1.6.7",
+    "yargs": "^17.7.2"
+  },
+  "keywords": [
+    "yaade",
+    "mcp"
+  ],
+  "author": "Jonathan Roesner",
+  "license": "MIT"
+}
