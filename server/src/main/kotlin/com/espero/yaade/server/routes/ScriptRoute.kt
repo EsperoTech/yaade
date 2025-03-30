@@ -134,6 +134,7 @@ class ScriptRoute(
                             "collectionDescription",
                             collectionJson.getJsonObject("data")?.getString("description")
                         )
+                        .put("availableEnvs", collection.getAvailableEnvNames())
                         .put("collectionId", collectionJson.getLong("id"))
                         .put("scriptId", scriptJson.getLong("id"))
                 )

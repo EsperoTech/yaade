@@ -233,6 +233,12 @@ class CollectionDb {
         return envs.getJsonObject(name)
     }
 
+    fun getAvailableEnvNames(): List<String> {
+        val json = jsonData()
+        val envs = json.getJsonObject("envs") ?: return emptyList()
+        return envs.map.map { it.key }
+    }
+
     companion object {
 
         fun fromUpdateRequest(request: JsonObject): CollectionDb {
