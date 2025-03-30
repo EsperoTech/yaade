@@ -23,6 +23,7 @@ export default {
           { text: "Backups", link: "/backups" },
           { text: "Certificates", link: "/certificates" },
           { text: "Tokens", link: "/access-tokens" },
+          { text: "MCP", link: "/mcp" },
         ],
       },
     ],

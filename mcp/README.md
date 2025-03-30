@@ -21,7 +21,6 @@ Install it in your MCP compatible tool, e.g. Cursor or Claude Desktop:
     }
   }
 }
-
 ```
 
 Where the YAADE URL is of the form `https://yaade.example.com` and the token is your YAADE access token like `yaade_fd03fmdksax...`.
