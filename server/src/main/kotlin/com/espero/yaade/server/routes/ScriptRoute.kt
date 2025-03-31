@@ -158,8 +158,22 @@ class ScriptRoute(
             ctx.user().principal().getJsonObject("data", JsonObject())
                 .getJsonArray("groups", JsonArray())
         val scriptString = jobScript.jsonData().getString("script")
+        val additionalEnvData =
+            ctx.body()?.asJsonObject()?.getJsonArray("additionalEnvData")?.list
+                ?.fold(JsonObject()) { it, obj ->
+                    val o = JsonObject.mapFrom(obj)
+                    it.put(o.getString("key"), o.getString("value"))
+                }
+                ?: JsonObject()
         val result =
-            run(jobScript.id, scriptString, jobScript.collectionId, envName ?: "", ownerGroups)
+            run(
+                jobScript.id,
+                scriptString,
+                jobScript.collectionId,
+                envName ?: "",
+                ownerGroups,
+                additionalEnvData
+            )
                 ?: throw ServerError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     "Script failed"
@@ -192,7 +206,14 @@ class ScriptRoute(
         val ownerGroups = JsonArray(owner.groups().toList())
         val scriptString = jobScript.jsonData().getString("script")
             ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No script provided")
-        val result = run(jobScript.id, scriptString, jobScript.collectionId, envName, ownerGroups)
+        val result = run(
+            jobScript.id,
+            scriptString,
+            jobScript.collectionId,
+            envName,
+            ownerGroups,
+            JsonObject()
+        )
             ?: throw ServerError(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), "Script failed")
         ctx.end(result.encode())
     }
@@ -202,7 +223,8 @@ class ScriptRoute(
         scriptString: String,
         collectionId: Long,
         envName: String?,
-        ownerGroups: JsonArray
+        ownerGroups: JsonArray,
+        additionalEnvData: JsonObject
     ): JsonObject? {
         var res: JsonObject? = null
         try {
@@ -211,6 +233,7 @@ class ScriptRoute(
                 .put("collectionId", collectionId)
                 .put("envName", envName)
                 .put("ownerGroups", ownerGroups)
+                .put("additionalEnvData", additionalEnvData)
             res = vertx.eventBus()
                 .request<JsonObject>(
                     "script.run",
