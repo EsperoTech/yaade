@@ -63,3 +63,7 @@ Creates a user for the given username.
 ```
 
 That's it. Magic, right? Note that this is no deterministic process and it can happen that the LLM makes mistakes, so always check back what your LLM is doing.
+
+## Return data to the LLM
+
+After running a script, we return the same information as in the [script callback](/scripts.html#callback). So if you want to provide some information back to the LLM, for example the user id of the newly created user, simply log it in your script like `log("created user with id: " + user_id)`.
