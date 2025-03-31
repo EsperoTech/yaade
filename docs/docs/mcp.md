@@ -36,14 +36,30 @@ The MCP server currently provides two tools:
 1. List available scripts
 2. Run a script
 
-Usually you as the user of the AI application only care about running a script. To use the tool, simply write what you want to do in natural language. For example, say that you have a script to create a new user in the database, simply write something like `in yaade, create a new user`. The LLM should then go on to list the available scripts, find the create user script and then run it.
+Usually, as the user of the AI application you only care about running a script. To use the tool, simply write what you want to do in natural language. For example, say that you have a script that performs a health check, simply write something like `in yaade, check if my service is up`. The LLM should then go on to list the available scripts, find the health check script and then run it.
+
+### Inject data into the environment
+
+Most scripts depend on some environment data to provide useful functionality. Let's say you have a script to create a user, but you need to provide some information first, like the username. In a normal scenario you would go into your environment, set the key `username` to the value `jondoe` and then run the script. To make it easier for the LLM to do the same thing, we allow it to inject additional environment data when running a script. To run the previous example in your LLM you could simply ask something like `in yaade, create me a user with the username jondoe` - the LLM should understand that it should inject the username as additional env data.
 
 ### Giving Context
 
-Of course your LLM doesn't out of the box know what a specific script is used for. To fix that we make some important information available to the LLM when listing available scripts:
+But how does a script know what a script does and what additional env data it should set? For that, we provide some context for every script when listing the available scripts. For each script the LLM will see:
 
 - Script Name and Description
 - Collection Name and Description
 - Available Environments
 
-So if you have two scripts in a collection and both are called "uptime monitor" but one notes in the description that it is for Service A and one for Service B, then writing to your LLM sth. like `in yaade, give me the uptime status of service a` will result in the correct script being called.
+So if you want to let your LLM know that a script requires the `username` key, you can just add that as text into the script description. E.g.:
+
+```
+# Create User Script
+
+Creates a user for the given username.
+
+## Required Env Data
+
+- username: the username of the new user
+```
+
+That's it. Magic, right? Note that this is no deterministic process and it can happen that the LLM makes mistakes, so always check back what your LLM is doing.
