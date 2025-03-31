@@ -71,7 +71,11 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
             val startTime = System.currentTimeMillis()
             val ownerGroups =
                 msg.body().getJsonArray("ownerGroups", JsonArray()).map { it as String }.toSet()
-            val globalBindings = createGlobalBindings(context, collection, envName, ownerGroups)
+            val additionalEnvData =
+                msg.body().getJsonObject("additionalEnvData")
+                    .associate { it.key to it.value as String }
+            val globalBindings =
+                createGlobalBindings(context, collection, envName, ownerGroups, additionalEnvData)
             globalBindings.putMember(
                 "__continuation",
                 continuation
@@ -188,7 +192,8 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
         context: Context,
         collection: CollectionDb,
         envName: String?,
-        ownerGroups: Set<String>
+        ownerGroups: Set<String>,
+        additionalEnvData: Map<String, String>
     ): Value {
         val globalBindings: Value = context.getBindings("js")
         globalBindings.putMember("__exec", Exec(vertx.eventBus(), ownerGroups, this))
@@ -197,7 +202,8 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
             Environment(
                 collection,
                 envName ?: "",
-                daoManager
+                daoManager,
+                additionalEnvData
             )
         )
         return globalBindings

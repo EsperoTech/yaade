@@ -41,6 +41,7 @@ const server = new McpServer({
 // List scripts tool
 server.tool(
   "list_scripts",
+  "List all available scripts in Yaade. This tool should be used first whenever the user asks to interact with Yaade.",
   {},
   async () => {
     try {
@@ -64,18 +65,22 @@ server.tool(
   "run_script",
   {
     script_id: z.number(),
-    env: z.string().optional()
+    env: z.string().optional(),
+    additionalEnvData: z.array(z.object({
+      key: z.string(),
+      value: z.string()
+    })).optional()
   },
-  async ({ script_id, env }) => {
+  async ({ script_id, env, additionalEnvData }) => {
     try {
       let runUrl = `${argv.url}/api/v1/scripts/${script_id}/run`;
       if (env) {
         runUrl += `?env=${env}`;
       }
       
-      const response = await axios.post(runUrl, null, {
+      const response = await axios.post(runUrl, { additionalEnvData }, {
         headers: {
-          'Authorization': `Bearer ${argv.token}`
+          'Authorization': `Bearer ${argv.token}`,
         }
       });
       return {

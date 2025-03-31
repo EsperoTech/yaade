@@ -935,6 +935,28 @@ paths:
           required: false
           schema:
             type: string
+      requestBody:
+        description: The data to run the script with
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - additionalEnvData
+              properties:
+                additionalEnvData:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - key
+                      - value
+                    properties:
+                      key:
+                        type: string
+                      value:
+                        type: string
       responses:
         '200':
           description: Success
