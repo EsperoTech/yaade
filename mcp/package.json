@@ -1,6 +1,6 @@
 {
   "name": "yaade-mcp",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Yaade MCP Server",
   "main": "index.js",
   "type": "module",
