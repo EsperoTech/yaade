@@ -77,8 +77,10 @@ server.tool(
       if (env) {
         runUrl += `?env=${env}`;
       }
+
+      const body = additionalEnvData ? { additionalEnvData } : null;
       
-      const response = await axios.post(runUrl, { additionalEnvData }, {
+      const response = await axios.post(runUrl, body, {
         headers: {
           'Authorization': `Bearer ${argv.token}`,
         }
