@@ -79,11 +79,17 @@ server.tool(
       }
 
       const body = additionalEnvData ? { additionalEnvData } : null;
-      
+
+      const headers = {
+        'Authorization': `Bearer ${argv.token}`,
+      }
+
+      if (body) {
+        headers['Content-Type'] = 'application/json';
+      }
+
       const response = await axios.post(runUrl, body, {
-        headers: {
-          'Authorization': `Bearer ${argv.token}`,
-        }
+        headers: headers
       });
       return {
         content: [{ type: "text", text: JSON.stringify(response.data) }]
