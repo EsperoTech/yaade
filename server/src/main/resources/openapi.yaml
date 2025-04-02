@@ -942,8 +942,6 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - additionalEnvData
               properties:
                 additionalEnvData:
                   type: array
