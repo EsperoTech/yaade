@@ -117,6 +117,6 @@ chmod +x build.sh
     <img style="width:48%;min-width:48%;max-width:48%;height:auto" src="assets/user-management.png" alt="user-management-screenshot"/>
 </div>
 
-## 🤝  How can I contribute?
+## 🤝 How can I contribute?
 
 Your contribution is very welcome! First open an issue about the topic you want to contribute on, eg. adding a new feature, bugfixing or refactoring. We will then discuss further details. Eventually, I will review your Pull Request and merge / release it.
