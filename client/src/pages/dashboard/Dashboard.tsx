@@ -66,7 +66,7 @@ import {
 } from '../../state/currentRequest';
 import { CurrentScriptActionType, currentScriptReducer } from '../../state/currentScript';
 import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
-import getMergedEnvData from '../../utils/env';
+import { getMergedEnvData } from '../../utils/env';
 import interpolate from '../../utils/interpolate';
 import { getSelectedEnvs } from '../../utils/store';
 import styles from './Dashboard.module.css';

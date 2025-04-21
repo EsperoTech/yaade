@@ -28,7 +28,7 @@ import {
   CurrentCollectionActionType,
 } from '../../state/currentCollection';
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
-import getMergedEnvData from '../../utils/env';
+import { getMergedEnvData } from '../../utils/env';
 import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import AuthTab from '../authTab';

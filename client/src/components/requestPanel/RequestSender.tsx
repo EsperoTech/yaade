@@ -27,7 +27,7 @@ import {
   parseResponse,
   successToast,
 } from '../../utils';
-import getMergedEnvData from '../../utils/env';
+import { getMergedEnvData, getMergedHeaders } from '../../utils/env';
 import interpolate from '../../utils/interpolate';
 import { executeRequestScript, executeResponseScript } from '../../utils/script';
 import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
@@ -207,13 +207,7 @@ function RequestSender({
     }
 
     const collection = findCollection(collections, request.collectionId);
-
-    const enabledCollectionHeaders = collection?.data?.headers
-      ? collection.data.headers.filter((h) => h.isEnabled !== false)
-      : [];
-    const enabledRequestHeaders = request.data.headers
-      ? request.data.headers.filter((h) => h.isEnabled !== false)
-      : [];
+    const headers = getMergedHeaders(request, collections);
     let auth = collection?.data?.auth;
     if (request.data.auth && request.data.auth.enabled) {
       auth = request.data.auth;
@@ -224,8 +218,7 @@ function RequestSender({
       data: {
         ...request.data,
         auth,
-        // NOTE: this order is important because we want request headers to take precedence
-        headers: [...enabledCollectionHeaders, ...enabledRequestHeaders],
+        headers,
       },
     };
 

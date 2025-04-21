@@ -1,4 +1,6 @@
 import Collection, { Environment } from '../model/Collection';
+import KVRow from '../model/KVRow';
+import { RestRequest } from '../model/Request';
 import { findCollection } from '../state/collections';
 
 function getParentTree(collections: Collection[], collectionId: number): Collection[] {
@@ -22,24 +24,25 @@ function getMergedEnvData(
   const env = collection?.data?.envs?.[envName];
   if (!env) return undefined;
 
-  let result: {
-    [key: string]: string;
-  } = {};
+  const envs: Record<string, string>[] = [];
 
   let currentEnvName = envName;
-  for (let i = 0; i < tree.length; i++) {
-    const c = tree[i];
+  for (const c of tree) {
     const env = c.data?.envs?.[currentEnvName];
     if (!env) break;
-    result = {
-      ...result,
-      ...env.data,
-    };
+    envs.push(env.data);
     if (!env.parentEnvName) break;
     currentEnvName = env.parentEnvName;
   }
 
-  return result;
+  return envs.reverse().reduce((acc, env) => ({ ...acc, ...env }), {});
 }
 
-export default getMergedEnvData;
+function getMergedHeaders(request: RestRequest, collections: Collection[]): KVRow[] {
+  const tree = getParentTree(collections, request.collectionId);
+  const headers = tree.flatMap((c) => c.data?.headers ?? []);
+  headers.push(...(request.data.headers ?? []));
+  return headers.filter((h) => h.isEnabled !== false);
+}
+
+export { getMergedEnvData, getMergedHeaders };
