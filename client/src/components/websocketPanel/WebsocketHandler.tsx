@@ -17,7 +17,7 @@ import {
   CurrentRequestActionType,
 } from '../../state/currentRequest';
 import { errorToast, getMinorVersion } from '../../utils';
-import getMergedEnvData from '../../utils/env';
+import { getMergedEnvData } from '../../utils/env';
 import { sendMessageToExtension } from '../../utils/extension';
 import interpolate from '../../utils/interpolate';
 import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
