@@ -24,9 +24,9 @@ I was looking for a self-hosted Postman alternative so that API collections can 
 4. Easy single-file data import / export
 5. Proxy requests through your browser or through the server
 6. REST and Websockets with Markdown documentation support
-8. Scripts: Run scripts as cron jobs or via the API. Execute requests or run tests all in pure JavaScript
-9. Import collections from OpenAPI or Postman. Export to all different languages and frameworks.
-10. Most importantly: dark mode default
+7. Scripts: Run scripts as cron jobs or via the API. Execute requests or run tests all in pure JavaScript
+8. Import collections from OpenAPI or Postman. Export to all different languages and frameworks.
+9. Most importantly: dark mode default
 
 ## ⚡ Install
 
@@ -43,7 +43,7 @@ The default password is `password`. After login go to ⚙️ > Account and chang
 
 ### 2. 🔧 Extension
 
-Yaade uses a browser extension as a proxy to enable CORS requests. Install the extension using your browsers extension store. Currently only a chrome extension is available. You can find it <a href="https://chrome.google.com/webstore/detail/yaade-extension/mddoackclclnbkmofficmmepfnadolfa">here</a>. Then open it and input your server URL, eg. `https://yaade.example.com/`. From that point all requests originating from your Yaade browser tabs will be proxied through the extension.
+Yaade uses a browser extension as a proxy to enable CORS requests. Install the extension using your browsers extension store. Currently only a chrome extension is available. You can find it <a href="https://chrome.google.com/webstore/detail/yaade-extension/mddoackclclnbkmofficmmepfnadolfa">here</a> (Chrome) and <a href="https://addons.mozilla.org/en-US/firefox/addon/yaade-extension/">here</a> (Firefox). Then open it and input your server URL, eg. `https://yaade.example.com/`. From that point all requests originating from your Yaade browser tabs will be proxied through the extension.
 
 ## ⬆️ Upgrade
 
@@ -117,6 +117,6 @@ chmod +x build.sh
     <img style="width:48%;min-width:48%;max-width:48%;height:auto" src="assets/user-management.png" alt="user-management-screenshot"/>
 </div>
 
-## 🤝  How can I contribute?
+## 🤝 How can I contribute?
 
 Your contribution is very welcome! First open an issue about the topic you want to contribute on, eg. adding a new feature, bugfixing or refactoring. We will then discuss further details. Eventually, I will review your Pull Request and merge / release it.
