@@ -150,7 +150,7 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
         val headers = getCollectionTreeHeaders(parentTree, requestHeaders)
         val requestData = request.jsonData().copy().put("headers", headers)
         return CompletableFuture.supplyAsync(
-            { interpolate(requestData, collection, envName, envData) },
+            { interpolate(requestData, collection, envName, envData ?: JsonObject()) },
             executor
         )
     }
@@ -178,7 +178,7 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
         request: JsonObject,
         collection: CollectionDb,
         envName: String?,
-        envData: JsonObject?,
+        envData: JsonObject,
     ): JsonObject {
         if (envName == null) {
             return request
@@ -189,7 +189,7 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
             val globalBindings = context.getBindings("js")
             context.eval("js", interpolateFile)
             val res =
-                globalBindings.getMember("interpolate").execute(request.encode(), envData?.encode())
+                globalBindings.getMember("interpolate").execute(request.encode(), envData.encode())
                     .asString()
             val outString = out.toString()
             if (outString.trimIndent().isNotEmpty()) {
