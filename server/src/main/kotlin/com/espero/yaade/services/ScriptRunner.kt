@@ -72,7 +72,7 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
             val ownerGroups =
                 msg.body().getJsonArray("ownerGroups", JsonArray()).map { it as String }.toSet()
             val additionalEnvData =
-                msg.body().getJsonObject("additionalEnvData")
+                (msg.body().getJsonObject("additionalEnvData") ?: JsonObject())
                     .associate { it.key to it.value as String }
             val globalBindings =
                 createGlobalBindings(context, collection, envName, ownerGroups, additionalEnvData)
