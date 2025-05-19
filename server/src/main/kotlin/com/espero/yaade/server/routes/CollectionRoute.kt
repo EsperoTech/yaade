@@ -2,6 +2,7 @@ package com.espero.yaade.server.routes
 
 import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
+import com.espero.yaade.model.db.JobScriptDb
 import com.espero.yaade.model.db.RequestDb
 import com.espero.yaade.server.errors.ServerError
 import com.espero.yaade.services.OpenApiService
@@ -122,26 +123,78 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
             throw ServerError(HttpResponseStatus.NOT_FOUND.code(), "Collection not found")
         }
 
-        val requests = daoManager.requestDao.getAllInCollection(collectionId)
-
         val body = ctx.body().asJsonObject()
+        val topLevelParentId = collection.jsonData().getLong("parentId") ?: null
         val name = body.getString("name")
         collection.patchData(JsonObject().put("name", name))
 
-        TransactionManager.callInTransaction(daoManager.connectionSource) {
-            daoManager.collectionDao.create(collection)
-            collection.hideSecrets()
+        val collections = daoManager
+            .collectionDao.getAll()
+        val collectionsToDuplicate = mutableListOf(collection)
+        var parentIds = listOf(collection.id)
+        // NOTE: we cap at 10 to prevent infinite loops
+        for (i in 0..10) {
+            val childCollections = collections.filter { c ->
+                c.jsonData().getLong("parentId") in parentIds
+            }
+            if (childCollections.isEmpty()) {
+                break
+            }
+            collectionsToDuplicate.addAll(childCollections)
+            parentIds = childCollections.map { it.id }
+        }
 
-            requests.forEach {
-                it.collectionId = collection.id
-                daoManager.requestDao.create(it)
+        val requests = mutableListOf<RequestDb>()
+        val scripts = mutableListOf<JobScriptDb>()
+        for (c in collectionsToDuplicate) {
+            val reqs = daoManager.requestDao.getAllInCollection(c.id)
+            val scs = daoManager.jobScriptDao.getAllInCollection(c.id)
+            requests.addAll(reqs)
+            scripts.addAll(scs)
+        }
+
+        val oldToNewIds = mutableMapOf<Long, Long>()
+
+        TransactionManager.callInTransaction(daoManager.connectionSource) {
+            collectionsToDuplicate.forEach {
+                // NOTE: we can do this because the list is sorted by parents -> children
+                val parentId = it.jsonData().getLong("parentId")
+                if (parentId != null) {
+                    val newParentId = oldToNewIds[parentId]
+                    if (newParentId != null) {
+                        it.patchData(JsonObject().put("parentId", newParentId))
+                    } else {
+                        if (parentId != topLevelParentId) {
+                            // NOTE: this should never happen but we add this check to be safe
+                            throw RuntimeException(
+                                "Parent collection not found for id: $parentId"
+                            )
+                        }
+                    }
+                }
+                val oldId = it.id
+                daoManager.collectionDao.create(it)
+                oldToNewIds[oldId] = it.id
+                val rs = requests.filter { r -> r.collectionId == oldId }
+                rs.forEach { r ->
+                    r.collectionId = it.id
+                    daoManager.requestDao.create(r)
+                }
+                scripts.filter { s -> s.collectionId == oldId }
+                    .forEach { s ->
+                        s.collectionId = it.id
+                        daoManager.jobScriptDao.create(s)
+                    }
             }
         }
 
-        val requestsJson = requests.map(RequestDb::toJson)
-        val result = collection.toJson().put("requests", requestsJson).encode()
+        val result = createCollectionsResponse(collectionsToDuplicate)
+        if (result.size != 1) {
+            throw RuntimeException("Invalid state after duplication")
+        }
+        val newCollection = result[0]
 
-        ctx.end(result)
+        ctx.end(newCollection.encode())
     }
 
     suspend fun putCollection(ctx: RoutingContext) {
