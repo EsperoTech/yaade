@@ -22,6 +22,28 @@ window.addEventListener("message", function (event) {
           "*"
         );
       });
+    } else if (event.data.type == "ws-connect") {
+      chrome.runtime.sendMessage(event.data, function (result) {
+        console.log("ws-connect-result", result);
+        window.postMessage({ type: "ws-connect-result", result }, "*");
+      });
+    } else if (event.data.type == "ws-disconnect") {
+      chrome.runtime.sendMessage(event.data, function (result) {
+        window.postMessage({ type: "ws-disconnect-result", result }, "*");
+      });
+    } else if (event.data.type == "ws-write") {
+      chrome.runtime.sendMessage(event.data, function (result) {
+        window.postMessage({ type: "ws-write-result", result }, "*");
+      });
     }
+  }
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (
+    message.type === "ws-read" ||
+    message.type === "ws-close"
+  ) {
+    window.postMessage(message, "*");
   }
 });

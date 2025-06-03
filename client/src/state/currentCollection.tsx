@@ -77,7 +77,7 @@ type CurrentCollectionAction =
 function currentCollectionReducer(
   state: CurrentCollection | undefined = defaultCurrentCollection,
   action: CurrentCollectionAction,
-) {
+): CurrentCollection | undefined {
   switch (action.type) {
     case CurrentCollectionActionType.SET:
       return set(action.collection);

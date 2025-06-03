@@ -35,9 +35,18 @@ import ResponsePanel from '../../components/responsePanel';
 import ScriptPanel from '../../components/scriptPanel/ScriptPanel';
 import ScriptResultsPanel from '../../components/scriptResultsPanel';
 import Sidebar from '../../components/sidebar';
+import WebsocketHandler from '../../components/websocketPanel/WebsocketHandler';
+import WebsocketResponsePanel from '../../components/websocketResponsePanel/WebsocketResponsePanel';
 import { UserContext } from '../../context';
 import Collection, { CurrentCollection, SidebarCollection } from '../../model/Collection';
-import Request, { SidebarRequest } from '../../model/Request';
+import {
+  CurrentRestRequest,
+  CurrentWebsocketRequest,
+  OAuth2Config,
+  RestRequest,
+  SidebarRequest,
+  WebsocketRequest,
+} from '../../model/Request';
 import Script, { ScriptResult, SidebarScript } from '../../model/Script';
 import {
   CollectionsActionType,
@@ -63,14 +72,18 @@ import {
   openHistoryReducer,
 } from '../../state/openHistory';
 import { BASE_PATH, errorToast, parseLocation, successToast } from '../../utils';
+import { getMergedEnvData } from '../../utils/env';
+import interpolate from '../../utils/interpolate';
+import { getSelectedEnvs } from '../../utils/store';
 import styles from './Dashboard.module.css';
 
-function mapRequestToSidebarRequest(r: Request): SidebarRequest {
+function mapRequestToSidebarRequest(r: RestRequest | WebsocketRequest): SidebarRequest {
   return {
     id: r.id,
     collectionId: r.collectionId,
     name: r.data.name ?? '',
-    method: r.data.method ?? '',
+    type: r.type,
+    method: 'method' in r.data ? r.data.method : undefined,
   };
 }
 
@@ -193,10 +206,6 @@ function Dashboard() {
         if (loc.requestId && loc.collectionId) {
           const r = findRequest(collections, loc.requestId);
           if (r) {
-            const code = new URLSearchParams(window.location.search).get('code');
-            if (code) {
-              await getRequestAccessTokenFromCode(code, r);
-            }
             dispatchCurrentRequest({
               type: CurrentRequestActionType.SET,
               request: r,
@@ -211,6 +220,10 @@ function Dashboard() {
               type: OpenHistoryActionType.PUSH,
               item: { type: 'request', id: r.id },
             });
+            const code = new URLSearchParams(window.location.search).get('code');
+            if (code && r.type === 'REST') {
+              await getRequestAccessTokenFromCode(code, r, collections);
+            }
           }
           openCollectionTree(collections, loc.collectionId);
         } else if (loc.collectionId && loc.scriptId) {
@@ -235,10 +248,6 @@ function Dashboard() {
         } else if (loc.collectionId) {
           const c = findCollection(collections, loc.collectionId);
           if (c) {
-            const code = new URLSearchParams(window.location.search).get('code');
-            if (code) {
-              await getCollectionAccessTokenFromCode(code, c);
-            }
             dispatchCurrentCollection({
               type: CurrentCollectionActionType.SET,
               collection: c,
@@ -253,6 +262,10 @@ function Dashboard() {
               type: OpenHistoryActionType.PUSH,
               item: { type: 'collection', id: c.id },
             });
+            const code = new URLSearchParams(window.location.search).get('code');
+            if (code) {
+              await getCollectionAccessTokenFromCode(code, c, collections);
+            }
           }
           openCollectionTree(collections, loc.collectionId);
         }
@@ -267,27 +280,28 @@ function Dashboard() {
     getCollections();
   }, []);
 
-  async function getRequestAccessTokenFromCode(code: string, request: Request) {
-    const oauthConfig = request.data.auth?.oauth2;
-    if (!oauthConfig) {
-      errorToast('Auth data not found for request.', toast);
-      return;
+  async function getTokenFromCode(
+    code: string,
+    oauthConfig: OAuth2Config,
+    redirectUri: string,
+    collectionId: number,
+    fetchedCollections: Collection[],
+  ): Promise<OAuth2Config> {
+    // NOTE: set a default for backwards compatibility
+    if (!oauthConfig.grantType) {
+      oauthConfig.grantType = 'authorization_code';
     }
-
-    const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
+    const envName = getSelectedEnvs()[collectionId];
+    const selectedEnvData = getMergedEnvData(fetchedCollections, collectionId, envName);
+    const interpolationResult = interpolate(oauthConfig, selectedEnvData ?? {});
+    if (interpolationResult.errors.length > 0) {
+      errorToast('Failed to interpolate auth data.', toast);
+    }
+    const { tokenUrl, clientId, clientSecret, grantType } = interpolationResult.result;
 
     if (!tokenUrl || !clientId || !grantType) {
-      console.log({
-        message: 'Required oauth2 parameters are missing.',
-        tokenUrl,
-        clientId,
-        grantType,
-      });
-      return;
+      throw new Error('Required oauth2 parameters are missing.');
     }
-
-    const url = new URL(window.location.href);
-    let redirectUri = `${url.protocol}//${url.host}/#/${request.collectionId}/${request.id}`;
 
     const data = new URLSearchParams();
     data.append('code', code);
@@ -298,25 +312,56 @@ function Dashboard() {
     data.append('redirect_uri', redirectUri);
     data.append('grant_type', grantType);
 
-    try {
-      const res = await api.exchangeOAuthToken(tokenUrl, data.toString());
-      if (!res.ok) {
-        throw new Error('Failed to exchange code for token');
-      }
-      const body: any = await res.json();
+    const res = await api.exchangeOAuthToken(
+      tokenUrl,
+      data.toString(),
+      collectionId,
+      envName,
+    );
+    if (!res.ok) {
+      throw new Error('Failed to exchange code for token');
+    }
+    const body: any = await res.json();
 
+    const patchedOAuthConfig: OAuth2Config = {
+      accessToken: body.access_token,
+      refreshToken: body.refresh_token,
+    };
+
+    if (body.scope) {
+      patchedOAuthConfig.scope = body.scope;
+    }
+
+    return { ...oauthConfig, ...patchedOAuthConfig };
+  }
+
+  async function getRequestAccessTokenFromCode(
+    code: string,
+    request: RestRequest,
+    fetchedCollections: Collection[], // NOTE: we need to pass collections because they are not set yet in the state
+  ) {
+    const oauthConfig = request.data.auth?.oauth2;
+    if (!oauthConfig) {
+      errorToast('Auth data not found for request.', toast);
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    let redirectUri = `${url.protocol}//${url.host}/#/${request.collectionId}/${request.id}`;
+
+    try {
+      const patchedOAuthConfig = await getTokenFromCode(
+        code,
+        oauthConfig,
+        redirectUri,
+        request.collectionId,
+        fetchedCollections,
+      );
       const newData = {
         ...request.data,
         auth: {
           ...request.data.auth,
-          oauth2: {
-            ...oauthConfig,
-            accessToken: body.access_token,
-            refreshToken: body.refresh_token,
-            tokenType: body.token_type,
-            expiresIn: body.expires_in,
-            scope: body.scope,
-          },
+          oauth2: patchedOAuthConfig,
         },
       };
       const newRequest = {
@@ -329,6 +374,10 @@ function Dashboard() {
         id: request.id,
         data: newData,
       });
+      dispatchCurrentRequest({
+        type: CurrentRequestActionType.PATCH_DATA,
+        data: newData,
+      });
       successToast('Token was successfully generated.', toast);
     } catch (e) {
       console.error(e);
@@ -338,55 +387,33 @@ function Dashboard() {
     }
   }
 
-  async function getCollectionAccessTokenFromCode(code: string, collection: Collection) {
+  async function getCollectionAccessTokenFromCode(
+    code: string,
+    collection: Collection,
+    fetchedCollections: Collection[], // NOTE: we need to pass collections because they are not set yet in the state
+  ) {
     const oauthConfig = collection.data.auth?.oauth2;
     if (!oauthConfig) {
       errorToast('Auth data not found for collection.', toast);
       return;
     }
 
-    if (!oauthConfig.grantType) {
-      oauthConfig.grantType = 'authorization_code';
-    }
-
-    const { tokenUrl, clientId, clientSecret, grantType } = oauthConfig;
-
-    if (!tokenUrl || !clientId) {
-      console.log('Required oauth2 parameters are missing.');
-      return;
-    }
-
     const url = new URL(window.location.href);
     let redirectUri = `${url.protocol}//${url.host}/#/${collection.id}`;
 
-    const data = new URLSearchParams();
-    data.append('code', code);
-    data.append('client_id', clientId);
-    if (clientSecret) {
-      data.append('client_secret', clientSecret);
-    }
-    data.append('redirect_uri', redirectUri);
-    data.append('grant_type', grantType);
-
     try {
-      const res = await api.exchangeOAuthToken(tokenUrl, data.toString());
-      if (!res.ok) {
-        throw new Error('Failed to exchange code for token');
-      }
-      const body: any = await res.json();
-
+      const patchedOAuthConfig = await getTokenFromCode(
+        code,
+        oauthConfig,
+        redirectUri,
+        collection.id,
+        fetchedCollections,
+      );
       const newData = {
         ...collection.data,
         auth: {
           ...collection.data.auth,
-          oauth2: {
-            ...oauthConfig,
-            accessToken: body.access_token,
-            refreshToken: body.refresh_token,
-            tokenType: body.token_type,
-            expiresIn: body.expires_in,
-            scope: body.scope,
-          },
+          oauth2: patchedOAuthConfig,
         },
       };
       const newCollection = {
@@ -397,6 +424,10 @@ function Dashboard() {
       dispatchCollections({
         type: CollectionsActionType.PATCH_COLLECTION_DATA,
         id: collection.id,
+        data: newData,
+      });
+      dispatchCurrentCollection({
+        type: CurrentCollectionActionType.PATCH_DATA,
         data: newData,
       });
       successToast('Token was successfully generated.', toast);
@@ -494,7 +525,7 @@ function Dashboard() {
   );
 
   const updateRequest = useCallback(
-    (request: Request) =>
+    (request: RestRequest | WebsocketRequest) =>
       api
         .updateRequest(request)
         .then((res) => {
@@ -537,6 +568,17 @@ function Dashboard() {
         }),
     [toast],
   );
+
+  const saveRequest = useCallback(() => {
+    if (currentRequest?.isChanged) {
+      updateRequest(currentRequest);
+      dispatchCollections({
+        type: CollectionsActionType.PATCH_REQUEST_DATA,
+        id: currentRequest.id,
+        data: { ...currentRequest.data },
+      });
+    }
+  }, [currentRequest, updateRequest]);
 
   const selectRequest = useCallback(
     async (id: number, pushHistory: boolean = true) => {
@@ -762,8 +804,8 @@ function Dashboard() {
       try {
         const request = findRequest(collections, id);
         if (!request) return;
-        const newRequest = { ...request, data: { ...request.data, name: name } };
-        await api.updateRequest(newRequest);
+        request.data.name = name;
+        await api.updateRequest(request);
         dispatchCollections({
           type: CollectionsActionType.PATCH_REQUEST_DATA,
           id: id,
@@ -811,10 +853,18 @@ function Dashboard() {
       try {
         const request = findRequest(collections, id);
         if (!request) return;
-        const res = await api.createRequest(request.collectionId, {
-          ...request.data,
-          name: newName,
-        });
+        let res: any;
+        if (request.type === 'REST') {
+          res = await api.createRestRequest(request.collectionId, {
+            ...request.data,
+            name: newName,
+          });
+        } else if (request.type === 'WS') {
+          res = await api.createWebsocketRequest(request.collectionId, {
+            ...request.data,
+            name: newName,
+          });
+        }
         if (res.status !== 200) throw new Error();
         const newRequestData = await res.json();
         dispatchCollections({
@@ -917,7 +967,7 @@ function Dashboard() {
         errorToast('Could not take ownership of script', toast);
       }
     },
-    [toast],
+    [toast, user?.id],
   );
 
   const onRefreshResults = useCallback(async () => {
@@ -952,6 +1002,7 @@ function Dashboard() {
     panel = (
       <CollectionPanel
         currentCollection={currentCollection}
+        collections={collections}
         dispatchCurrentCollection={dispatchCurrentCollection}
         dispatchCollections={dispatchCollections}
         tabIndex={collectionPanelTabIndex}
@@ -959,12 +1010,12 @@ function Dashboard() {
       />
     );
   }
-  if (currentRequest) {
+  if (currentRequest && currentRequest.type === 'REST') {
     panel = (
       <Allotment vertical defaultSizes={[200, 100]} snap>
         <div className={styles.requestPanel}>
           <RequestSender
-            currentRequest={currentRequest}
+            currentRequest={currentRequest as CurrentRestRequest}
             dispatchCurrentRequest={dispatchCurrentRequest}
             collections={collections}
             dispatchCollections={dispatchCollections}
@@ -977,6 +1028,29 @@ function Dashboard() {
         </div>
         <div className={styles.responsePanel}>
           <ResponsePanel response={currentRequest?.data?.response} />
+        </div>
+      </Allotment>
+    );
+  }
+  if (currentRequest && currentRequest.type === 'WS') {
+    panel = (
+      <Allotment vertical defaultSizes={[200, 100]} snap>
+        <div className={styles.requestPanel}>
+          <WebsocketHandler
+            currentRequest={currentRequest as CurrentWebsocketRequest}
+            dispatchCurrentRequest={dispatchCurrentRequest}
+            dispatchCollections={dispatchCollections}
+            collections={collections}
+            isExtInitialized={isExtInitialized}
+            extVersion={extVersion}
+            openExtModal={onOpen}
+          />
+        </div>
+        <div className={styles.responsePanel}>
+          <WebsocketResponsePanel
+            response={currentRequest.data.response}
+            dispatchCurrentRequest={dispatchCurrentRequest}
+          />
         </div>
       </Allotment>
     );

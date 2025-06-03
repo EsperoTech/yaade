@@ -27,6 +27,7 @@ type CollectionRequestProps = {
   selected: boolean;
   selectRequest: any;
   depth: number;
+  type: 'REST' | 'WS';
   dispatchCollections: Dispatch<CollectionsAction>;
   renameRequest: (id: number, newName: string) => void;
   deleteRequest: (id: number) => void;
@@ -48,6 +49,7 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
   request,
   selected,
   depth,
+  type,
   renameRequest,
   selectRequest,
   deleteRequest,
@@ -180,12 +182,21 @@ const CollectionRequest: FunctionComponent<CollectionRequestProps> = ({
       tabIndex={0}
     >
       {Array(depth + 1).fill(<div className={styles.line} />)}
-      <span
-        className={cn(styles, 'requestMethod', [colorMode])}
-        style={{ ...getMethodColor(request.method), marginLeft: '0.8rem' }}
-      >
-        {methodName}
-      </span>
+      {type === 'REST' ? (
+        <span
+          className={cn(styles, 'requestMethod', [colorMode])}
+          style={{ ...getMethodColor(request.method ?? 'GET'), marginLeft: '0.8rem' }}
+        >
+          {methodName}
+        </span>
+      ) : (
+        <span
+          className={cn(styles, 'requestMethod', [colorMode])}
+          style={{ color: 'white', marginLeft: '0.8rem' }}
+        >
+          WS
+        </span>
+      )}
       <span className={cn(styles, 'requestName', [colorMode])}>{request.name}</span>
       <span className={styles.actionIcon}>
         <Menu>

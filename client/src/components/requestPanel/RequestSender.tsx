@@ -4,8 +4,8 @@ import { Dispatch, MutableRefObject, useMemo, useRef, useState } from 'react';
 import api from '../../api';
 import Collection from '../../model/Collection';
 import KVRow from '../../model/KVRow';
-import Request, { CurrentRequest } from '../../model/Request';
-import Response from '../../model/Response';
+import { CurrentRestRequest, RestRequest } from '../../model/Request';
+import { RestResponse } from '../../model/Response';
 import { JasmineReport } from '../../model/Script';
 import {
   CollectionsAction,
@@ -27,12 +27,67 @@ import {
   parseResponse,
   successToast,
 } from '../../utils';
+import { getMergedEnvData, getMergedHeaders } from '../../utils/env';
 import interpolate from '../../utils/interpolate';
 import { executeRequestScript, executeResponseScript } from '../../utils/script';
-import { getSelectedEnv } from '../../utils/store';
+import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import BasicModal from '../basicModal';
 import RequestPanel from './RequestPanel';
+
+function getEnvVar(
+  collections: Collection[],
+  collectionId: number,
+  key: string,
+  envName?: string,
+) {
+  if (!envName) return '';
+
+  const envData = getMergedEnvData(collections, collectionId, envName);
+
+  return envData?.[key] ?? '';
+}
+
+function mod(collections: Collection[], id: number, f: (c: Collection) => void) {
+  for (let i = 0; i < collections.length; i++) {
+    if (collections[i].id === id) {
+      f(collections[i]);
+      return;
+    }
+    if (collections[i].children) {
+      mod(collections[i].children, id, f);
+    }
+  }
+}
+
+function setEnvVar(
+  collections: Collection[],
+  dispatchCollections: Dispatch<CollectionsAction>,
+  collectionId: number,
+  key: string,
+  value: string,
+  envName?: string,
+) {
+  if (!envName) return;
+  mod(collections, collectionId, (c) => {
+    const envs = c.data?.envs;
+    if (!envs) return;
+
+    const env = envs[envName];
+    if (!env) return;
+
+    env.data[key] = value;
+  });
+  return dispatchCollections({
+    type: CollectionsActionType.SET_ENV_VAR,
+    payload: {
+      collectionId,
+      envName,
+      key,
+      value,
+    },
+  });
+}
 
 type NewReqFormState = {
   collectionId: number;
@@ -40,7 +95,7 @@ type NewReqFormState = {
 };
 
 type RequestSenderProps = {
-  currentRequest: CurrentRequest;
+  currentRequest: CurrentRestRequest;
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
   collections: Collection[];
   dispatchCollections: Dispatch<CollectionsAction>;
@@ -112,13 +167,13 @@ function RequestSender({
     }
   }
 
-  async function handleSaveNewRequestClick() {
+  async function handleSaveNewRESTRequestClick() {
     try {
-      const response = await api.createRequest(newReqForm.collectionId, {
+      const response = await api.createRestRequest(newReqForm.collectionId, {
         ...currentRequest?.data,
         name: newReqForm.name,
       });
-      const newRequest = (await response.json()) as Request;
+      const newRequest = (await response.json()) as RestRequest;
 
       dispatchCollections({
         type: CollectionsActionType.PATCH_REQUEST_DATA,
@@ -144,8 +199,14 @@ function RequestSender({
   const requestCollection = useMemo(() => {
     return findCollection(collections, currentRequest?.collectionId);
   }, [collections, currentRequest?.collectionId]);
-  const selectedEnv = useMemo(() => {
-    return requestCollection ? getSelectedEnv(requestCollection) : null;
+  const selectedEnvData = useMemo(() => {
+    if (!requestCollection) return null;
+    const envName = getSelectedEnvs()[requestCollection.id];
+    return envName ? getMergedEnvData(collections, requestCollection.id, envName) : null;
+  }, [collections, requestCollection]);
+  const selectedEnvName = useMemo(() => {
+    if (!requestCollection) return null;
+    return getSelectedEnvs()[requestCollection.id];
   }, [requestCollection]);
 
   if (collections.length > 0 && newReqForm.collectionId === -1) {
@@ -160,36 +221,6 @@ function RequestSender({
     onClose();
   }
 
-  function getEnvVar(collectionId: number, envName?: string) {
-    return (collections: Collection[], key: string): string => {
-      if (!envName) return '';
-
-      const c = findCollection(collections, collectionId);
-      if (!c) return '';
-
-      const envs = c.data?.envs;
-      if (!envs) return '';
-
-      const newEnv = envs[envName];
-      if (!newEnv) return '';
-
-      return newEnv.data[key] ?? '';
-    };
-  }
-
-  function setEnvVar(collectionId: number, key: string, value: string, envName?: string) {
-    if (!envName) return;
-    return dispatchCollections({
-      type: CollectionsActionType.SET_ENV_VAR,
-      payload: {
-        collectionId,
-        envName,
-        key,
-        value,
-      },
-    });
-  }
-
   const encodeFormDataBody = (kvs: KVRow[]) => {
     const params = new URLSearchParams();
     for (const kv of kvs) {
@@ -202,34 +233,28 @@ function RequestSender({
   };
 
   async function sendRequest(
-    request: Request,
+    request: RestRequest,
+    reqCollections: Collection[],
     envName?: string,
     n?: number,
-  ): Promise<Response> {
+  ): Promise<RestResponse> {
     if (n && n >= 5) {
       throw Error('Exec loop detected in request script');
     }
 
-    const collection = findCollection(collections, request.collectionId);
-
-    const enabledCollectionHeaders = collection?.data?.headers
-      ? collection.data.headers.filter((h) => h.isEnabled !== false)
-      : [];
-    const enabledRequestHeaders = request.data.headers
-      ? request.data.headers.filter((h) => h.isEnabled !== false)
-      : [];
+    const collection = findCollection(reqCollections, request.collectionId);
+    const headers = getMergedHeaders(request, reqCollections);
     let auth = collection?.data?.auth;
     if (request.data.auth && request.data.auth.enabled) {
       auth = request.data.auth;
     }
 
-    const injectedReq: Request = {
+    const injectedReq: RestRequest = {
       ...request,
       data: {
         ...request.data,
         auth,
-        // NOTE: this order is important because we want request headers to take precedence
-        headers: [...enabledCollectionHeaders, ...enabledRequestHeaders],
+        headers,
       },
     };
 
@@ -246,6 +271,7 @@ function RequestSender({
       }
       await doRequestScript(
         injectedReq,
+        reqCollections,
         collection?.data?.requestScript,
         true,
         envName,
@@ -260,6 +286,7 @@ function RequestSender({
       }
       await doRequestScript(
         injectedReq,
+        reqCollections,
         injectedReq.data.requestScript,
         false,
         envName,
@@ -267,10 +294,10 @@ function RequestSender({
       );
     }
 
-    let response = null;
+    let response: RestResponse | null = null;
     switch (proxy) {
       case 'server':
-        response = await sendRequestToServer(injectedReq, envName);
+        response = await sendRequestToServer(injectedReq, reqCollections, envName);
         break;
       case 'ext':
         if (!isExtInitialized.current) {
@@ -279,6 +306,7 @@ function RequestSender({
         }
         response = await sendRequestToExtension(
           injectedReq,
+          reqCollections,
           envName,
           collection?.data?.settings?.extensionOptions?.timeout,
         );
@@ -290,6 +318,7 @@ function RequestSender({
     if (injectedReq.data.responseScript) {
       const jasmineReport = await doResponseScript(
         injectedReq,
+        reqCollections,
         response,
         injectedReq.data.responseScript,
         false,
@@ -304,6 +333,7 @@ function RequestSender({
     if (collection?.data?.responseScript) {
       const jasmineReport = await doResponseScript(
         injectedReq,
+        reqCollections,
         response,
         collection?.data?.responseScript,
         true,
@@ -319,24 +349,31 @@ function RequestSender({
   }
 
   async function doRequestScript(
-    request: Request,
+    request: RestRequest,
+    reqCollections: Collection[],
     requestScript: string,
     isCollectionLevel: boolean,
     envName?: string,
     n?: number,
   ) {
-    // NOTE: cannot pass state on top level because it does not use most current state
     const set = (key: string, value: string) =>
-      setEnvVar(request.collectionId, key, value, envName);
+      setEnvVar(
+        reqCollections,
+        dispatchCollections,
+        request.collectionId,
+        key,
+        value,
+        envName,
+      );
     const get = (key: string): string =>
-      getEnvVar(request.collectionId, envName)(collections, key);
+      getEnvVar(reqCollections, request.collectionId, key, envName);
     const exec = async (requestId: number, envName?: string) => {
-      const request = findRequest(collections, requestId);
-      if (!request) {
-        throw Error(`Request with id ${requestId} not found`);
+      const request = findRequest(reqCollections, requestId);
+      if (!request || request.type !== 'REST') {
+        throw Error(`REST Request with id ${requestId} not found`);
       }
       if (!n) n = 0;
-      return await sendRequest(request, envName, n + 1);
+      return await sendRequest(request, reqCollections, envName, n + 1);
     };
     await executeRequestScript(
       request,
@@ -350,8 +387,9 @@ function RequestSender({
   }
 
   async function doResponseScript(
-    request: Request,
-    response: Response,
+    request: RestRequest,
+    reqCollections: Collection[],
+    response: RestResponse,
     responseScript: string,
     isCollectionLevel: boolean,
     envName?: string,
@@ -359,16 +397,23 @@ function RequestSender({
   ): Promise<JasmineReport | null> {
     // NOTE: cannot pass state on top level because it does not use most current state
     const set = (key: string, value: string) =>
-      setEnvVar(request.collectionId, key, value, envName);
+      setEnvVar(
+        reqCollections,
+        dispatchCollections,
+        request.collectionId,
+        key,
+        value,
+        envName,
+      );
     const get = (key: string): string =>
-      getEnvVar(request.collectionId, envName)(collections, key);
+      getEnvVar(reqCollections, request.collectionId, key, envName);
     const exec = async (requestId: number, envName?: string) => {
-      const request = findRequest(collections, requestId);
-      if (!request) {
-        throw Error(`Request with id ${requestId} not found`);
+      const request = findRequest(reqCollections, requestId);
+      if (!request || request.type !== 'REST') {
+        throw Error(`REST Request with id ${requestId} not found`);
       }
       if (!n) n = 0;
-      return await sendRequest(request, envName, n + 1);
+      return await sendRequest(request, reqCollections, envName, n + 1);
     };
     return await executeResponseScript(
       request,
@@ -384,10 +429,11 @@ function RequestSender({
   }
 
   async function sendRequestToExtension(
-    request: Request,
+    request: RestRequest,
+    reqCollections: Collection[],
     envName?: string,
     timeout = 5,
-  ): Promise<Response> {
+  ): Promise<RestResponse> {
     return new Promise((resolve, reject) => {
       const messageId = createMessageId(request.id);
 
@@ -414,12 +460,12 @@ function RequestSender({
 
       let interpolatedRequest = { ...request };
       if (envName) {
-        const collection = findCollection(collections, request.collectionId);
+        const collection = findCollection(reqCollections, request.collectionId);
         if (!collection) {
           throw Error('Collection not found for id: ' + request.collectionId);
         }
-        const selectedEnv = collection.data?.envs?.[envName];
-        const selectedEnvData = selectedEnv?.data ?? {};
+        const selectedEnvData =
+          getMergedEnvData(reqCollections, request.collectionId, envName) ?? {};
         const interpolateResult = interpolate(request, selectedEnvData);
         interpolatedRequest = interpolateResult.result;
       }
@@ -476,7 +522,7 @@ function RequestSender({
     });
   }
 
-  async function saveOnSend(request: Request) {
+  async function saveOnSend(request: RestRequest) {
     if (request.id === -1) return;
 
     let response = await api.updateRequest(request);
@@ -499,16 +545,17 @@ function RequestSender({
   }
 
   async function sendRequestToServer(
-    request: Request,
+    request: RestRequest,
+    reqCollections: Collection[],
     envName?: string,
-  ): Promise<Response> {
+  ): Promise<RestResponse> {
     if (envName) {
-      const collection = findCollection(collections, request.collectionId);
+      const collection = findCollection(reqCollections, request.collectionId);
       if (!collection) {
         throw Error('Collection not found for id: ' + request.collectionId);
       }
-      const selectedEnv = collection.data?.envs?.[envName];
-      const selectedEnvData = selectedEnv?.data ?? {};
+      const selectedEnvData =
+        getMergedEnvData(reqCollections, request.collectionId, envName) ?? {};
       const interpolateResult = interpolate(request, selectedEnvData);
       request = interpolateResult.result;
     }
@@ -549,11 +596,15 @@ function RequestSender({
           currentRequest={currentRequest}
           dispatchCurrentRequest={dispatchCurrentRequest}
           handleSaveRequestClick={handleSaveRequestClick}
-          sendRequest={sendRequest}
+          sendRequest={(request) => {
+            const reqCollections = JSON.parse(JSON.stringify(collections));
+            return sendRequest(request, reqCollections, selectedEnvName ?? undefined);
+          }}
           saveOnSend={saveOnSend}
-          selectedEnv={selectedEnv}
           tabIndex={tabIndex}
           setTabIndex={setTabIndex}
+          selectedEnvData={selectedEnvData ?? {}}
+          selectedEnvName={selectedEnvName ?? ''}
         />
       )}
       <BasicModal
@@ -561,7 +612,7 @@ function RequestSender({
         onClose={onCloseClear}
         initialRef={initialRef}
         heading="Save a new request"
-        onClick={handleSaveNewRequestClick}
+        onClick={handleSaveNewRESTRequestClick}
         isButtonDisabled={newReqForm.name === '' || newReqForm.collectionId === -1}
         buttonText="Save"
         buttonColor="green"

@@ -10,7 +10,7 @@ import { LanguageName, loadLanguage } from '@uiw/codemirror-extensions-langs';
 import { useCodeMirror } from '@uiw/react-codemirror';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 
-import { CurrentRequest } from '../../model/Request';
+import { CurrentRestRequest } from '../../model/Request';
 import { successToast } from '../../utils';
 import { generateHTTPSnippet, Target } from '../../utils/httpsnippet';
 import styles from './GenerateCodeTab.module.css';
@@ -132,11 +132,11 @@ const options: Array<StateTarget> = [
 ];
 
 type Props = {
-  request: CurrentRequest;
-  env: any;
+  request: CurrentRestRequest;
+  selectedEnvData: Record<string, string>;
 };
 
-const GenerateCodeTab: FC<Props> = ({ request, env }) => {
+const GenerateCodeTab: FC<Props> = ({ request, selectedEnvData }) => {
   const { colorMode } = useColorMode();
   const toast = useToast();
   const [target, setTarget] = useState<StateTarget>({
@@ -155,7 +155,12 @@ const GenerateCodeTab: FC<Props> = ({ request, env }) => {
 
   useEffect(() => {
     try {
-      const code = generateHTTPSnippet(request, target.target, target.client, env);
+      const code = generateHTTPSnippet(
+        request,
+        target.target,
+        target.client,
+        selectedEnvData,
+      );
       setSnippet(code);
     } catch (e: any) {
       toast({
@@ -166,7 +171,7 @@ const GenerateCodeTab: FC<Props> = ({ request, env }) => {
         isClosable: true,
       });
     }
-  }, [env, request, target, toast]);
+  }, [selectedEnvData, request, target, toast]);
 
   const { setContainer } = useCodeMirror({
     container: ref.current,

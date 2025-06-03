@@ -2,6 +2,8 @@ import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
 import { tags } from '@lezer/highlight';
 
+import KVRow from '../../model/KVRow';
+
 const helpCursor = syntaxHighlighting(
   HighlightStyle.define([
     {

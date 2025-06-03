@@ -202,6 +202,7 @@ function MoveableRequest({
         selected={selected}
         selectRequest={selectRequest}
         depth={depth}
+        type={request.type}
         dispatchCollections={dispatchCollections}
         renameRequest={renameRequest}
         deleteRequest={deleteRequest}

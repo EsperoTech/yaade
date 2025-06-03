@@ -20,7 +20,7 @@ const theme = EditorView.theme({
 type BodyTextEditorProps = {
   content: string;
   setContent: any;
-  selectedEnv: any;
+  selectedEnvData: Record<string, string>;
   contentType: string;
   setEditorView?: any;
 };
@@ -28,7 +28,7 @@ type BodyTextEditorProps = {
 function BodyTextEditor({
   content,
   setContent,
-  selectedEnv,
+  selectedEnvData,
   contentType,
   setEditorView,
 }: BodyTextEditorProps) {
@@ -36,7 +36,7 @@ function BodyTextEditor({
 
   const extensions = [
     cursorTooltipBaseTheme,
-    wordHover(selectedEnv?.data),
+    wordHover(selectedEnvData),
     helpCursor,
     theme,
   ];

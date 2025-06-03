@@ -99,6 +99,50 @@ class ScriptRoute(
         ctx.end()
     }
 
+    fun tokenListScripts(ctx: RoutingContext) {
+        val principal = ctx.user().principal()
+        val userId = principal.getLong("id")
+        val user = daoManager.userDao.getById(userId)
+            ?: throw ServerError(HttpResponseStatus.FORBIDDEN.code(), "User is not logged in")
+        val rawCollections = if (daoManager.userDao.isAdmin(userId))
+            daoManager.collectionDao.getAll()
+        else {
+            daoManager.collectionDao.getForUser(user)
+        }
+
+        val scripts = daoManager.jobScriptDao.getAll()
+        val result = JsonArray()
+        for (script in scripts) {
+            val collection = rawCollections.find { it.id == script.collectionId }
+            if (collection != null && collection.canRead(user)) {
+                val scriptJson = script.toJson()
+                val collectionJson = collection.toJson()
+                result.add(
+                    JsonObject().put(
+                        "scriptName",
+                        scriptJson.getJsonObject("data")?.getString("name")
+                    )
+                        .put(
+                            "scriptDescription",
+                            scriptJson.getJsonObject("data")?.getString("description")
+                        )
+                        .put(
+                            "collectionName",
+                            collectionJson.getJsonObject("data")?.getString("name")
+                        )
+                        .put(
+                            "collectionDescription",
+                            collectionJson.getJsonObject("data")?.getString("description")
+                        )
+                        .put("availableEnvs", collection.getAvailableEnvNames())
+                        .put("collectionId", collectionJson.getLong("id"))
+                        .put("scriptId", scriptJson.getLong("id"))
+                )
+            }
+        }
+        ctx.end(result.encode())
+    }
+
     suspend fun tokenRunScript(ctx: RoutingContext) {
         val id = ctx.pathParam("id").toLong()
         val envName = ctx.queryParam("env").firstOrNull()
@@ -114,8 +158,22 @@ class ScriptRoute(
             ctx.user().principal().getJsonObject("data", JsonObject())
                 .getJsonArray("groups", JsonArray())
         val scriptString = jobScript.jsonData().getString("script")
+        val additionalEnvData =
+            ctx.body()?.asJsonObject()?.getJsonArray("additionalEnvData")?.list
+                ?.fold(JsonObject()) { it, obj ->
+                    val o = JsonObject.mapFrom(obj)
+                    it.put(o.getString("key"), o.getString("value"))
+                }
+                ?: JsonObject()
         val result =
-            run(jobScript.id, scriptString, jobScript.collectionId, envName ?: "", ownerGroups)
+            run(
+                jobScript.id,
+                scriptString,
+                jobScript.collectionId,
+                envName ?: "",
+                ownerGroups,
+                additionalEnvData
+            )
                 ?: throw ServerError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     "Script failed"
@@ -148,7 +206,14 @@ class ScriptRoute(
         val ownerGroups = JsonArray(owner.groups().toList())
         val scriptString = jobScript.jsonData().getString("script")
             ?: throw ServerError(HttpResponseStatus.BAD_REQUEST.code(), "No script provided")
-        val result = run(jobScript.id, scriptString, jobScript.collectionId, envName, ownerGroups)
+        val result = run(
+            jobScript.id,
+            scriptString,
+            jobScript.collectionId,
+            envName,
+            ownerGroups,
+            JsonObject()
+        )
             ?: throw ServerError(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), "Script failed")
         ctx.end(result.encode())
     }
@@ -158,7 +223,8 @@ class ScriptRoute(
         scriptString: String,
         collectionId: Long,
         envName: String?,
-        ownerGroups: JsonArray
+        ownerGroups: JsonArray,
+        additionalEnvData: JsonObject
     ): JsonObject? {
         var res: JsonObject? = null
         try {
@@ -167,6 +233,7 @@ class ScriptRoute(
                 .put("collectionId", collectionId)
                 .put("envName", envName)
                 .put("ownerGroups", ownerGroups)
+                .put("additionalEnvData", additionalEnvData)
             res = vertx.eventBus()
                 .request<JsonObject>(
                     "script.run",

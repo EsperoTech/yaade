@@ -28,9 +28,9 @@ type UriBarProps = {
   setMethod: any;
   isLoading: boolean;
   handleSendButtonClick: () => void;
-  env: any;
   // NOTE: we need this to set the focus element on changing the request
   currentRequestId: number;
+  selectedEnvData: Record<string, string>;
 };
 
 type MethodOptionProps = {
@@ -44,8 +44,8 @@ function UriBar({
   setMethod,
   isLoading,
   handleSendButtonClick,
-  env,
   currentRequestId,
+  selectedEnvData,
 }: UriBarProps) {
   const { colorMode } = useColorMode();
   const ref = useRef<HTMLDivElement>(null);
@@ -59,7 +59,7 @@ function UriBar({
       colorMode === 'light' ? baseThemeLight : baseThemeDark,
       singleLineExtension,
       history(),
-      wordHover(env?.data),
+      wordHover(selectedEnvData),
       helpCursor,
       cursorTooltipBaseTheme,
       drawSelection(),

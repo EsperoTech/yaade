@@ -1,10 +1,10 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import CommandPalette, { Command } from 'react-command-palette';
 
 import { CurrentModalContext } from '../../context/CurrentModalContext';
 import { FocusElementsContext } from '../../context/FocusElementsContext';
 import Collection, { CurrentCollection } from '../../model/Collection';
-import Request, { CurrentRequest } from '../../model/Request';
+import { CurrentRestRequest, RestRequest, WebsocketRequest } from '../../model/Request';
 import Script, { CurrentScript } from '../../model/Script';
 import {
   OpenHistory,
@@ -15,7 +15,7 @@ import { useKeyPress } from '../../utils/useKeyPress';
 
 type CmdPaletteProps = {
   collections: Collection[];
-  currentRequest?: CurrentRequest;
+  currentRequest?: CurrentRestRequest;
   currentCollection?: CurrentCollection;
   currentScript?: CurrentScript;
   selectCollection: any;
@@ -42,13 +42,7 @@ function CmdPalette({
 }: CmdPaletteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { setCurrentModal: setModal } = useContext(CurrentModalContext);
-  const {
-    uriBarView,
-    bodyEditorView,
-    requestScriptEditorView,
-    responseScriptEditorView,
-    i,
-  } = useContext(FocusElementsContext);
+  const { uriBarView } = useContext(FocusElementsContext);
   useKeyPress(() => setIsOpen((open) => !open), 'p', true, true);
 
   function getCurrentCollectionId() {
@@ -56,6 +50,7 @@ function CmdPalette({
       currentCollection?.id || currentRequest?.collectionId || currentScript?.collectionId
     );
   }
+  useKeyPress(() => setIsOpen(true), 'p', true, true);
 
   async function openCollectionPanelTab(index: number) {
     const collectionId = getCurrentCollectionId();
@@ -253,7 +248,9 @@ function CmdPalette({
     }
     return res;
   }
-  function getFlattenedRequests(collections: Collection[]): Request[] {
+  function getFlattenedRequests(
+    collections: Collection[],
+  ): (RestRequest | WebsocketRequest)[] {
     return getFlattenedCollections(collections).flatMap((c) => c.requests ?? []);
   }
   function getFlattenedScripts(collections: Collection[]): Script[] {

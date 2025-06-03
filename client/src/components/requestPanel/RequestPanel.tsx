@@ -6,13 +6,18 @@ import { VscSave } from 'react-icons/vsc';
 import { UserContext } from '../../context';
 import { FocusElementsContext } from '../../context/FocusElementsContext';
 import KVRow from '../../model/KVRow';
-import Request, { AuthData, CurrentRequest } from '../../model/Request';
-import Response from '../../model/Response';
+import { AuthData, CurrentRestRequest, RestRequest } from '../../model/Request';
+import { RestResponse } from '../../model/Response';
 import {
   CurrentRequestAction,
   CurrentRequestActionType,
 } from '../../state/currentRequest';
-import { currentRequestToRequest, errorToast } from '../../utils';
+import {
+  currentRestRequestToRequest,
+  errorToast,
+  getParamsFromUri,
+  getUriFromParams,
+} from '../../utils';
 import { getSelectedEnvs } from '../../utils/store';
 import AuthTab from '../authTab';
 import BodyEditor from '../bodyEditor';
@@ -23,82 +28,16 @@ import KVEditor from '../kvEditor';
 import UriBar from '../uriBar';
 import styles from './RequestPanel.module.css';
 
-function getParamsFromUri(uri: string, params?: Array<KVRow>): Array<KVRow> {
-  const paramString = uri.split('?')[1];
-  if (!paramString) {
-    return params?.filter((param) => param.isEnabled === false) ?? [];
-  }
-
-  const uriParams = paramString.split('&').map((kv) => {
-    const [k, ...v] = kv.split('='); // ...v with v.join('=') handle cases where the value contains '='
-    return {
-      key: k,
-      value: v.join('='),
-    };
-  });
-
-  if (!params) {
-    return uriParams;
-  }
-
-  const newParams: KVRow[] = [];
-
-  let indexEnabledParams = 0;
-  for (const [_, param] of params.entries()) {
-    if (param.isEnabled === false) {
-      newParams.push(param);
-    } else {
-      const uriParam = uriParams[indexEnabledParams];
-      if (!uriParam) {
-        console.warn('params and URI params out of sync (enabled params > URI params)');
-        newParams.push({ key: '', value: '' });
-      } else {
-        newParams.push(uriParam);
-      }
-      indexEnabledParams++;
-    }
-  }
-
-  if (uriParams.length > indexEnabledParams) {
-    console.warn('params and URI params out of sync (URI params > enabled params)');
-  }
-  // add remaining URI params to newParams in case they go out of sync
-  for (let i = indexEnabledParams; i < uriParams.length; i++) {
-    newParams.push(uriParams[i]);
-  }
-
-  return newParams;
-}
-
-function getUriFromParams(uri: string, params: Array<KVRow>): string {
-  let newUri = uri;
-  if (!newUri.includes('?')) {
-    newUri += '?';
-  }
-  const base = newUri.split('?')[0];
-  let searchParams = '';
-  for (let i = 0; i < params.length; i++) {
-    if (params[i].key === '' && params[i].value === '') {
-      continue;
-    }
-    if (i !== 0) searchParams += '&';
-    searchParams += `${params[i].key}=${params[i].value}`;
-  }
-  if (searchParams === '') {
-    return base;
-  }
-  return `${base}?${searchParams}`;
-}
-
 type RequestPanelProps = {
-  currentRequest: CurrentRequest;
+  currentRequest: CurrentRestRequest;
   dispatchCurrentRequest: Dispatch<CurrentRequestAction>;
-  sendRequest(request: Request, envName?: string, n?: number): Promise<Response>;
-  saveOnSend: (request: Request) => Promise<void>;
+  sendRequest(request: RestRequest, envName?: string, n?: number): Promise<RestResponse>;
+  saveOnSend: (request: RestRequest) => Promise<void>;
   handleSaveRequestClick: () => Promise<void>;
-  selectedEnv: Record<string, string>;
   tabIndex: number;
   setTabIndex: (index: number) => void;
+  selectedEnvData: Record<string, string>;
+  selectedEnvName?: string;
 };
 
 function RequestPanel({
@@ -107,9 +46,10 @@ function RequestPanel({
   sendRequest,
   saveOnSend,
   handleSaveRequestClick,
-  selectedEnv,
   tabIndex,
   setTabIndex,
+  selectedEnvData,
+  selectedEnvName,
 }: RequestPanelProps) {
   const toast = useToast();
   const { user } = useContext(UserContext);
@@ -255,7 +195,7 @@ function RequestPanel({
         isLoading: true,
       });
 
-      let requestToSend = currentRequestToRequest(currentRequest);
+      let requestToSend = currentRestRequestToRequest(currentRequest);
 
       const envName = getSelectedEnvs()[requestToSend.collectionId];
 
@@ -266,7 +206,7 @@ function RequestPanel({
         data: { response },
       });
 
-      const newRequest: Request = {
+      const newRequest: RestRequest = {
         ...currentRequest,
         data: { ...currentRequest.data, response: response },
       };
@@ -294,8 +234,8 @@ function RequestPanel({
           setMethod={setMethod}
           handleSendButtonClick={handleSendButtonClick}
           isLoading={currentRequest.isLoading}
-          env={selectedEnv}
           currentRequestId={currentRequest.id}
+          selectedEnvData={selectedEnvData}
         />
         <IconButton
           aria-label="save-request-button"
@@ -347,7 +287,7 @@ function RequestPanel({
               setKvs={setParams}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              env={selectedEnv}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel>
@@ -357,7 +297,7 @@ function RequestPanel({
               setKvs={setHeaders}
               canDisableRows={true}
               hasEnvSupport={'BOTH'}
-              env={selectedEnv}
+              selectedEnvData={selectedEnvData}
             />
           </TabPanel>
           <TabPanel h="100%">
@@ -366,7 +306,7 @@ function RequestPanel({
               formDataContent={currentRequest.data.formDataBody}
               setContent={setBody}
               setFormDataContent={setFormDataBody}
-              selectedEnv={selectedEnv}
+              selectedEnvData={selectedEnvData}
               contentType={contentType}
               setContentType={setContentType}
               setContentTypeHeader={setContentTypeHeader}
@@ -377,7 +317,9 @@ function RequestPanel({
               authData={currentRequest.data.auth}
               setAuthData={setAuthData}
               doSave={handleSaveRequestClick}
-              selectedEnv={selectedEnv}
+              selectedEnvData={selectedEnvData}
+              selectedEnvName={selectedEnvName}
+              selectedCollectionId={currentRequest.collectionId}
             />
           </TabPanel>
           <TabPanel h="100%">
@@ -393,7 +335,7 @@ function RequestPanel({
             />
           </TabPanel>
           <TabPanel>
-            <GenerateCodeTab request={currentRequest} env={selectedEnv} />
+            <GenerateCodeTab request={currentRequest} selectedEnvData={selectedEnvData} />
           </TabPanel>
         </TabPanels>
       </Tabs>

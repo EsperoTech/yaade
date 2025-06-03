@@ -66,7 +66,7 @@ object OpenApiService {
         }
 
         return RequestDb(
-            collection.id, JsonObject()
+            collection.id, "REST", JsonObject()
                 .put("name", name)
                 .put("description", description)
                 .put("uri", basePath + path + queryParams)

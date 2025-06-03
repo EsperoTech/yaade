@@ -20,9 +20,27 @@ class CollectionDao(connectionSource: ConnectionSource) :
         return getAll().filter { it.isOwner(user) && it.getName() == name }
     }
 
-    fun getSecrets(collectionId: Long, envname: String): JsonObject? {
-        val collection: CollectionDb = getById(collectionId) ?: return null
-        return collection.getSecrets(envname)
+    fun getSecrets(collectionId: Long, envName: String): JsonObject? {
+        val parentTree = mutableListOf<JsonObject>()
+        var currentCollectionId = collectionId
+        var currentEnvName = envName
+        var depth = 0
+        while (depth < 10) {
+            val currentCollection = getById(currentCollectionId) ?: break
+            val currentEnv = currentCollection.getEnv(currentEnvName) ?: break
+            parentTree.add(0, currentCollection.getSecrets(currentEnvName) ?: JsonObject())
+            currentEnvName = currentEnv.getString("parentEnvName") ?: break
+            currentCollectionId = currentCollection.jsonData().getLong("parentId") ?: break
+            depth++
+        }
+
+        val result = JsonObject()
+        for (s in parentTree) {
+            for (kv in s) {
+                result.put(kv.key, kv.value)
+            }
+        }
+        return result
     }
 
     fun updateWithoutSecrets(c: CollectionDb) {

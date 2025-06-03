@@ -71,7 +71,11 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
             val startTime = System.currentTimeMillis()
             val ownerGroups =
                 msg.body().getJsonArray("ownerGroups", JsonArray()).map { it as String }.toSet()
-            val globalBindings = createGlobalBindings(context, collection, envName, ownerGroups)
+            val additionalEnvData =
+                (msg.body().getJsonObject("additionalEnvData") ?: JsonObject())
+                    .associate { it.key to it.value as String }
+            val globalBindings =
+                createGlobalBindings(context, collection, envName, ownerGroups, additionalEnvData)
             globalBindings.putMember(
                 "__continuation",
                 continuation
@@ -140,22 +144,45 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
         ) {
             throw IllegalArgumentException("Owner of script does not have the necessary permissions")
         }
+        val parentTree = getParentTree(collection, ownerGroups)
+        val envData = getMergedEnvData(collection, envName, parentTree)
+        val requestHeaders = request.jsonData().getJsonArray("headers", JsonArray())
+        val headers = getCollectionTreeHeaders(parentTree, requestHeaders)
+        val requestData = request.jsonData().copy().put("headers", headers)
         return CompletableFuture.supplyAsync(
-            { interpolate(request.jsonData(), collection, envName) },
+            { interpolate(requestData, collection, envName, envData ?: JsonObject()) },
             executor
         )
+    }
+
+    private fun getCollectionTreeHeaders(
+        parentTree: List<CollectionDb>,
+        headers: JsonArray
+    ): JsonArray {
+        val collectionHeaders = parentTree.reversed().fold(JsonArray()) { acc, c ->
+            acc.addAll(c.jsonData().getJsonArray("headers", JsonArray()))
+        }
+        collectionHeaders.addAll(headers)
+        val result = JsonArray()
+        for (header in collectionHeaders) {
+            if (header is JsonObject) {
+                if (header.getBoolean("isEnabled", true)) {
+                    result.add(header)
+                }
+            }
+        }
+        return result
     }
 
     private fun interpolate(
         request: JsonObject,
         collection: CollectionDb,
         envName: String?,
+        envData: JsonObject,
     ): JsonObject {
         if (envName == null) {
             return request
         }
-        val env = collection.getEnv(envName) ?: JsonObject()
-        val envData = env.getJsonObject("data") ?: JsonObject()
         val out = ByteArrayOutputStream()
         newContext(out).use { context ->
             runtimeBuilder.initRuntime(context)
@@ -180,6 +207,41 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
         }
     }
 
+    private fun getParentTree(
+        collection: CollectionDb,
+        ownerGroups: Set<String>,
+        i: Int = 0
+    ): List<CollectionDb> {
+        if (i > 10) {
+            return emptyList()
+        }
+        if (!ownerGroups.contains("admin") && collection.groups().intersect(ownerGroups).isEmpty())
+            throw RuntimeException("Owner of script does not have the necessary permissions")
+        val parentId = collection.jsonData().getLong("parentId") ?: return listOf(collection)
+        val c = daoManager.collectionDao.getById(parentId)
+            ?: return listOf(collection)
+        return listOf(collection) + getParentTree(c, ownerGroups, i + 1)
+    }
+
+    private fun getMergedEnvData(
+        collection: CollectionDb,
+        envName: String?,
+        parentTree: List<CollectionDb>
+    ): JsonObject? {
+        if (envName == null) return null
+        if (collection.jsonData().getJsonObject("envs")?.getJsonObject(envName) == null) return null
+        val envs: MutableList<JsonObject> = mutableListOf()
+        var currentEnvName = envName
+        for (c in parentTree) {
+            val envData = c.jsonData().getJsonObject("envs")?.getJsonObject(currentEnvName)
+                ?: break
+            envs.add(envData.getJsonObject("data"))
+            currentEnvName = envData.getString("parentEnvName", "")
+            if (currentEnvName.isEmpty()) break
+        }
+        return envs.reversed().fold(JsonObject()) { acc, json -> acc.mergeIn(json) }
+    }
+
     private fun newContext(out: ByteArrayOutputStream): Context {
         return contextBuilder.out(out).err(out).build()
     }
@@ -188,7 +250,8 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
         context: Context,
         collection: CollectionDb,
         envName: String?,
-        ownerGroups: Set<String>
+        ownerGroups: Set<String>,
+        additionalEnvData: Map<String, String>
     ): Value {
         val globalBindings: Value = context.getBindings("js")
         globalBindings.putMember("__exec", Exec(vertx.eventBus(), ownerGroups, this))
@@ -197,7 +260,8 @@ class ScriptRunner(private val daoManager: DaoManager) : CoroutineVerticle() {
             Environment(
                 collection,
                 envName ?: "",
-                daoManager
+                daoManager,
+                additionalEnvData
             )
         )
         return globalBindings

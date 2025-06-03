@@ -158,6 +158,13 @@ class CollectionDb {
         return env.getJsonObject("data")?.getString(key)
     }
 
+    fun getParentEnvName(envName: String): String? {
+        val json = jsonData()
+        val envs = json.getJsonObject("envs") ?: return null
+        val env = envs.getJsonObject(envName) ?: return null
+        return env.getString("parentEnvName")
+    }
+
     fun setSecret(envName: String, key: String, value: String) {
         val json = jsonData()
         var envs = json.getJsonObject("envs")
@@ -231,6 +238,12 @@ class CollectionDb {
         val json = jsonData()
         val envs = json.getJsonObject("envs") ?: return null
         return envs.getJsonObject(name)
+    }
+
+    fun getAvailableEnvNames(): List<String> {
+        val json = jsonData()
+        val envs = json.getJsonObject("envs") ?: return emptyList()
+        return envs.map.map { it.key }
     }
 
     companion object {

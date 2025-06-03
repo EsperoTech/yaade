@@ -33,7 +33,7 @@ import api from '../../api';
 import { UserContext } from '../../context';
 import { CurrentModalContext } from '../../context/CurrentModalContext';
 import Collection, { SidebarCollection } from '../../model/Collection';
-import Request from '../../model/Request';
+import { RestRequest, WebsocketRequest } from '../../model/Request';
 import Script from '../../model/Script';
 import { CollectionsAction, CollectionsActionType } from '../../state/collections';
 import { cn, errorToast, successToast } from '../../utils';
@@ -377,7 +377,7 @@ function MoveableHeader({
     clearCurrentModal();
   }
 
-  async function handleCreateRequestClick() {
+  async function handleCreateRESTRequestClick() {
     try {
       let data = {};
       if (state.importData) {
@@ -398,8 +398,31 @@ function MoveableHeader({
           method: 'GET',
         };
       }
-      const response = await api.createRequest(collection.id, data);
-      const newRequest = (await response.json()) as Request;
+      const response = await api.createRestRequest(collection.id, data);
+      const newRequest = (await response.json()) as RestRequest;
+
+      dispatchCollections({
+        type: CollectionsActionType.ADD_REQUEST,
+        request: newRequest,
+      });
+      selectRequest.current(newRequest.id);
+
+      onCloseClear();
+      successToast('A new request was created.', toast);
+    } catch (e) {
+      console.error(e);
+      errorToast('The request could be not created', toast);
+    }
+  }
+
+  async function handleCreateWebsocketRequestClick() {
+    try {
+      const data = {
+        name: state.newRequestName,
+        method: 'GET',
+      };
+      const response = await api.createWebsocketRequest(collection.id, data);
+      const newRequest = (await response.json()) as WebsocketRequest;
 
       dispatchCollections({
         type: CollectionsActionType.ADD_REQUEST,
@@ -502,14 +525,14 @@ function MoveableHeader({
     ? null
     : ((s: string | undefined) => {
         switch (s) {
-          case 'newRequest':
+          case 'newRestRequest':
             return (
               <BasicModal
                 isOpen={isOpen}
                 onClose={onCloseClear}
                 initialRef={initialRef}
                 heading="Create a new request"
-                onClick={handleCreateRequestClick}
+                onClick={handleCreateRESTRequestClick}
                 isButtonDisabled={state.newRequestName === ''}
                 buttonText="Create"
                 buttonColor="green"
@@ -568,6 +591,30 @@ function MoveableHeader({
                     </TabPanel>
                   </TabPanels>
                 </Tabs>
+              </BasicModal>
+            );
+          case 'newWebsocketRequest':
+            return (
+              <BasicModal
+                isOpen={isOpen}
+                onClose={onCloseClear}
+                initialRef={initialRef}
+                heading="Create a new request"
+                onClick={handleCreateWebsocketRequestClick}
+                isButtonDisabled={state.newRequestName === ''}
+                buttonText="Create"
+                buttonColor="green"
+              >
+                <Input
+                  placeholder="Name"
+                  w="100%"
+                  borderRadius={20}
+                  backgroundColor={colorMode === 'light' ? 'white' : undefined}
+                  colorScheme="green"
+                  value={state.newRequestName}
+                  onChange={(e) => setState({ ...state, newRequestName: e.target.value })}
+                  ref={initialRef}
+                />
               </BasicModal>
             );
           case 'newScript':
@@ -816,6 +863,15 @@ function MoveableHeader({
                     }}
                   >
                     New Request
+                  </MenuItem>
+                  <MenuItem
+                    icon={<AddIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentModal('newWebsocketRequest', 'collection', collection.id);
+                    }}
+                  >
+                    New Websocket Request
                   </MenuItem>
                   <MenuItem
                     icon={<VscFolder />}

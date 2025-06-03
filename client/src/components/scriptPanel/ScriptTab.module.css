@@ -1,0 +1,10 @@
+.menu {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.container {
+  height: calc(100% - 2rem);
+}

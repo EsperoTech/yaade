@@ -33,12 +33,14 @@ import styles from './EnvironmentsTab.module.css';
 type Environment = {
   data: Record<string, string>;
   proxy: string;
+  parentEnvName?: string;
   secretKeys: string[];
 };
 
 type EnvironmentModalProps = {
   collectionId: number;
   envs: Record<string, Environment>;
+  parentEnvNames: string[];
   setEnvs: (envs: Record<string, Environment>) => void;
 };
 
@@ -58,6 +60,7 @@ type EnvironmentTabState = {
   selectedEnvSecrets: Secret[];
   newSecretKey: string;
   newSecretValue: string;
+  selectedParentEnvName?: string;
 };
 
 const DEFAULT_ENV = {
@@ -72,6 +75,7 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
   collectionId,
   envs,
   setEnvs,
+  parentEnvNames,
 }) => {
   const [state, setState] = useState<EnvironmentTabState>({
     modalState: 'default',
@@ -288,6 +292,18 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
       [selectedEnvName]: {
         ...selectedEnv,
         proxy,
+      },
+    });
+  }
+
+  function setParentEnvName(parentEnvName: string) {
+    if (!selectedEnvName) return;
+    const selectedEnv = getEnvOrDefault(selectedEnvName);
+    setEnvs({
+      ...envs,
+      [selectedEnvName]: {
+        ...selectedEnv,
+        parentEnvName,
       },
     });
   }
@@ -554,6 +570,23 @@ const EnvironmentTab: FunctionComponent<EnvironmentModalProps> = ({
           >
             <option value="ext">Extension</option>
             <option value="server">Server</option>
+          </Select>
+          <Heading as="h6" size="xs" my="4">
+            Inherit from
+          </Heading>
+          <Select
+            w="100%"
+            borderRadius={20}
+            colorScheme="green"
+            backgroundColor={colorMode === 'light' ? 'white' : undefined}
+            onChange={(e) => setParentEnvName(e.target.value)}
+            value={envs[selectedEnvName]?.parentEnvName ?? ''}
+            disabled={!parentEnvNames.length}
+          >
+            <option value="">None</option>
+            {parentEnvNames.map((env: any) => (
+              <option key={`${collectionId}-${env}`}>{env}</option>
+            ))}
           </Select>
           <Heading as="h6" size="xs" my="4">
             Variables

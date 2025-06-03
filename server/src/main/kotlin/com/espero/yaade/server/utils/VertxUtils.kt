@@ -117,6 +117,26 @@ fun Route.coroutineHandler(coroutineVerticle: CoroutineVerticle, handler: Handle
     }
 }
 
+fun Route.authorizedCoroutineHandler(
+    coroutineVerticle: CoroutineVerticle,
+    handler: suspend (ctx: RoutingContext) -> Unit
+) {
+    this.handler { ctx ->
+        if (ctx.user() == null) {
+            ctx.fail(ServerError(HttpResponseStatus.UNAUTHORIZED.code(), "Not logged in"))
+            return@handler
+        }
+        coroutineVerticle.launch {
+            try {
+                handler(ctx)
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                ctx.fail(t)
+            }
+        }
+    }
+}
+
 fun configureDatabindCodec() {
     // we do not limit the length of strings for now
     // this might become a performance problem later on
