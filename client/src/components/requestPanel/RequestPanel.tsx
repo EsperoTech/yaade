@@ -4,6 +4,7 @@ import { Dispatch, useCallback, useContext, useMemo } from 'react';
 import { VscSave } from 'react-icons/vsc';
 
 import { UserContext } from '../../context';
+import { FocusElementsContext } from '../../context/FocusElementsContext';
 import KVRow from '../../model/KVRow';
 import { AuthData, CurrentRestRequest, RestRequest } from '../../model/Request';
 import { RestResponse } from '../../model/Response';
@@ -33,6 +34,8 @@ type RequestPanelProps = {
   sendRequest(request: RestRequest, envName?: string, n?: number): Promise<RestResponse>;
   saveOnSend: (request: RestRequest) => Promise<void>;
   handleSaveRequestClick: () => Promise<void>;
+  tabIndex: number;
+  setTabIndex: (index: number) => void;
   selectedEnvData: Record<string, string>;
   selectedEnvName?: string;
 };
@@ -43,6 +46,8 @@ function RequestPanel({
   sendRequest,
   saveOnSend,
   handleSaveRequestClick,
+  tabIndex,
+  setTabIndex,
   selectedEnvData,
   selectedEnvName,
 }: RequestPanelProps) {
@@ -229,6 +234,7 @@ function RequestPanel({
           setMethod={setMethod}
           handleSendButtonClick={handleSendButtonClick}
           isLoading={currentRequest.isLoading}
+          currentRequestId={currentRequest.id}
           selectedEnvData={selectedEnvData}
         />
         <IconButton
@@ -244,6 +250,8 @@ function RequestPanel({
 
       <Tabs
         isLazy
+        index={tabIndex}
+        onChange={(index) => setTabIndex(index)}
         colorScheme="green"
         mt="1"
         display="flex"

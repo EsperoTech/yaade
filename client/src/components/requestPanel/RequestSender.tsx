@@ -102,6 +102,8 @@ type RequestSenderProps = {
   isExtInitialized: MutableRefObject<boolean>;
   extVersion: MutableRefObject<string | undefined>;
   openExtModal: () => void;
+  tabIndex: number;
+  setTabIndex: (index: number) => void;
 };
 
 function RequestSender({
@@ -112,6 +114,8 @@ function RequestSender({
   isExtInitialized,
   extVersion,
   openExtModal,
+  tabIndex,
+  setTabIndex,
 }: RequestSenderProps) {
   const [newReqForm, setNewReqForm] = useState<NewReqFormState>({
     collectionId: -1,
@@ -597,6 +601,8 @@ function RequestSender({
             return sendRequest(request, reqCollections, selectedEnvName ?? undefined);
           }}
           saveOnSend={saveOnSend}
+          tabIndex={tabIndex}
+          setTabIndex={setTabIndex}
           selectedEnvData={selectedEnvData ?? {}}
           selectedEnvName={selectedEnvName ?? ''}
         />

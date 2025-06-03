@@ -29,7 +29,7 @@ import {
 } from '../../state/currentCollection';
 import { BASE_PATH, cn, errorToast, successToast } from '../../utils';
 import { getMergedEnvData } from '../../utils/env';
-import { getSelectedEnv, getSelectedEnvs } from '../../utils/store';
+import { getSelectedEnvs } from '../../utils/store';
 import { useKeyPress } from '../../utils/useKeyPress';
 import AuthTab from '../authTab';
 import Editor from '../editor';
@@ -62,9 +62,6 @@ export default function CollectionPanel({
     const envName = getSelectedEnvs()[currentCollection.id];
     return envName ? envName : null;
   }, [currentCollection.id]);
-  const selectedEnv = useMemo(() => {
-    return currentCollection ? getSelectedEnv(currentCollection) : null;
-  }, [currentCollection]);
   const selectedEnvData = useMemo(() => {
     if (!currentCollection) return null;
     return selectedEnvName

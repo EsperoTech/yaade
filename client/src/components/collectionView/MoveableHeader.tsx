@@ -31,6 +31,7 @@ import {
 
 import api from '../../api';
 import { UserContext } from '../../context';
+import { CurrentModalContext } from '../../context/CurrentModalContext';
 import Collection, { SidebarCollection } from '../../model/Collection';
 import { RestRequest, WebsocketRequest } from '../../model/Request';
 import Script from '../../model/Script';
@@ -64,7 +65,6 @@ type MoveableHeaderState = {
   name: string;
   newRequestName: string;
   importData: string;
-  currentModal: string;
   newCollectionName: string;
   groups: string[];
   uploadFile: any;
@@ -114,10 +114,23 @@ function MoveableHeader({
   isCollectionDescendant,
 }: MoveableHeaderProps) {
   const { user } = useContext(UserContext);
+  const {
+    currentModalState,
+    currentModalType,
+    currentModalId,
+    clearCurrentModal,
+    setCurrentModal,
+  } = useContext(CurrentModalContext);
+  const isOpen = useMemo(
+    () =>
+      !!currentModalState &&
+      currentModalType === 'collection' &&
+      currentModalId === collection.id,
+    [currentModalState, currentModalType, currentModalId, collection.id],
+  );
   const [state, setState] = useState<MoveableHeaderState>({
     name: collection.name,
     newRequestName: '',
-    currentModal: '',
     importData: '',
     newCollectionName: '',
     groups: user?.data?.groups ?? [],
@@ -135,7 +148,6 @@ function MoveableHeader({
   const { colorMode } = useColorMode();
   const { onCopy } = useClipboard(`${window.location.origin}/#/${collection.id}`);
   const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const headerVariants = useMemo(() => {
     return currentCollectionId === collection.id ? ['selected'] : [];
   }, [currentCollectionId, collection.id]);
@@ -362,7 +374,7 @@ function MoveableHeader({
       newScriptName: '',
       importData: '',
     });
-    onClose();
+    clearCurrentModal();
   }
 
   async function handleCreateRESTRequestClick() {
@@ -511,7 +523,7 @@ function MoveableHeader({
   // correctly on response scripts
   const currentModal = !isOpen
     ? null
-    : ((s: string) => {
+    : ((s: string | undefined) => {
         switch (s) {
           case 'newRestRequest':
             return (
@@ -777,7 +789,7 @@ function MoveableHeader({
               </BasicModal>
             );
         }
-      })(state.currentModal);
+      })(currentModalState);
 
   return (
     <div
@@ -847,8 +859,7 @@ function MoveableHeader({
                     icon={<AddIcon />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setState({ ...state, currentModal: 'newRestRequest' });
-                      onOpen();
+                      setCurrentModal('newRequest', 'collection', collection.id);
                     }}
                   >
                     New Request
@@ -857,8 +868,7 @@ function MoveableHeader({
                     icon={<AddIcon />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setState({ ...state, currentModal: 'newWebsocketRequest' });
-                      onOpen();
+                      setCurrentModal('newWebsocketRequest', 'collection', collection.id);
                     }}
                   >
                     New Websocket Request
@@ -867,8 +877,7 @@ function MoveableHeader({
                     icon={<VscFolder />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setState({ ...state, currentModal: 'newCollection' });
-                      onOpen();
+                      setCurrentModal('newCollection', 'collection', collection.id);
                     }}
                   >
                     New Collection
@@ -877,8 +886,7 @@ function MoveableHeader({
                     icon={<VscFileCode />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setState({ ...state, currentModal: 'newScript' });
-                      onOpen();
+                      setCurrentModal('newScript', 'collection', collection.id);
                     }}
                   >
                     New Job Script
@@ -899,11 +907,9 @@ function MoveableHeader({
                       e.stopPropagation();
                       setState({
                         ...state,
-                        currentModal: 'duplicate',
                         name: `${collection.name} (copy)`,
                       });
-
-                      onOpen();
+                      setCurrentModal('duplicate', 'collection', collection.id);
                     }}
                   >
                     Duplicate
@@ -913,8 +919,7 @@ function MoveableHeader({
                     icon={<DeleteIcon />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setState({ ...state, currentModal: 'delete' });
-                      onOpen();
+                      setCurrentModal('delete', 'collection', collection.id);
                     }}
                   >
                     Delete
