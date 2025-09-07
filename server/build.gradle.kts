@@ -48,6 +48,10 @@ dependencies {
 
     implementation("org.apache.commons:commons-text:1.9")
 
+    // langchain4j dependencies
+    implementation("dev.langchain4j:langchain4j:1.4.0")
+    implementation("dev.langchain4j:langchain4j-open-ai:1.4.0")
+
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")

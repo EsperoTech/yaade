@@ -43,9 +43,14 @@ class CollectionRoute(private val daoManager: DaoManager, private val vertx: Ver
                 .getAllInCollection(it.id)
                 .map { script -> script.toJson() }
                 .sortedBy { el -> el.getJsonObject("data").getInteger("rank") ?: 0 }
+            val agents = daoManager.agentDao
+                .getByCollectionId(it.id)
+                .map { agent -> agent.jsonData().put("id", agent.id) }
+                .sortedBy { el -> el.getInteger("rank") ?: 0 }
             it.toJson()
                 .put("requests", requests)
                 .put("scripts", scripts)
+                .put("agents", agents)
         }.sortedBy { it.getJsonObject("data").getInteger("rank") ?: 0 }
 
         val result = ArrayList<JsonObject>()

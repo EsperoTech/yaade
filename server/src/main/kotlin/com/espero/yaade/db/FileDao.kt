@@ -6,7 +6,5 @@ import com.j256.ormlite.support.ConnectionSource
 class FileDao(connectionSource: ConnectionSource) :
     BaseDao<FileDb>(connectionSource, FileDb::class.java) {
 
-    fun getAll(): List<FileDb> {
-        return dao.queryForAll()
-    }
+    fun getAll(): List<FileDb> = dao.queryForAll()
 }
