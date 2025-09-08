@@ -209,14 +209,18 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             routerBuilder.operation("tokenListScripts")
                 .tokenCoroutineHandler(this, daoManager, scriptRoute::tokenListScripts)
 
+            routerBuilder.operation("createAgent")
+                .userCoroutineHandler(this, agentRoute::create)
+            routerBuilder.operation("getAgent")
+                .userCoroutineHandler(this, agentRoute::getById)
+            routerBuilder.operation("updateAgent")
+                .userCoroutineHandler(this, agentRoute::update)
+            routerBuilder.operation("deleteAgent")
+                .userCoroutineHandler(this, agentRoute::delete)
+            routerBuilder.operation("invokeAgent")
+                .userCoroutineHandler(this, agentRoute::invoke)
+
             val router = routerBuilder.createRouter()
-            
-            // Manual agent routes (not in OpenAPI spec yet)
-            router.post("/api/agents").authorizedCoroutineHandler(this, agentRoute::create)
-            router.get("/api/agents/:id").authorizedCoroutineHandler(this, agentRoute::getById)
-            router.put("/api/agents/:id").authorizedCoroutineHandler(this, agentRoute::update) 
-            router.delete("/api/agents/:id").authorizedCoroutineHandler(this, agentRoute::delete)
-            router.post("/api/agents/:id/invoke").authorizedCoroutineHandler(this, agentRoute::invoke)
             
             router.route("/*").coroutineHandler(this, StaticHandler.create())
 

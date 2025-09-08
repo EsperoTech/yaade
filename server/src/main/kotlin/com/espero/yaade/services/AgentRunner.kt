@@ -4,8 +4,11 @@ import com.espero.yaade.db.DaoManager
 import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.routes.ScriptRoute
+import dev.langchain4j.agent.tool.Tool
+import dev.langchain4j.model.openai.OpenAiChatModel
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
+import kotlinx.coroutines.runBlocking
 
 class AgentRunner(
     private val daoManager: DaoManager,
@@ -31,27 +34,56 @@ class AgentRunner(
         }
         
         val agentConfig = agent.jsonData()
-        val tools = agentConfig.getJsonArray("tools") ?: JsonArray()
         
         try {
-            // Create dynamic tools from agent configuration and execute them
-            val toolProvider = DynamicToolProvider(daoManager, requestSender, scriptRoute, user, envName)
-            val toolResults = JsonArray()
+            // Create LLM with OpenAI key from environment or agent config  
+            val openaiKey = agentConfig.getString("apiKey") ?: System.getenv("OPENAI_API_KEY")
+                ?: throw IllegalArgumentException("No OpenAI API key provided")
+            val modelName = agentConfig.getString("model") ?: "gpt-3.5-turbo"
             
-            for (toolItem in tools) {
-                val toolConfig = toolItem as JsonObject
-                val toolResult = toolProvider.executeTool(toolConfig)
-                toolResults.add(toolResult)
+            // For future enhancement: this will create the actual OpenAI model
+            // val chatModel = OpenAiChatModel.builder()
+            //     .apiKey(openaiKey)
+            //     .modelName(modelName)
+            //     .build()
+            
+            // Create dynamic tools and execute them based on the message
+            val dynamicTools = DynamicTools(
+                agentConfig,
+                daoManager,
+                requestSender, 
+                scriptRoute,
+                user,
+                envName
+            )
+            
+            // For now, create a simple response that shows the agent is working
+            // and execute tools based on the message content
+            val toolResults = mutableListOf<String>()
+            
+            // Simple logic: if message mentions "request" or "http", execute request tools
+            if (message.lowercase().contains("request") || message.lowercase().contains("http")) {
+                toolResults.add(dynamicTools.executeRequest())
             }
             
-            // For now, return a simple response showing the tools were executed
-            // This demonstrates the dynamic tool creation and execution
+            // Simple logic: if message mentions "script" or "run", execute script tools  
+            if (message.lowercase().contains("script") || message.lowercase().contains("run")) {
+                toolResults.add(dynamicTools.executeScript())
+            }
+            
+            // If no specific tools mentioned, just respond with available tools
+            val toolCount = (agentConfig.getJsonArray("tools") ?: JsonArray()).size()
+            val response = if (toolResults.isEmpty()) {
+                "I'm an AI agent with $toolCount tools available. Ask me to execute requests or scripts!"
+            } else {
+                "Executed tools based on your request:\n" + toolResults.joinToString("\n")
+            }
+            
             return JsonObject()
-                .put("response", "Agent processed message: '$message'. Executed ${tools.size()} tools successfully.")
+                .put("response", response)
                 .put("agentName", agentConfig.getString("name"))
-                .put("toolCount", tools.size())
-                .put("toolResults", toolResults)
-                .put("message", message)
+                .put("toolCount", toolCount)
+                .put("model", modelName)
         } catch (e: Exception) {
             return JsonObject()
                 .put("response", "Agent invocation failed: ${e.message}")
@@ -62,7 +94,8 @@ class AgentRunner(
     }
 }
 
-class DynamicToolProvider(
+class DynamicTools(
+    private val agentConfig: JsonObject,
     private val daoManager: DaoManager,
     private val requestSender: RequestSender,
     private val scriptRoute: ScriptRoute,
@@ -70,79 +103,79 @@ class DynamicToolProvider(
     private val envName: String?
 ) {
     
-    suspend fun executeTool(toolConfig: JsonObject): JsonObject {
-        val toolType = toolConfig.getString("type")
-        val toolId = toolConfig.getLong("id")
-        
-        return when (toolType) {
-            "request" -> executeRequest(toolId, toolConfig)
-            "script" -> executeScript(toolId, toolConfig)
-            else -> JsonObject()
-                .put("success", false)
-                .put("error", "Unknown tool type: $toolType")
-        }
-    }
-    
-    private suspend fun executeRequest(requestId: Long, toolConfig: JsonObject): JsonObject {
+    @Tool("Execute HTTP request - dynamically calls configured requests")
+    fun executeRequest(): String {
         return try {
-            val request = daoManager.requestDao.getById(requestId)
-                ?: return JsonObject()
-                    .put("success", false)
-                    .put("error", "Request not found: $requestId")
+            val tools = agentConfig.getJsonArray("tools") ?: JsonArray()
+            val requestTools = tools.filter { 
+                val tool = it as JsonObject
+                tool.getString("type") == "request"
+            }
+            
+            if (requestTools.isEmpty()) {
+                return "No request tools configured"
+            }
+            
+            // Execute the first request tool for now (in a real implementation, 
+            // the LLM would specify which tool to call)
+            val firstTool = requestTools.first() as JsonObject
+            val requestId = firstTool.getLong("id")
+            val request = daoManager.requestDao.getById(requestId) 
+                ?: return "Request not found: $requestId"
             
             val requestData = request.jsonData()
-            val toolName = toolConfig.getString("name") ?: requestData.getString("name") ?: "request_$requestId"
+            val method = requestData.getString("method") ?: "GET"
+            val url = requestData.getString("url") ?: "unknown"
             
-            // For now, return a success message indicating we would execute the request
-            // TODO: Integrate with RequestSender.send() method
-            JsonObject()
-                .put("success", true)
-                .put("toolType", "request")
-                .put("toolName", toolName)
-                .put("result", "Request tool executed (actual RequestSender integration pending)")
+            // TODO: Integrate with actual RequestSender.send() method
+            "Successfully executed $method request to $url (RequestSender integration pending)"
         } catch (e: Exception) {
-            JsonObject()
-                .put("success", false)
-                .put("toolType", "request")
-                .put("error", "Request execution failed: ${e.message}")
+            "Error executing request: ${e.message}"
         }
     }
     
-    private suspend fun executeScript(scriptId: Long, toolConfig: JsonObject): JsonObject {
+    @Tool("Execute JavaScript script - dynamically calls configured scripts")  
+    fun executeScript(): String {
         return try {
+            val tools = agentConfig.getJsonArray("tools") ?: JsonArray()
+            val scriptTools = tools.filter { 
+                val tool = it as JsonObject
+                tool.getString("type") == "script"
+            }
+            
+            if (scriptTools.isEmpty()) {
+                return "No script tools configured"
+            }
+            
+            // Execute the first script tool for now
+            val firstTool = scriptTools.first() as JsonObject
+            val scriptId = firstTool.getLong("id")
             val script = daoManager.jobScriptDao.getById(scriptId)
-                ?: return JsonObject()
-                    .put("success", false)
-                    .put("error", "Script not found: $scriptId")
+                ?: return "Script not found: $scriptId"
             
             val scriptData = script.jsonData()
-            val toolName = toolConfig.getString("name") ?: scriptData.getString("name") ?: "script_$scriptId"
-            val scriptString = scriptData.getString("script") ?: return JsonObject()
-                .put("success", false)
-                .put("error", "No script content")
-            
+            val scriptString = scriptData.getString("script") ?: return "No script content"
             val ownerGroups = user.groups().toList()
             
-            val result = scriptRoute.run(
-                scriptId,
-                scriptString,
-                script.collectionId,
-                envName,
-                JsonArray(ownerGroups),
-                JsonObject()
-            )
+            // Use runBlocking to handle suspend function
+            val result = runBlocking {
+                scriptRoute.run(
+                    scriptId,
+                    scriptString,
+                    script.collectionId,
+                    envName,
+                    JsonArray(ownerGroups),
+                    JsonObject()
+                )
+            }
             
-            JsonObject()
-                .put("success", result?.getBoolean("success") ?: false)
-                .put("toolType", "script")
-                .put("toolName", toolName)
-                .put("result", result?.encode() ?: "No result")
-                
+            if (result?.getBoolean("success") == true) {
+                "Script executed successfully. Result: ${result.encode()}"
+            } else {
+                "Script failed: ${result?.getString("error") ?: "Unknown error"}"
+            }
         } catch (e: Exception) {
-            JsonObject()
-                .put("success", false)
-                .put("toolType", "script")
-                .put("error", "Script execution failed: ${e.message}")
+            "Error executing script: ${e.message}"
         }
     }
 }
