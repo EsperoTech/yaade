@@ -5,7 +5,9 @@ import com.espero.yaade.model.db.CollectionDb
 import com.espero.yaade.model.db.UserDb
 import com.espero.yaade.server.routes.ScriptRoute
 import dev.langchain4j.agent.tool.Tool
+import dev.langchain4j.memory.chat.MessageWindowChatMemory
 import dev.langchain4j.model.openai.OpenAiChatModel
+import dev.langchain4j.service.AiServices
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import kotlinx.coroutines.runBlocking
@@ -41,48 +43,36 @@ class AgentRunner(
                 ?: throw IllegalArgumentException("No OpenAI API key provided")
             val modelName = agentConfig.getString("model") ?: "gpt-3.5-turbo"
             
-            // For future enhancement: this will create the actual OpenAI model
-            // val chatModel = OpenAiChatModel.builder()
-            //     .apiKey(openaiKey)
-            //     .modelName(modelName)
-            //     .build()
+            val chatModel = OpenAiChatModel.builder()
+                .apiKey(openaiKey)
+                .modelName(modelName)
+                .build()
             
-            // Create dynamic tools and execute them based on the message
-            val dynamicTools = DynamicTools(
+            // Create dynamic tools instance with access to configured tools
+            val dynamicTools = DynamicAgentTools(
                 agentConfig,
                 daoManager,
-                requestSender, 
+                requestSender,
                 scriptRoute,
                 user,
                 envName
             )
             
-            // For now, create a simple response that shows the agent is working
-            // and execute tools based on the message content
-            val toolResults = mutableListOf<String>()
+            // Create AI service with tools
+            val memory = MessageWindowChatMemory.withMaxMessages(10)
+            val assistant = AiServices.builder(AgentAssistant::class.java)
+                .chatModel(chatModel)
+                .tools(dynamicTools)
+                .chatMemory(memory)
+                .build()
             
-            // Simple logic: if message mentions "request" or "http", execute request tools
-            if (message.lowercase().contains("request") || message.lowercase().contains("http")) {
-                toolResults.add(dynamicTools.executeRequest())
-            }
-            
-            // Simple logic: if message mentions "script" or "run", execute script tools  
-            if (message.lowercase().contains("script") || message.lowercase().contains("run")) {
-                toolResults.add(dynamicTools.executeScript())
-            }
-            
-            // If no specific tools mentioned, just respond with available tools
-            val toolCount = (agentConfig.getJsonArray("tools") ?: JsonArray()).size()
-            val response = if (toolResults.isEmpty()) {
-                "I'm an AI agent with $toolCount tools available. Ask me to execute requests or scripts!"
-            } else {
-                "Executed tools based on your request:\n" + toolResults.joinToString("\n")
-            }
+            // Invoke the agent with the user's message
+            val response = assistant.chat(message)
             
             return JsonObject()
                 .put("response", response)
                 .put("agentName", agentConfig.getString("name"))
-                .put("toolCount", toolCount)
+                .put("toolCount", (agentConfig.getJsonArray("tools") ?: JsonArray()).size())
                 .put("model", modelName)
         } catch (e: Exception) {
             return JsonObject()
@@ -92,9 +82,14 @@ class AgentRunner(
                 .put("errorMessage", e.message)
         }
     }
+    
+    interface AgentAssistant {
+        fun chat(message: String): String
+    }
 }
 
-class DynamicTools(
+// Dynamic tools class that provides @Tool annotated methods to langchain4j
+class DynamicAgentTools(
     private val agentConfig: JsonObject,
     private val daoManager: DaoManager,
     private val requestSender: RequestSender,
@@ -103,79 +98,76 @@ class DynamicTools(
     private val envName: String?
 ) {
     
-    @Tool("Execute HTTP request - dynamically calls configured requests")
-    fun executeRequest(): String {
-        return try {
-            val tools = agentConfig.getJsonArray("tools") ?: JsonArray()
-            val requestTools = tools.filter { 
-                val tool = it as JsonObject
-                tool.getString("type") == "request"
-            }
-            
-            if (requestTools.isEmpty()) {
-                return "No request tools configured"
-            }
-            
-            // Execute the first request tool for now (in a real implementation, 
-            // the LLM would specify which tool to call)
-            val firstTool = requestTools.first() as JsonObject
-            val requestId = firstTool.getLong("id")
-            val request = daoManager.requestDao.getById(requestId) 
-                ?: return "Request not found: $requestId"
-            
-            val requestData = request.jsonData()
-            val method = requestData.getString("method") ?: "GET"
-            val url = requestData.getString("url") ?: "unknown"
-            
-            // TODO: Integrate with actual RequestSender.send() method
-            "Successfully executed $method request to $url (RequestSender integration pending)"
-        } catch (e: Exception) {
-            "Error executing request: ${e.message}"
+    @Tool("Execute HTTP requests configured for this agent")
+    fun executeHttpRequest(): String {
+        return runBlocking {
+            executeConfiguredTool("request")
         }
     }
     
-    @Tool("Execute JavaScript script - dynamically calls configured scripts")  
-    fun executeScript(): String {
-        return try {
+    @Tool("Execute JavaScript scripts configured for this agent")
+    fun executeJavaScriptScript(): String {
+        return runBlocking {
+            executeConfiguredTool("script")
+        }
+    }
+    
+    private suspend fun executeConfiguredTool(toolType: String): String {
+        try {
             val tools = agentConfig.getJsonArray("tools") ?: JsonArray()
-            val scriptTools = tools.filter { 
+            val matchingTools = tools.filter { 
                 val tool = it as JsonObject
-                tool.getString("type") == "script"
+                tool.getString("type") == toolType
             }
             
-            if (scriptTools.isEmpty()) {
-                return "No script tools configured"
+            if (matchingTools.isEmpty()) {
+                return "No $toolType tools configured for this agent"
             }
             
-            // Execute the first script tool for now
-            val firstTool = scriptTools.first() as JsonObject
-            val scriptId = firstTool.getLong("id")
-            val script = daoManager.jobScriptDao.getById(scriptId)
-                ?: return "Script not found: $scriptId"
+            // Execute the first matching tool (in a real implementation, 
+            // the LLM could specify parameters to choose which tool)
+            val firstTool = matchingTools.first() as JsonObject
+            val toolId = firstTool.getLong("id")
             
-            val scriptData = script.jsonData()
-            val scriptString = scriptData.getString("script") ?: return "No script content"
-            val ownerGroups = user.groups().toList()
-            
-            // Use runBlocking to handle suspend function
-            val result = runBlocking {
-                scriptRoute.run(
-                    scriptId,
-                    scriptString,
-                    script.collectionId,
-                    envName,
-                    JsonArray(ownerGroups),
-                    JsonObject()
-                )
-            }
-            
-            if (result?.getBoolean("success") == true) {
-                "Script executed successfully. Result: ${result.encode()}"
-            } else {
-                "Script failed: ${result?.getString("error") ?: "Unknown error"}"
+            when (toolType) {
+                "request" -> {
+                    val request = daoManager.requestDao.getById(toolId)
+                        ?: return "Request not found: $toolId"
+                    
+                    val requestData = request.jsonData()
+                    val method = requestData.getString("method") ?: "GET"
+                    val url = requestData.getString("url") ?: "unknown"
+                    
+                    // TODO: Integrate with actual RequestSender.send() method
+                    return "Successfully executed $method request to $url (RequestSender integration pending)"
+                }
+                "script" -> {
+                    val script = daoManager.jobScriptDao.getById(toolId)
+                        ?: return "Script not found: $toolId"
+                    
+                    val scriptData = script.jsonData()
+                    val scriptString = scriptData.getString("script") ?: return "No script content"
+                    val ownerGroups = user.groups().toList()
+                    
+                    val result = scriptRoute.run(
+                        toolId,
+                        scriptString,
+                        script.collectionId,
+                        envName,
+                        JsonArray(ownerGroups),
+                        JsonObject()
+                    )
+                    
+                    return if (result?.getBoolean("success") == true) {
+                        "Script executed successfully. Result: ${result.encode()}"
+                    } else {
+                        "Script failed: ${result?.getString("error") ?: "Unknown error"}"
+                    }
+                }
+                else -> return "Unknown tool type: $toolType"
             }
         } catch (e: Exception) {
-            "Error executing script: ${e.message}"
+            return "Error executing $toolType tool: ${e.message}"
         }
     }
 }
