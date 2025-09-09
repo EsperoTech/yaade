@@ -860,6 +860,109 @@ paths:
       responses:
         '200':
           description: Success
+  /api/agents:
+    post:
+      tags:
+        - Agents
+      summary: Create a new agent
+      operationId: createAgent
+      requestBody:
+        description: The agent to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgentRequest"
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+  /api/agents/{id}:
+    get:
+      tags:
+        - Agents
+      summary: Get an agent
+      operationId: getAgent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+    put:
+      tags:
+        - Agents
+      summary: Update an agent
+      operationId: updateAgent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: The updated agent
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Agent"
+      responses:
+        '200':
+          description: Success
+    delete:
+      tags:
+        - Agents
+      summary: Delete an agent
+      operationId: deleteAgent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Success
+  /api/agents/{id}/invoke:
+    post:
+      tags:
+        - Agents
+      summary: Invoke an agent
+      operationId: invokeAgent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: The message to send to the agent
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvokeAgentRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
   /api/accessTokens:
     get:
       tags:
@@ -1200,3 +1303,86 @@ components:
           type: integer
         data:
           type: object
+    CreateAgentRequest:
+      type: object
+      required:
+        - collectionId
+        - name
+      properties:
+        collectionId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [request, script]
+              id:
+                type: integer
+              name:
+                type: string
+              description:
+                type: string
+        apiKey:
+          type: string
+        model:
+          type: string
+    Agent:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+        collectionId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [request, script]
+              id:
+                type: integer
+              name:
+                type: string
+              description:
+                type: string
+        apiKey:
+          type: string
+        model:
+          type: string
+    InvokeAgentRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        envName:
+          type: string
+    AgentResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        agentName:
+          type: string
+        toolCount:
+          type: integer
+        error:
+          type: boolean
+        errorMessage:
+          type: string

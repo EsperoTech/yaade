@@ -11,6 +11,7 @@ import com.espero.yaade.server.auth.AuthHandler
 import com.espero.yaade.server.errors.handleFailure
 import com.espero.yaade.server.routes.*
 import com.espero.yaade.server.utils.*
+import com.espero.yaade.services.AgentRunner
 import com.espero.yaade.services.RequestSender
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServer
@@ -59,6 +60,10 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             val scriptRoute = ScriptRoute(daoManager, vertx)
             val accessTokenRoute = AccessTokenRoute(daoManager)
             val websocketRoute = WebsocketRoute(vertx, daoManager)
+            
+            // Agent-related initialization
+            val agentRunner = AgentRunner(daoManager, requestSender, scriptRoute)
+            val agentRoute = AgentRoute(daoManager, agentRunner)
 
             val routerBuilder = RouterBuilder.create(vertx, "openapi.yaml").coAwait()
 
@@ -204,7 +209,19 @@ class Server(private val port: Int, private val daoManager: DaoManager) : Corout
             routerBuilder.operation("tokenListScripts")
                 .tokenCoroutineHandler(this, daoManager, scriptRoute::tokenListScripts)
 
+            routerBuilder.operation("createAgent")
+                .userCoroutineHandler(this, agentRoute::create)
+            routerBuilder.operation("getAgent")
+                .userCoroutineHandler(this, agentRoute::getById)
+            routerBuilder.operation("updateAgent")
+                .userCoroutineHandler(this, agentRoute::update)
+            routerBuilder.operation("deleteAgent")
+                .userCoroutineHandler(this, agentRoute::delete)
+            routerBuilder.operation("invokeAgent")
+                .userCoroutineHandler(this, agentRoute::invoke)
+
             val router = routerBuilder.createRouter()
+            
             router.route("/*").coroutineHandler(this, StaticHandler.create())
 
             val admin = daoManager.userDao.getByUsername(ADMIN_USERNAME)
